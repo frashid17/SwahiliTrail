@@ -42,3 +42,7 @@ next-env.d.ts
 
 # Local project notes (not for the public repo)
 PLATFORM.md
+
+# Next.js auto-generated agent rule files (recreated by `next dev`)
+AGENTS.md
+CLAUDE.md
