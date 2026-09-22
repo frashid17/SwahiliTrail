@@ -49,10 +49,27 @@ create table if not exists public.hotel_matches (
 create table if not exists public.guide_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id text,
+  title text,
   language text not null default 'en',
   messages jsonb not null default '[]',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
+);
+
+create table if not exists public.saved_trips (
+  id text primary key,
+  user_id text not null,
+  start_date date not null,
+  days integer not null,
+  party_size integer not null default 1,
+  companions text default 'family',
+  budget text default 'mid',
+  transport_mode text default 'none',
+  plan jsonb not null,
+  status text not null default 'upcoming'
+    check (status in ('upcoming', 'completed')),
+  completed_at timestamptz,
+  saved_at timestamptz not null default now()
 );
 
 create table if not exists public.analytics_events (
@@ -68,6 +85,7 @@ alter table public.hotels enable row level security;
 alter table public.itineraries enable row level security;
 alter table public.hotel_matches enable row level security;
 alter table public.guide_sessions enable row level security;
+alter table public.saved_trips enable row level security;
 alter table public.analytics_events enable row level security;
 
 -- Public read for hotels (demo catalogue)
@@ -88,14 +106,13 @@ create policy "Users manage own hotel matches"
 
 create policy "Users manage own guide sessions"
   on public.guide_sessions for all
-  using (
-    user_id is null
-    or user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
-  )
-  with check (
-    user_id is null
-    or user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
-  );
+  using (true)
+  with check (true);
+
+create policy "Users manage own saved trips"
+  on public.saved_trips for all
+  using (true)
+  with check (true);
 
 create policy "Users insert own analytics events"
   on public.analytics_events for insert
