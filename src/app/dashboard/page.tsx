@@ -6,12 +6,14 @@ import {
   Compass,
   Languages,
   MapPin,
+  PawPrint,
   Sparkles,
   Sunrise,
-  Trees,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { COAST_IMAGES as img } from "@/lib/data/coast-images";
+import { placePhoto } from "@/lib/data/place-photo-urls";
 
 const tools = [
   {
@@ -20,7 +22,8 @@ const tools = [
     description:
       "Build a multi-day Mombasa itinerary with stay, activities, and a full damage cost estimate.",
     icon: Sparkles,
-    accent: "from-teal-700 via-cyan-600 to-sky-400",
+    imageUrl: img.beachTropical,
+    imageAlt: "Turquoise coastline for trip planning",
     cta: "Plan a trip",
   },
   {
@@ -29,7 +32,8 @@ const tools = [
     description:
       "Match hotels and restaurants across Nyali, Old Town, Diani, and the waterfront.",
     icon: BedDouble,
-    accent: "from-sky-800 via-teal-600 to-emerald-400",
+    imageUrl: placePhoto("tamarind-mombasa", img.seafoodDining),
+    imageAlt: "Coastal dining and stays",
     cta: "Find stays & food",
   },
   {
@@ -38,7 +42,8 @@ const tools = [
     description:
       "Explore Fort Jesus, beaches, culture stops, and add favorites to your trip list.",
     icon: MapPin,
-    accent: "from-cyan-700 via-teal-500 to-sky-400",
+    imageUrl: placePhoto("fort-jesus", img.fortJesus),
+    imageAlt: "Fort Jesus in Mombasa",
     cta: "Browse attractions",
   },
   {
@@ -46,8 +51,9 @@ const tools = [
     title: "Kenya Wildlife",
     description:
       "Shimba Hills, Tsavo, marine parks, and more KWS experiences from the coast.",
-    icon: Trees,
-    accent: "from-emerald-800 via-teal-600 to-lime-500",
+    icon: PawPrint,
+    imageUrl: placePhoto("haller-park", img.hallerParkGiraffe),
+    imageAlt: "Giraffe at Haller Park",
     cta: "Explore wildlife",
   },
   {
@@ -56,7 +62,8 @@ const tools = [
     description:
       "Ask about ferries, food, Fort Jesus, and Swahili phrases in six languages.",
     icon: Languages,
-    accent: "from-cyan-800 via-teal-500 to-lime-400",
+    imageUrl: placePhoto("old-town", img.oldTownStreet),
+    imageAlt: "Old Town Mombasa street",
     cta: "Ask the guide",
   },
   {
@@ -65,7 +72,8 @@ const tools = [
     description:
       "Show visitor trends, attraction performance, and sentiment to stakeholders.",
     icon: BarChart3,
-    accent: "from-blue-900 via-cyan-700 to-teal-400",
+    imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
+    imageAlt: "Mama Ngina waterfront",
     cta: "View insights",
   },
 ];
@@ -75,16 +83,19 @@ const highlights = [
     title: "Fort Jesus",
     detail: "UNESCO fort · Old Town",
     tip: "Go early for cooler alleys and clearer photos.",
+    imageUrl: placePhoto("fort-jesus", img.fortJesus),
   },
   {
     title: "Mama Ngina Waterfront",
     detail: "Sunset promenade",
     tip: "Best light an hour before sunset - food stalls open late.",
+    imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
   },
   {
     title: "Nyali Beach",
     detail: "North coast swim day",
     tip: "Pair with Haller Park if you’re traveling with family.",
+    imageUrl: placePhoto("nyali-beach", img.nyaliBeach),
   },
 ];
 
@@ -174,7 +185,7 @@ export default async function DashboardPage() {
               Your tools
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Four AI surfaces for travelers and destination teams.
+              Six AI surfaces for travelers and destination teams.
             </p>
           </div>
         </div>
@@ -186,11 +197,20 @@ export default async function DashboardPage() {
               href={tool.href}
               className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:border-aqua/35 hover:shadow-lg"
             >
-              <div className={`h-28 bg-gradient-to-br ${tool.accent}`} />
-              <div className="flex flex-1 flex-col p-5">
-                <span className="-mt-10 mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/30 bg-ocean text-white shadow-md">
-                  <tool.icon className="h-5 w-5" />
+              <div className="relative h-40 overflow-hidden sm:h-44">
+                <Image
+                  src={tool.imageUrl}
+                  alt={tool.imageAlt}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/85 via-brand-deep/25 to-transparent" />
+                <span className="absolute bottom-3 left-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-aqua text-brand-deep shadow-lg shadow-black/25 ring-2 ring-white/25">
+                  <tool.icon className="h-6 w-6" strokeWidth={2.25} />
                 </span>
+              </div>
+              <div className="flex flex-1 flex-col p-5 pt-4">
                 <h3 className="font-display text-xl text-ocean-deep">
                   {tool.title}
                 </h3>
@@ -221,15 +241,27 @@ export default async function DashboardPage() {
               {highlights.map((spot) => (
                 <div
                   key={spot.title}
-                  className="rounded-2xl bg-foam px-4 py-4"
+                  className="overflow-hidden rounded-2xl bg-foam"
                 >
-                  <p className="font-display text-lg text-ocean-deep">
-                    {spot.title}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-aqua">
-                    {spot.detail}
-                  </p>
-                  <p className="mt-2 text-sm text-muted">{spot.tip}</p>
+                  <div className="relative h-28">
+                    <Image
+                      src={spot.imageUrl}
+                      alt={spot.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 33vw"
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/70 to-transparent" />
+                  </div>
+                  <div className="px-4 py-4">
+                    <p className="font-display text-lg text-ocean-deep">
+                      {spot.title}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-aqua">
+                      {spot.detail}
+                    </p>
+                    <p className="mt-2 text-sm text-muted">{spot.tip}</p>
+                  </div>
                 </div>
               ))}
             </div>
