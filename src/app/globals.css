@@ -73,6 +73,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  color: var(--ocean-deep);
+}
+
+.dark input[type="date"],
+.dark input[type="time"],
+.dark input[type="datetime-local"] {
+  color-scheme: dark;
 }
 
 ::selection {
