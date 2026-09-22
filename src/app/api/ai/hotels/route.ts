@@ -7,7 +7,7 @@ import {
   RESTAURANTS,
   restaurantsForArea,
 } from "@/lib/data/restaurants";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const bodySchema = z.object({
   mode: z.enum(["hotels", "restaurants"]).default("hotels"),
@@ -101,7 +101,7 @@ Use exact names from the catalogue in rationale/tips.`,
         tips: match.tips,
       });
 
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       if (supabase) {
         await supabase.from("hotel_matches").insert({
           user_id: userId,
