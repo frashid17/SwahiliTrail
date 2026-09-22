@@ -1,0 +1,310 @@
+{
+  "at": "2026-09-22T01:19:34.947Z",
+  "log": [
+    {
+      "id": "tamarind-mombasa",
+      "ok": true,
+      "name": "Tamarind Restaurant Mombasa"
+    },
+    {
+      "id": "forodhani",
+      "ok": true,
+      "name": "Forodhani Restaurant"
+    },
+    {
+      "id": "galaxy",
+      "ok": true,
+      "name": "GALAXY CHINESE RESTAURANT-MOMBASA"
+    },
+    {
+      "id": "java-nyali",
+      "ok": true,
+      "name": "Java House - Nyali Centre"
+    },
+    {
+      "id": "shehnai",
+      "ok": true,
+      "name": "Shehnai Restaurant"
+    },
+    {
+      "id": "sails",
+      "ok": true,
+      "name": "Sails Beach Bar & Restaurant"
+    },
+    {
+      "id": "nomad",
+      "ok": true,
+      "name": "Nomad Beach Bar & Restaurant"
+    },
+    {
+      "id": "blaze",
+      "ok": true,
+      "name": "Rockwall Italian Restaurant"
+    },
+    {
+      "id": "coffee-house",
+      "ok": true,
+      "name": "Mama Ngina Waterfront"
+    },
+    {
+      "id": "kilifi-beach",
+      "ok": true,
+      "name": "Distant Relatives Ecolodge & Backpackers"
+    },
+    {
+      "id": "florida-club",
+      "ok": true,
+      "name": "Mombasa Club"
+    },
+    {
+      "id": "tembo-disco",
+      "ok": true,
+      "name": "Tembo Disco"
+    },
+    {
+      "id": "cubana-mombasa",
+      "ok": true,
+      "name": "Cuba Libre"
+    },
+    {
+      "id": "mv-plus-bar",
+      "ok": true,
+      "name": "Mingles Lounge ️"
+    },
+    {
+      "id": "tamarind-dhow",
+      "ok": true,
+      "name": "Tamarind Dhow"
+    },
+    {
+      "id": "blaze-grill-night",
+      "ok": true,
+      "name": "La pranzo"
+    },
+    {
+      "id": "sails-diani-night",
+      "ok": true,
+      "name": "Sails Beach Bar & Restaurant"
+    },
+    {
+      "id": "nyali-beach",
+      "ok": true,
+      "name": "Nyali Beach"
+    },
+    {
+      "id": "diani-beach",
+      "ok": true,
+      "name": "Diani Beach"
+    },
+    {
+      "id": "bamburi-beach",
+      "ok": true,
+      "name": "Bamburi Beach Hotel"
+    },
+    {
+      "id": "wasini-kisite",
+      "ok": true,
+      "name": "Kisite-Mpunguti Marine National Park"
+    },
+    {
+      "id": "glass-bottom-nyali",
+      "ok": true,
+      "name": "Glassboat & Snorkeling Tours at Serena Beach Reef"
+    },
+    {
+      "id": "watamu-marine",
+      "ok": true,
+      "name": "Watamu Marine National Park & Reserve"
+    },
+    {
+      "id": "shimba-hills",
+      "ok": true,
+      "name": "Shimba Hills National Reserve"
+    },
+    {
+      "id": "haller-park",
+      "ok": true,
+      "name": "Haller Park"
+    },
+    {
+      "id": "tsavo-west-day",
+      "ok": true,
+      "name": "Tsavo West National Park"
+    },
+    {
+      "id": "fort-jesus",
+      "ok": true,
+      "name": "Fort Jesus Museum"
+    },
+    {
+      "id": "old-town-mombasa",
+      "ok": true,
+      "name": "Old Town"
+    },
+    {
+      "id": "ngomongo",
+      "ok": true,
+      "name": "Ngomongo Villages"
+    },
+    {
+      "id": "kite-diani",
+      "ok": true,
+      "name": "KiteMotion Kiteschool in Soul Breeze"
+    },
+    {
+      "id": "scuba-diani",
+      "ok": true,
+      "name": "Yellow Fins Diving Kenya-Padi 5 Star Padi Center"
+    },
+    {
+      "id": "camel-rides",
+      "ok": true,
+      "name": "Siyad camel 001"
+    },
+    {
+      "id": "arabuko-trails",
+      "ok": false,
+      "reason": "no photo"
+    },
+    {
+      "id": "mama-ngina-walk",
+      "ok": true,
+      "name": "Mama Ngina Waterfront"
+    },
+    {
+      "id": "ocean-cleanup",
+      "ok": true,
+      "name": "Salu Solutions Cleaning,Garbage Collection and Fumigation Services Company"
+    },
+    {
+      "id": "turtle-conservation",
+      "ok": true,
+      "name": "Local Ocean Conservation"
+    },
+    {
+      "id": "old-town",
+      "ok": true,
+      "name": "Old Town"
+    },
+    {
+      "id": "mama-ngina",
+      "ok": true,
+      "name": "Mama Ngina Waterfront"
+    },
+    {
+      "id": "diani",
+      "ok": true,
+      "name": "Diani Reef Beach Resort & Spa"
+    },
+    {
+      "id": "spice-market",
+      "ok": true,
+      "name": "Mombasa Spice Market"
+    },
+    {
+      "id": "likoni-ferry",
+      "ok": true,
+      "name": "Likoni Ferry - Mombasa"
+    },
+    {
+      "id": "mamba-village",
+      "ok": true,
+      "name": "Mamba Village Mombasa"
+    },
+    {
+      "id": "wasini",
+      "ok": true,
+      "name": "KAKASAIDY WASINI DOLPHIN TOURS"
+    },
+    {
+      "id": "glass-bottom",
+      "ok": true,
+      "name": "Glassboat & Snorkeling Tours at Serena Beach Reef"
+    },
+    {
+      "id": "nyali-breeze",
+      "ok": true,
+      "name": "Serena Beach Resort & Spa"
+    },
+    {
+      "id": "sarova-whitesands",
+      "ok": true,
+      "name": "Sarova Whitesands Beach Resort & Spa Mombasa - Beach Hotel in Mombasa"
+    },
+    {
+      "id": "old-town-haven",
+      "ok": true,
+      "name": "The Tamarind Village"
+    },
+    {
+      "id": "diani-horizon",
+      "ok": true,
+      "name": "Baobab Beach Resort & Spa"
+    },
+    {
+      "id": "leopard-beach",
+      "ok": true,
+      "name": "Leopard Beach Resort and Spa"
+    },
+    {
+      "id": "bamburi-bay",
+      "ok": true,
+      "name": "Voyager Beach Resort"
+    },
+    {
+      "id": "mama-ngina-view",
+      "ok": true,
+      "name": "PrideInn Paradise Beach Resort & Spa Mombasa"
+    },
+    {
+      "id": "english-point",
+      "ok": true,
+      "name": "Hotel Englishpoint Mombasa"
+    },
+    {
+      "id": "kilifi-creek",
+      "ok": true,
+      "name": "Mnarani Beach Club"
+    },
+    {
+      "id": "driiftwood",
+      "ok": true,
+      "name": "Driftwood Malindi"
+    },
+    {
+      "id": "fountain-beach",
+      "ok": true,
+      "name": "Neptune Beach Resort"
+    },
+    {
+      "id": "city-royal",
+      "ok": true,
+      "name": "Royal Court Hotel, Mombasa"
+    },
+    {
+      "id": "tsavo-east",
+      "ok": true,
+      "name": "Tsavo East National Park"
+    },
+    {
+      "id": "tsavo-west",
+      "ok": true,
+      "name": "Tsavo West National Park"
+    },
+    {
+      "id": "arabuko-sokoke",
+      "ok": true,
+      "name": "Arabuko Sokoke Forest Reserve"
+    },
+    {
+      "id": "kisite-mpunguti",
+      "ok": true,
+      "name": "Kisite-Mpunguti Marine National Park"
+    },
+    {
+      "id": "haller-kws-adj",
+      "ok": true,
+      "name": "Haller Park"
+    }
+  ]
+}
