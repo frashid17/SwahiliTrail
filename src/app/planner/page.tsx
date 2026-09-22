@@ -34,8 +34,8 @@ import {
 import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
   addSavedTrip,
-  loadSavedTrips,
   removeSavedTrip,
+  syncSavedTripsFromCloud,
   type SavedTrip,
 } from "@/lib/saved-trips";
 import {
@@ -168,7 +168,7 @@ export default function PlannerPage() {
   useEffect(() => {
     if (!isLoaded || !userId) return;
     setCart(loadTripCart(userId));
-    setSavedTrips(loadSavedTrips(userId));
+    void syncSavedTripsFromCloud(userId).then(setSavedTrips);
   }, [isLoaded, userId]);
 
   const suggestedHires = useMemo(
@@ -301,21 +301,27 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="coastal-grid h-[calc(100vh-4rem)] overflow-hidden">
-      <div className="mx-auto grid h-full max-w-[90rem] gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-6 lg:px-10 lg:py-5">
-        <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface/85 shadow-sm backdrop-blur">
+    <div className="coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
+      <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
+        <aside className="relative flex shrink-0 flex-col rounded-2xl border border-border bg-surface/85 shadow-sm backdrop-blur sm:rounded-3xl lg:min-h-0 lg:overflow-hidden">
           <CoastalOrbs />
-          <div className="relative z-[1] min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5">
+          <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-aqua">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:text-xs">
                 AI Trip Planner
               </p>
-              <h1 className="mt-2 font-display text-3xl text-ocean-deep">
+              <h1 className="mt-1.5 font-display text-2xl text-ocean-deep sm:mt-2 sm:text-3xl">
                 Curate a full coast trip
               </h1>
-              <p className="mt-2 text-sm text-muted">
-                Set days, stay, transport, and activities. Results scroll on the
-                right while this panel stays put.
+              <p className="mt-1.5 text-sm text-muted sm:mt-2">
+                <span className="lg:hidden">
+                  Set days, stay, transport, and activities. Your curated trip
+                  appears below.
+                </span>
+                <span className="hidden lg:inline">
+                  Set days, stay, transport, and activities. Results scroll on
+                  the right while this panel stays put.
+                </span>
               </p>
             </div>
 
@@ -400,7 +406,7 @@ export default function PlannerPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border bg-foam px-3 py-2"
+                className="mt-1 w-full rounded-xl border border-border bg-foam px-3 py-2.5 text-ocean-deep [color-scheme:light] dark:[color-scheme:dark]"
               />
             </label>
 
@@ -673,11 +679,11 @@ export default function PlannerPage() {
           </div>
         </aside>
 
-        <section className="relative flex min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface/70 shadow-sm">
+        <section className="relative flex min-h-[min(20rem,55dvh)] flex-col rounded-2xl border border-border bg-surface/70 shadow-sm sm:rounded-3xl lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <CoastalOrbs className="opacity-40" />
-          <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+          <div className="relative z-[1] p-3 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {!plan ? (
-              <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-8 text-center text-muted">
+              <div className="flex min-h-[10rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
                 Your curated trip will land here - day plans, stay suggestion,
                 car-hire contacts, and a damage cost estimate.
               </div>
@@ -687,10 +693,10 @@ export default function PlannerPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-5"
               >
-                <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+                <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm sm:rounded-3xl sm:p-6">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
-                      <h2 className="font-display text-3xl text-ocean-deep">
+                      <h2 className="font-display text-2xl text-ocean-deep sm:text-3xl">
                         {plan.title}
                       </h2>
                       <p className="mt-2 text-muted">{plan.summary}</p>
@@ -863,7 +869,7 @@ export default function PlannerPage() {
                 {plan.days.map((day) => (
                   <div
                     key={day.day}
-                    className="rounded-3xl border border-border bg-surface p-6 sm:p-7"
+                    className="rounded-2xl border border-border bg-surface p-4 sm:rounded-3xl sm:p-7"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
