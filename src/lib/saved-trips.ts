@@ -145,6 +145,7 @@ export function addSavedTrip(
     : draft;
   const trips = [withAuto, ...loadSavedTrips(userId)].slice(0, 20);
   saveSavedTrips(userId, trips);
+  void pushTripsToCloud(trips);
   return trips;
 }
 
@@ -157,6 +158,7 @@ export function updateSavedTrip(
     t.id === tripId ? { ...t, ...patch } : t,
   );
   saveSavedTrips(userId, trips);
+  void pushTripsToCloud(trips);
   return trips;
 }
 
@@ -177,6 +179,10 @@ export function markTripUpcoming(userId: string, tripId: string): SavedTrip[] {
 export function removeSavedTrip(userId: string, tripId: string): SavedTrip[] {
   const trips = loadSavedTrips(userId).filter((t) => t.id !== tripId);
   saveSavedTrips(userId, trips);
+  void fetch(`/api/trips?id=${encodeURIComponent(tripId)}`, {
+    method: "DELETE",
+  }).catch(() => undefined);
+  void pushTripsToCloud(trips);
   return trips;
 }
 
@@ -184,4 +190,59 @@ export function isPlanSaved(userId: string, planTitle: string, days: number) {
   return loadSavedTrips(userId).some(
     (t) => t.plan.title === planTitle && t.days === days,
   );
+}
+
+function tripStamp(trip: SavedTrip) {
+  return new Date(trip.completedAt ?? trip.savedAt).getTime();
+}
+
+/** Merge local + cloud by id, preferring the newer record. */
+export function mergeTrips(local: SavedTrip[], remote: SavedTrip[]): SavedTrip[] {
+  const map = new Map<string, SavedTrip>();
+  for (const trip of [...local, ...remote].map(normalizeTrip)) {
+    const prev = map.get(trip.id);
+    if (!prev || tripStamp(trip) >= tripStamp(prev)) {
+      map.set(trip.id, trip);
+    }
+  }
+  const { trips } = syncTripStatuses([...map.values()]);
+  return trips.sort(
+    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+  );
+}
+
+async function pushTripsToCloud(trips: SavedTrip[]) {
+  try {
+    await fetch("/api/trips", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trips }),
+    });
+  } catch {
+    // Offline / not configured — local copy remains.
+  }
+}
+
+/**
+ * Load local trips, pull cloud copy, merge, persist both ways.
+ * Call once after auth is ready so localhost and production share data.
+ */
+export async function syncSavedTripsFromCloud(
+  userId: string,
+): Promise<SavedTrip[]> {
+  const local = loadSavedTrips(userId);
+  try {
+    const res = await fetch("/api/trips", { cache: "no-store" });
+    if (!res.ok) return local;
+    const data = (await res.json()) as { trips?: SavedTrip[]; cloud?: boolean };
+    const remote = Array.isArray(data.trips) ? data.trips : [];
+    const merged = mergeTrips(local, remote);
+    saveSavedTrips(userId, merged);
+    if (data.cloud) {
+      await pushTripsToCloud(merged);
+    }
+    return merged;
+  } catch {
+    return local;
+  }
 }
