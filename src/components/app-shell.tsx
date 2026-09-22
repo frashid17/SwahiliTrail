@@ -73,7 +73,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className={isImmersive ? "min-h-0 flex-1 overflow-hidden" : "flex-1"}>
+      <main
+        className={
+          isImmersive
+            ? // Mobile: page scrolls. Desktop: panels own their scroll.
+              "flex-1 overflow-y-auto lg:min-h-0 lg:overflow-hidden"
+            : "flex-1"
+        }
+      >
         {children}
       </main>
       {isImmersive ? null : <SiteFooter />}
