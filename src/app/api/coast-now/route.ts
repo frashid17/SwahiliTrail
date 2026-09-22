@@ -6,14 +6,36 @@ import {
 
 const { lat: LAT, lon: LON, tz: TZ } = MOMBASA_COORDS;
 
+/**
+ * Open-Meteo with timezone=Africa/Nairobi returns wall-clock strings like
+ * "2026-09-22T06:10" (no offset). Parsing those with `new Date()` uses the
+ * *server* local zone — UTC on Vercel — then formatting into Nairobi adds +3h
+ * and shows wrong sunrise/sunset/tides in production.
+ */
 function formatHm(iso: string) {
+  const match = iso.match(/T(\d{2}):(\d{2})/);
+  if (match) return `${match[1]}:${match[2]}`;
+
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "--:--";
   return d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
     timeZone: TZ,
   });
+}
+
+/** Parse Open-Meteo Nairobi wall-clock timestamps into epoch ms. */
+function parseCoastLocalMs(iso: string): number {
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso)) {
+    return new Date(iso).getTime();
+  }
+  // Africa/Nairobi is UTC+3 year-round (no DST)
+  const withOffset = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(iso)
+    ? `${iso}:00+03:00`
+    : `${iso}+03:00`;
+  return new Date(withOffset).getTime();
 }
 
 function findNextTideExtremum(
@@ -25,7 +47,7 @@ function findNextTideExtremum(
   for (let i = 0; i < times.length; i++) {
     const h = heights[i];
     if (h == null || Number.isNaN(h)) continue;
-    points.push({ t: new Date(times[i]).getTime(), h, iso: times[i] });
+    points.push({ t: parseCoastLocalMs(times[i]), h, iso: times[i] });
   }
   if (points.length < 3) return null;
 
