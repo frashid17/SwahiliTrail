@@ -199,18 +199,21 @@ export default function HotelsPage() {
   const tips = mode === "hotels" ? hotelTips : restaurantTips;
 
   return (
-    <div className="coastal-grid h-[calc(100vh-4rem)] overflow-hidden">
-      <div className="mx-auto grid h-full max-w-[90rem] gap-4 px-4 py-4 sm:px-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:px-10 lg:py-5">
-        <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface/85 shadow-sm backdrop-blur">
+    <div className="coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
+      <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
+        <aside className="relative flex shrink-0 flex-col rounded-2xl border border-border bg-surface/85 shadow-sm backdrop-blur sm:rounded-3xl lg:min-h-0 lg:overflow-hidden">
           <CoastalOrbs />
-          <div className="relative z-[1] min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-5">
+          <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-aqua">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:text-xs">
                 Stay & eat
               </p>
-              <h1 className="mt-2 font-display text-3xl text-ocean-deep">
+              <h1 className="mt-1.5 font-display text-2xl leading-tight text-ocean-deep sm:mt-2 sm:text-3xl">
                 Match coastal stays & tables
               </h1>
+              <p className="mt-1.5 text-sm text-muted lg:hidden">
+                Tune budget and vibe, then match. Ranked results appear below.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-foam p-1">
@@ -259,8 +262,8 @@ export default function HotelsPage() {
               <textarea
                 value={vibe}
                 onChange={(e) => setVibe(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-xl border border-border bg-foam px-3 py-2"
+                rows={2}
+                className="mt-1 min-h-[4.5rem] w-full resize-y rounded-xl border border-border bg-foam px-3 py-2.5 text-ocean-deep"
               />
             </label>
 
@@ -345,13 +348,13 @@ export default function HotelsPage() {
           </div>
         </aside>
 
-        <section className="relative flex min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+        <section className="relative flex min-h-[min(18rem,50dvh)] flex-col rounded-2xl border border-border bg-surface shadow-sm sm:rounded-3xl lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <CoastalOrbs className="opacity-50" />
-          <div className="relative z-[1] shrink-0 border-b border-border px-5 py-4">
-            <h2 className="font-display text-2xl text-ocean-deep">
+          <div className="relative z-[1] shrink-0 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
+            <h2 className="font-display text-xl text-ocean-deep sm:text-2xl">
               {mode === "hotels" ? "Matched stays" : "Matched restaurants"}
             </h2>
-            <p className="text-sm text-muted">
+            <p className="mt-0.5 text-sm text-muted">
               {resultCount > 0
                 ? `${resultCount} ranked option${resultCount === 1 ? "" : "s"}`
                 : "Run the matcher to see ranked results here."}
@@ -361,10 +364,10 @@ export default function HotelsPage() {
             </p>
           </div>
 
-          <div className="relative z-[1] min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
+          <div className="relative z-[1] space-y-3 p-3 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {rationale ? (
-              <div className="rounded-3xl border border-border bg-foam/70 p-5">
-                <h3 className="font-display text-xl text-ocean-deep">
+              <div className="rounded-2xl border border-border bg-foam/70 p-4 sm:rounded-3xl sm:p-5">
+                <h3 className="font-display text-lg text-ocean-deep sm:text-xl">
                   Why these matches
                 </h3>
                 <p className="mt-2 text-sm text-muted">{rationale}</p>
@@ -379,13 +382,13 @@ export default function HotelsPage() {
             ) : null}
 
             {mode === "hotels" && hotels.length === 0 ? (
-              <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-dashed border-ocean/30 bg-foam/40 p-8 text-center text-muted">
+              <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
                 Matched hotels will rank here after you run the AI matcher.
               </div>
             ) : null}
 
             {mode === "restaurants" && restaurants.length === 0 ? (
-              <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-dashed border-ocean/30 bg-foam/40 p-8 text-center text-muted">
+              <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
                 Matched restaurants will rank here after you run the AI matcher.
               </div>
             ) : null}
@@ -415,7 +418,7 @@ export default function HotelsPage() {
                             <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
                               #{index + 1} · {hotel.area}
                             </p>
-                            <h3 className="font-display text-2xl text-on-brand">
+                            <h3 className="font-display text-xl text-on-brand sm:text-2xl">
                               {hotel.name}
                             </h3>
                           </div>
@@ -425,7 +428,7 @@ export default function HotelsPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="p-5">
+                      <div className="p-4 sm:p-5">
                         <p className="text-sm text-muted">{hotel.description}</p>
                         <p className="mt-3 text-sm font-semibold text-ocean">
                           From KES {hotel.pricePerNight.toLocaleString()} / night
@@ -496,7 +499,7 @@ export default function HotelsPage() {
                           <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
                             #{index + 1} · {restaurant.area}
                           </p>
-                          <h3 className="font-display text-2xl text-on-brand">
+                          <h3 className="font-display text-xl text-on-brand sm:text-2xl">
                             {restaurant.name}
                           </h3>
                         </div>
@@ -506,7 +509,7 @@ export default function HotelsPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="p-5">
+                    <div className="p-4 sm:p-5">
                       <p className="text-sm text-muted">
                         {restaurant.description}
                       </p>
