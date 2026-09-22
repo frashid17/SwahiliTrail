@@ -1,0 +1,247 @@
+[
+  {
+    "id": "tamarind-mombasa",
+    "query": "Tamarind Restaurant Nyali Kenya"
+  },
+  {
+    "id": "forodhani",
+    "query": "Forodhani Restaurant Mombasa Old Town Kenya"
+  },
+  {
+    "id": "galaxy",
+    "query": "Galaxy Chinese Restaurant Nyali Kenya"
+  },
+  {
+    "id": "java-nyali",
+    "query": "Java House Nyali Nyali Kenya"
+  },
+  {
+    "id": "shehnai",
+    "query": "Shehnai Restaurant Mombasa CBD Kenya"
+  },
+  {
+    "id": "sails",
+    "query": "Sails Beach Bar & Restaurant Diani Beach Kenya"
+  },
+  {
+    "id": "nomad",
+    "query": "Nomad Beach Bar Diani Beach Kenya"
+  },
+  {
+    "id": "blaze",
+    "query": "Blaze Grill Nyali Kenya"
+  },
+  {
+    "id": "coffee-house",
+    "query": "Miss Port Coffee House Mama Ngina Waterfront Kenya"
+  },
+  {
+    "id": "kilifi-beach",
+    "query": "Distant Relatives Ecolodge Kitchen Kilifi Kenya"
+  },
+  {
+    "id": "florida-club",
+    "query": "Florida Club Mombasa Mama Ngina"
+  },
+  {
+    "id": "tembo-disco",
+    "query": "Tembo Disco Nyali Mombasa"
+  },
+  {
+    "id": "cubana-mombasa",
+    "query": "Cubana Restaurant Nyali Mombasa"
+  },
+  {
+    "id": "mv-plus-bar",
+    "query": "MV+ Bar Lounge Nyali Mombasa"
+  },
+  {
+    "id": "tamarind-dhow",
+    "query": "Tamarind Dhow Mombasa Kenya",
+    "placeId": "ChIJ3YP-0FATQBgRSxJ3g2lxBbQ"
+  },
+  {
+    "id": "blaze-grill-night",
+    "query": "Blaze Grill Nyali Mombasa"
+  },
+  {
+    "id": "sails-diani-night",
+    "query": "Sails Restaurant Diani Beach"
+  },
+  {
+    "id": "nyali-beach",
+    "query": "Nyali Beach Mombasa"
+  },
+  {
+    "id": "diani-beach",
+    "query": "Diani Beach Kenya"
+  },
+  {
+    "id": "bamburi-beach",
+    "query": "Bamburi Beach Mombasa"
+  },
+  {
+    "id": "wasini-kisite",
+    "query": "Kisite Mpunguti Marine National Park"
+  },
+  {
+    "id": "glass-bottom-nyali",
+    "query": "glass bottom boat Nyali Mombasa"
+  },
+  {
+    "id": "watamu-marine",
+    "query": "Watamu Marine National Park"
+  },
+  {
+    "id": "shimba-hills",
+    "query": "Shimba Hills National Reserve"
+  },
+  {
+    "id": "haller-park",
+    "query": "Haller Park Mombasa"
+  },
+  {
+    "id": "tsavo-west-day",
+    "query": "Tsavo West National Park"
+  },
+  {
+    "id": "fort-jesus",
+    "query": "Fort Jesus Mombasa"
+  },
+  {
+    "id": "old-town-mombasa",
+    "query": "Mombasa Old Town"
+  },
+  {
+    "id": "ngomongo",
+    "query": "Ngomongo Villages Mtwapa"
+  },
+  {
+    "id": "kite-diani",
+    "query": "kitesurfing school Diani Beach"
+  },
+  {
+    "id": "scuba-diani",
+    "query": "scuba diving Diani Kenya"
+  },
+  {
+    "id": "camel-rides",
+    "query": "camel ride Nyali Beach Mombasa"
+  },
+  {
+    "id": "arabuko-trails",
+    "query": "Arabuko Sokoke Forest"
+  },
+  {
+    "id": "mama-ngina-walk",
+    "query": "Mama Ngina Waterfront Mombasa"
+  },
+  {
+    "id": "ocean-cleanup",
+    "query": "beach cleanup Mombasa Nyali"
+  },
+  {
+    "id": "turtle-conservation",
+    "query": "Local Ocean Conservation Watamu turtles"
+  },
+  {
+    "id": "old-town",
+    "query": "Mombasa Old Town Old Town Mombasa Kenya"
+  },
+  {
+    "id": "mama-ngina",
+    "query": "Mama Ngina Waterfront CBD / Waterfront Mombasa Kenya"
+  },
+  {
+    "id": "diani",
+    "query": "Diani Beach South Coast Mombasa Kenya"
+  },
+  {
+    "id": "spice-market",
+    "query": "Mackinnon Market & Spice Stalls Island Mombasa Kenya"
+  },
+  {
+    "id": "likoni-ferry",
+    "query": "Likoni Ferry Crossing Likoni Mombasa Kenya"
+  },
+  {
+    "id": "mamba-village",
+    "query": "Mamba Village Centre Nyali Mombasa Kenya"
+  },
+  {
+    "id": "wasini",
+    "query": "Wasini Island & dolphin trip South Coast Mombasa Kenya"
+  },
+  {
+    "id": "glass-bottom",
+    "query": "Glass-bottom boat / reef trip Nyali / Bamburi Mombasa Kenya"
+  },
+  {
+    "id": "nyali-breeze",
+    "query": "Serena Beach Resort & Spa Nyali Kenya"
+  },
+  {
+    "id": "sarova-whitesands",
+    "query": "Sarova Whitesands Beach Resort Bamburi Kenya"
+  },
+  {
+    "id": "old-town-haven",
+    "query": "Tamarind Village Mombasa Old Town Kenya"
+  },
+  {
+    "id": "diani-horizon",
+    "query": "Baobab Beach Resort & Spa Diani Beach Kenya"
+  },
+  {
+    "id": "leopard-beach",
+    "query": "Leopard Beach Resort & Spa Diani Beach Kenya"
+  },
+  {
+    "id": "bamburi-bay",
+    "query": "Voyager Beach Resort Bamburi Kenya"
+  },
+  {
+    "id": "mama-ngina-view",
+    "query": "PrideInn Paradise Beach Resort Shanzu Kenya"
+  },
+  {
+    "id": "english-point",
+    "query": "English Point Marina Hotel Nyali Kenya"
+  },
+  {
+    "id": "kilifi-creek",
+    "query": "Mnarani Club Kilifi Kenya"
+  },
+  {
+    "id": "driiftwood",
+    "query": "Driftwood Beach Club Malindi / north coast trip Kenya"
+  },
+  {
+    "id": "fountain-beach",
+    "query": "Neptune Beach Resort Bamburi Kenya"
+  },
+  {
+    "id": "city-royal",
+    "query": "Royal Court Hotel Mama Ngina Waterfront Kenya"
+  },
+  {
+    "id": "tsavo-east",
+    "query": "Tsavo East National Park Kenya"
+  },
+  {
+    "id": "tsavo-west",
+    "query": "Tsavo West National Park Kenya"
+  },
+  {
+    "id": "arabuko-sokoke",
+    "query": "Arabuko Sokoke Forest Reserve Kenya"
+  },
+  {
+    "id": "kisite-mpunguti",
+    "query": "Kisite Mpunguti Marine Park Kenya"
+  },
+  {
+    "id": "haller-kws-adj",
+    "query": "Haller Park (Bamburi) Kenya"
+  }
+]
