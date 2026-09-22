@@ -20,10 +20,10 @@ import {
 } from "@/lib/plan-export";
 import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
-  getSavedTrip,
   markTripComplete,
   markTripUpcoming,
   removeSavedTrip,
+  syncSavedTripsFromCloud,
   tripEndDate,
   type SavedTrip,
 } from "@/lib/saved-trips";
@@ -36,7 +36,14 @@ export default function TripDetailPage() {
 
   useEffect(() => {
     if (!isLoaded || !userId) return;
-    setTrip(getSavedTrip(userId, params.id));
+    let cancelled = false;
+    void syncSavedTripsFromCloud(userId).then((trips) => {
+      if (cancelled) return;
+      setTrip(trips.find((t) => t.id === params.id) ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isLoaded, userId, params.id]);
 
   if (isLoaded && userId && !trip) {
