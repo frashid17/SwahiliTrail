@@ -13,10 +13,10 @@ import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/fade-in";
 import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
-  loadSavedTrips,
   markTripComplete,
   markTripUpcoming,
   removeSavedTrip,
+  syncSavedTripsFromCloud,
   tripEndDate,
   type SavedTrip,
 } from "@/lib/saved-trips";
@@ -26,7 +26,14 @@ export default function MyTripsPage() {
   const [trips, setTrips] = useState<SavedTrip[]>([]);
 
   useEffect(() => {
-    if (isLoaded && userId) setTrips(loadSavedTrips(userId));
+    if (!isLoaded || !userId) return;
+    let cancelled = false;
+    void syncSavedTripsFromCloud(userId).then((trips) => {
+      if (!cancelled) setTrips(trips);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isLoaded, userId]);
 
   function remove(e: React.MouseEvent, id: string) {
