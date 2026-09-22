@@ -1,10 +1,11 @@
 "use client";
 
-import { Show, UserButton } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { AccountMenu } from "@/components/auth/account-menu";
 import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -110,11 +111,14 @@ export function SiteHeader() {
             >
               Dashboard
             </Link>
-            <UserButton />
+            <AccountMenu />
           </Show>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
+          <Show when="signed-in">
+            <AccountMenu />
+          </Show>
           <ThemeToggle />
           <button
             type="button"
@@ -135,32 +139,40 @@ export function SiteHeader() {
               onNavigate={() => setOpen(false)}
               className="rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-surface"
             />
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-col gap-2">
               <Show when="signed-out">
-                <Link
-                  href="/sign-in"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 rounded-full border border-border bg-surface px-3 py-2 text-center text-sm font-medium"
-                >
-                  Sign in
-                </Link>
-                <Link
-                  href="/sign-up"
-                  onClick={() => setOpen(false)}
-                  className="flex-1 rounded-full bg-coral px-3 py-2 text-center text-sm font-semibold text-white"
-                >
-                  Get started
-                </Link>
+                <div className="flex gap-2">
+                  <Link
+                    href="/sign-in"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 rounded-full border border-border bg-surface px-3 py-2 text-center text-sm font-medium"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    onClick={() => setOpen(false)}
+                    className="flex-1 rounded-full bg-coral px-3 py-2 text-center text-sm font-semibold text-white"
+                  >
+                    Get started
+                  </Link>
+                </div>
               </Show>
               <Show when="signed-in">
                 <Link
+                  href="/account"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-ocean-deep hover:bg-surface"
+                >
+                  Manage account
+                </Link>
+                <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="flex-1 rounded-full bg-ocean px-3 py-2 text-center text-sm font-semibold text-white"
+                  className="rounded-full bg-ocean px-3 py-2 text-center text-sm font-semibold text-white"
                 >
                   Dashboard
                 </Link>
-                <UserButton />
               </Show>
             </div>
           </div>
