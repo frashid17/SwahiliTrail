@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateJson, sanitizeAiStrings } from "@/lib/ai/gemini";
 import { ATTRACTIONS, GUIDE_LANGUAGES } from "@/lib/data/attractions";
-import { createClient } from "@/lib/supabase/server";
+import { titleFromMessages } from "@/lib/guide-history";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { toPlainText } from "@/lib/text";
 
 const langCodes = ["en", "sw", "fr", "de", "zh", "ar"] as const;
@@ -88,20 +89,23 @@ ${context}`,
       : input.language;
     const plainReply = toPlainText(clean.reply);
 
-    const supabase = await createClient();
+    const messages = [
+      ...(input.history ?? []),
+      { role: "assistant" as const, content: plainReply },
+    ];
+
+    const supabase = createAdminClient();
     if (supabase) {
-      const history = [
-        ...(input.history ?? []),
-        { role: "assistant" as const, content: plainReply },
-      ];
       if (input.sessionId) {
+        const now = new Date().toISOString();
         await supabase.from("guide_sessions").upsert(
           {
             id: input.sessionId,
             user_id: userId,
+            title: titleFromMessages(messages),
             language: detected,
-            messages: history,
-            updated_at: new Date().toISOString(),
+            messages,
+            updated_at: now,
           },
           { onConflict: "id" },
         );
