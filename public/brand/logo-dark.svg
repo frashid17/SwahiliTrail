@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 128" fill="none" role="img" aria-label="Swahili Trail">
+  <rect width="128" height="128" rx="28" fill="#0B6E7A"/>
+  <path d="M18 104C36 96 48 78 56 58c8-20 18-36 40-42 6-1.5 14-1 22 1-10 14-16 30-20 48-5 22-14 40-36 52-12 7-28 8-44-13z" fill="#FFFFFF"/>
+  <path d="M24 86c16-22 30-26 48-20 14 5 24 2 36-10 1 16-4 32-16 44-14 14-34 18-52 10-12-5-18-14-16-24z" fill="#5ED4DE"/>
+  <path d="M42 54c12-10 26-12 40-4 8 4 16 2 24-4-6 14-16 24-30 28-12 4-24-2-34-20z" fill="#E8F7F6"/>
+  <text x="152" y="78" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="600" fill="#FFFFFF">Swahili</text>
+  <text x="340" y="78" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="500" fill="#5ED4DE">Trail</text>
+</svg>
