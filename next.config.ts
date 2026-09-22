@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "media.ticketmaster.eu",
       },
+      {
+        protocol: "https",
+        hostname: "img.clerk.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.clerk.dev",
+      },
     ],
   },
 };
