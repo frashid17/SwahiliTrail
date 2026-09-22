@@ -7,7 +7,7 @@ import { carHiresForMode, type TransportMode } from "@/lib/data/car-hires";
 import { HOTELS } from "@/lib/data/hotels";
 import { RESTAURANTS } from "@/lib/data/restaurants";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const cartItemSchema = z.object({
   id: z.string(),
@@ -205,7 +205,7 @@ Rules:
 
     const cleanPlan = sanitizeAiStrings(plan);
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     if (supabase) {
       await supabase.from("itineraries").insert({
         user_id: userId,
