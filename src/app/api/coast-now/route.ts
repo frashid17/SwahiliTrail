@@ -1,0 +1,129 @@
+import { NextResponse } from "next/server";
+import {
+  MOMBASA_COORDS,
+  type CoastNowPayload,
+} from "@/lib/coast-now";
+
+const { lat: LAT, lon: LON, tz: TZ } = MOMBASA_COORDS;
+
+function formatHm(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: TZ,
+  });
+}
+
+function findNextTideExtremum(
+  times: string[],
+  heights: (number | null)[],
+  nowMs: number,
+): CoastNowPayload["nextTide"] {
+  const points: { t: number; h: number; iso: string }[] = [];
+  for (let i = 0; i < times.length; i++) {
+    const h = heights[i];
+    if (h == null || Number.isNaN(h)) continue;
+    points.push({ t: new Date(times[i]).getTime(), h, iso: times[i] });
+  }
+  if (points.length < 3) return null;
+
+  type Ext = { type: "high" | "low"; iso: string; h: number; t: number };
+  const extrema: Ext[] = [];
+  for (let i = 1; i < points.length - 1; i++) {
+    const prev = points[i - 1];
+    const cur = points[i];
+    const next = points[i + 1];
+    if (cur.h >= prev.h && cur.h >= next.h) {
+      extrema.push({ type: "high", iso: cur.iso, h: cur.h, t: cur.t });
+    } else if (cur.h <= prev.h && cur.h <= next.h) {
+      extrema.push({ type: "low", iso: cur.iso, h: cur.h, t: cur.t });
+    }
+  }
+
+  const upcoming = extrema.find((e) => e.t >= nowMs - 15 * 60 * 1000);
+  if (!upcoming) return null;
+  return {
+    type: upcoming.type,
+    time: formatHm(upcoming.iso),
+    heightM: Math.round(upcoming.h * 100) / 100,
+  };
+}
+
+export async function GET() {
+  try {
+    const weatherUrl = new URL("https://api.open-meteo.com/v1/forecast");
+    weatherUrl.searchParams.set("latitude", String(LAT));
+    weatherUrl.searchParams.set("longitude", String(LON));
+    weatherUrl.searchParams.set("current", "temperature_2m");
+    weatherUrl.searchParams.set("daily", "sunrise,sunset");
+    weatherUrl.searchParams.set("timezone", TZ);
+    weatherUrl.searchParams.set("forecast_days", "1");
+
+    const marineUrl = new URL("https://marine-api.open-meteo.com/v1/marine");
+    marineUrl.searchParams.set("latitude", String(LAT));
+    marineUrl.searchParams.set("longitude", String(LON));
+    marineUrl.searchParams.set("hourly", "sea_level_height_msl");
+    marineUrl.searchParams.set("timezone", TZ);
+    marineUrl.searchParams.set("forecast_days", "2");
+
+    const [weatherRes, marineRes] = await Promise.all([
+      fetch(weatherUrl, { next: { revalidate: 300 } }),
+      fetch(marineUrl, { next: { revalidate: 300 } }),
+    ]);
+
+    if (!weatherRes.ok) {
+      throw new Error(`Weather upstream ${weatherRes.status}`);
+    }
+
+    const weather = (await weatherRes.json()) as {
+      current?: { temperature_2m?: number };
+      daily?: { sunrise?: string[]; sunset?: string[] };
+    };
+
+    let nextTide: CoastNowPayload["nextTide"] = null;
+    if (marineRes.ok) {
+      const marine = (await marineRes.json()) as {
+        hourly?: {
+          time?: string[];
+          sea_level_height_msl?: (number | null)[];
+        };
+      };
+      nextTide = findNextTideExtremum(
+        marine.hourly?.time ?? [],
+        marine.hourly?.sea_level_height_msl ?? [],
+        Date.now(),
+      );
+    }
+
+    const temp = weather.current?.temperature_2m;
+    const sunriseIso = weather.daily?.sunrise?.[0];
+    const sunsetIso = weather.daily?.sunset?.[0];
+
+    if (temp == null || !sunriseIso || !sunsetIso) {
+      throw new Error("Incomplete weather payload");
+    }
+
+    const payload: CoastNowPayload = {
+      location: "Mombasa",
+      temperatureC: Math.round(temp),
+      sunrise: formatHm(sunriseIso),
+      sunset: formatHm(sunsetIso),
+      nextTide,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return NextResponse.json(payload, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  } catch (error) {
+    console.error("[coast-now]", error);
+    return NextResponse.json(
+      { error: "Unable to load coast conditions" },
+      { status: 502 },
+    );
+  }
+}
