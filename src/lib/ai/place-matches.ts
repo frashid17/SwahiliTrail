@@ -99,7 +99,7 @@ export function aiPlaceToHotel(
     vibe: place.vibe?.trim() || "Recommended stay",
     description:
       place.description?.trim() ||
-      `${name} in ${area} — suggested for your trip preferences.`,
+      `${name} in ${area} - suggested for your trip preferences.`,
     amenities: (place.amenities?.length ? place.amenities : ["Wi-Fi"]).slice(
       0,
       6,
@@ -144,7 +144,7 @@ export function aiPlaceToRestaurant(
     vibe: place.vibe?.trim() || "Recommended dining",
     description:
       place.description?.trim() ||
-      `${name} in ${area} — suggested for your trip preferences.`,
+      `${name} in ${area} - suggested for your trip preferences.`,
     imageUrl:
       place.imageUrl?.trim() || hashPick(`${name}|${area}`, FOOD_FALLBACKS),
     websiteUrl: place.websiteUrl?.trim() || null,
