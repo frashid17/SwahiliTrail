@@ -18,9 +18,9 @@ import { placePhoto } from "@/lib/data/place-photo-urls";
 const tools = [
   {
     href: "/planner",
-    title: "AI Trip Planner",
+    title: "Trip Planner",
     description:
-      "Build a multi-day Mombasa itinerary with stay, activities, and a full damage cost estimate.",
+      "Multi-day plan for Hola or the delta, with a rough KES total.",
     icon: Sparkles,
     imageUrl: img.beachTropical,
     imageAlt: "Turquoise coastline for trip planning",
@@ -30,7 +30,7 @@ const tools = [
     href: "/hotels",
     title: "Stay & Eat",
     description:
-      "Match hotels and restaurants across Nyali, Old Town, Diani, and the waterfront.",
+      "Filter lodging and meals by budget. Start near Hola if you can.",
     icon: BedDouble,
     imageUrl: placePhoto("tamarind-mombasa", img.seafoodDining),
     imageAlt: "Coastal dining and stays",
@@ -40,7 +40,7 @@ const tools = [
     href: "/attractions",
     title: "Attractions",
     description:
-      "Explore Fort Jesus, beaches, culture stops, and add favorites to your trip list.",
+      "Delta stops, wildlife, and culture - add picks to your trip list.",
     icon: MapPin,
     imageUrl: placePhoto("fort-jesus", img.fortJesus),
     imageAlt: "Fort Jesus in Mombasa",
@@ -48,19 +48,19 @@ const tools = [
   },
   {
     href: "/wildlife",
-    title: "Kenya Wildlife",
+    title: "Wildlife",
     description:
-      "Shimba Hills, Tsavo, marine parks, and more KWS experiences from the coast.",
+      "Primate reserve, delta wetlands, then coast parks if you have time.",
     icon: PawPrint,
-    imageUrl: placePhoto("haller-park", img.hallerParkGiraffe),
-    imageAlt: "Giraffe at Haller Park",
+    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
+    imageAlt: "Riverine forest habitat",
     cta: "Explore wildlife",
   },
   {
     href: "/guide",
     title: "Multilingual Guide",
     description:
-      "Ask about ferries, food, Fort Jesus, and Swahili phrases in six languages.",
+      "Roads, food, lodging, phrases - answers in six languages.",
     icon: Languages,
     imageUrl: placePhoto("old-town", img.oldTownStreet),
     imageAlt: "Old Town Mombasa street",
@@ -68,9 +68,9 @@ const tools = [
   },
   {
     href: "/analytics",
-    title: "Tourism Analytics",
+    title: "Destination Analytics",
     description:
-      "Show visitor trends, attraction performance, and sentiment to stakeholders.",
+      "Visitor charts and attraction interest for a short stakeholder brief.",
     icon: BarChart3,
     imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
     imageAlt: "Mama Ngina waterfront",
@@ -80,22 +80,22 @@ const tools = [
 
 const highlights = [
   {
-    title: "Fort Jesus",
-    detail: "UNESCO fort · Old Town",
-    tip: "Go early for cooler alleys and clearer photos.",
-    imageUrl: placePhoto("fort-jesus", img.fortJesus),
+    title: "Tana River Delta",
+    detail: "Delta · Kipini",
+    tip: "Go with a local boat operator and check tides first.",
+    imageUrl: placePhoto("tana-delta", img.beachTropical),
   },
   {
-    title: "Mama Ngina Waterfront",
-    detail: "Sunset promenade",
-    tip: "Best light an hour before sunset - food stalls open late.",
-    imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
+    title: "Hola · IBS 2026",
+    detail: "Summit base · innovation",
+    tip: "Book lodging early for 7–10 October 2026.",
+    imageUrl: placePhoto("hola-ibs", img.mamaNginaWaterfront),
   },
   {
-    title: "Nyali Beach",
-    detail: "North coast swim day",
-    tip: "Pair with Haller Park if you’re traveling with family.",
-    imageUrl: placePhoto("nyali-beach", img.nyaliBeach),
+    title: "Primate Reserve",
+    detail: "Riverine forest wildlife",
+    tip: "Arrange a guide - access can be seasonal.",
+    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
   },
 ];
 
@@ -138,8 +138,8 @@ export default async function DashboardPage() {
                 Karibu, {name}
               </h1>
               <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">
-                Your AI coastal workspace for Mombasa - plan the trip, find the
-                stay, ask the guide, and brief stakeholders with analytics.
+                Plan a Tana River trip, find a stay, ask the guide, or open
+                analytics for an IBS brief.
               </p>
             </div>
 
@@ -185,7 +185,7 @@ export default async function DashboardPage() {
               Your tools
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Six AI surfaces for travelers and destination teams.
+              Pick one and start.
             </p>
           </div>
         </div>
@@ -273,17 +273,17 @@ export default async function DashboardPage() {
               Demo tip
             </p>
             <h2 className="mt-2 font-display text-2xl leading-snug sm:text-3xl">
-              Walk the flow for Digital Tourism Day
+              Try the IBS demo path
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-on-brand/75">
-              Generate a 3-day itinerary, match a Nyali stay, ask the guide in
-              Kiswahili, then open analytics for stakeholder storytelling.
+              Build a 3-day Hola plan, match a stay near town, ask the guide in
+              Kiswahili, then open analytics for a short brief.
             </p>
             <Link
               href="/planner"
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-coral px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
             >
-              Begin with the planner
+              Start with the planner
               <ArrowRight className="h-4 w-4" />
             </Link>
           </section>
