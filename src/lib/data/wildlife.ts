@@ -20,7 +20,7 @@ export type WildlifeSite = {
   bookingTip: string;
 };
 
-/** Kenya wildlife catalogue — reserves, parks, and coast nature days */
+/** Kenya wildlife catalogue - reserves, parks, and coast nature days */
 const WILDLIFE_SITES_BASE: WildlifeSite[] = [
   {
     id: "tana-primate-reserve",
@@ -254,7 +254,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     blurb:
       "South-coast marine park - dolphins, snorkeling, and Wasini Island lunches.",
     about:
-      "Kisite Mpunguti is a full water day via Shimoni boats. Dolphins, snorkeling, and Wasini seafood — a classic south-coast outing.",
+      "Kisite Mpunguti is a full water day via Shimoni boats. Dolphins, snorkeling, and Wasini seafood - a classic south-coast outing.",
     tips: [
       "Join a reputable Shimoni operator",
       "Confirm whether park fees are included",
