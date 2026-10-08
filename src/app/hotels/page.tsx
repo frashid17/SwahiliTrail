@@ -356,7 +356,11 @@ export default function HotelsPage() {
             <button
               type="button"
               onClick={match}
-              disabled={loading || !vibe.trim()}
+              disabled={
+                loading ||
+                !vibe.trim() ||
+                (quota != null && (quota.remaining ?? 0) <= 0)
+              }
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {loading ? (
