@@ -1,7 +1,7 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Auth checks live on each page/layout/API route (resource-based).
-// Keep clerkMiddleware for session handling — do not use createRouteMatcher.
+// Keep clerkMiddleware for session handling - do not use createRouteMatcher.
 export default clerkMiddleware();
 
 export const config = {
