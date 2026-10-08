@@ -1,7 +1,8 @@
 "use client";
 
-import { Moon, Sun, Thermometer, Waves } from "lucide-react";
+import { MapPin, Moon, Sun, Thermometer, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import type { CoastNowPayload } from "@/lib/coast-now";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,25 @@ function MetricTile({
   );
 }
 
+function readCoords(): Promise<{ lat: number; lon: number } | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        }),
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 },
+    );
+  });
+}
+
 export function CoastNowBar({ className = "" }: { className?: string }) {
+  const { regionId, region } = useKenyaLocation();
   const [state, setState] = useState<State>({ status: "loading" });
 
   useEffect(() => {
@@ -40,7 +59,16 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
 
     async function load() {
       try {
-        const res = await fetch("/api/coast-now", { cache: "no-store" });
+        let qs = "";
+        if (region) {
+          qs = `?lat=${region.coords.lat.toFixed(5)}&lon=${region.coords.lon.toFixed(5)}&label=${encodeURIComponent(region.coords.label)}`;
+        } else {
+          const coords = await readCoords();
+          qs = coords
+            ? `?lat=${coords.lat.toFixed(5)}&lon=${coords.lon.toFixed(5)}`
+            : "";
+        }
+        const res = await fetch(`/api/coast-now${qs}`, { cache: "no-store" });
         if (!res.ok) throw new Error("bad status");
         const data = (await res.json()) as CoastNowPayload;
         if (!cancelled) setState({ status: "ready", data });
@@ -49,13 +77,19 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
       }
     }
 
+    setState({ status: "loading" });
     void load();
     const id = window.setInterval(load, 5 * 60 * 1000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+  }, [region, regionId]);
+
+  const showTide =
+    state.status === "ready" &&
+    state.data.coastal &&
+    Boolean(state.data.nextTide);
 
   const tideLabel =
     state.status === "ready" && state.data.nextTide
@@ -74,7 +108,7 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
       )}
       role="status"
       aria-live="polite"
-      aria-label="Live coast conditions for Tana River Delta"
+      aria-label="Live conditions"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2.5 sm:px-4 sm:py-3">
         <span className="inline-flex items-center gap-2">
@@ -86,17 +120,26 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
             <span className="relative h-2 w-2 rounded-full bg-coral" />
           </span>
           <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-coral sm:text-xs">
-            Coast now
+            Live now
           </span>
         </span>
-        <span className="truncate text-[11px] font-medium text-white/45 sm:text-xs">
-          {state.status === "ready" ? state.data.location : "Tana Delta"}
+        <span className="inline-flex min-w-0 items-center gap-1 truncate text-[11px] font-medium text-white/45 sm:text-xs">
+          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+          <span className="truncate">
+            {state.status === "ready"
+              ? state.data.location
+              : region
+                ? region.coords.label
+                : "Detecting location…"}
+          </span>
         </span>
       </div>
 
       {state.status === "loading" ? (
         <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
-          Updating delta & coast conditions…
+          {region
+            ? `Updating conditions for ${region.label}…`
+            : "Updating conditions for your location…"}
         </div>
       ) : state.status === "error" ? (
         <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
@@ -117,13 +160,30 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
             </span>
           </div>
 
-          <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
-            <MetricTile icon={Waves} label={tideLabel} value={tideValue} />
+          <div
+            className={cn(
+              "grid min-w-0 flex-1 gap-2",
+              showTide ? "grid-cols-3" : "grid-cols-2",
+            )}
+          >
+            {showTide ? (
+              <MetricTile icon={Waves} label={tideLabel} value={tideValue} />
+            ) : null}
             <MetricTile icon={Sun} label="Sunrise" value={state.data.sunrise} />
             <MetricTile icon={Moon} label="Sunset" value={state.data.sunset} />
           </div>
         </div>
       )}
+
+      {state.status === "ready" && region ? (
+        <p className="border-t border-white/10 px-3.5 py-2 text-[10px] text-white/40 sm:px-4">
+          Showing {region.label} — choose All Kenya for your device location
+        </p>
+      ) : state.status === "ready" && state.data.source === "fallback" ? (
+        <p className="border-t border-white/10 px-3.5 py-2 text-[10px] text-white/40 sm:px-4">
+          Showing Nairobi — allow location or pick a region (e.g. Nanyuki)
+        </p>
+      ) : null}
     </div>
   );
 }
