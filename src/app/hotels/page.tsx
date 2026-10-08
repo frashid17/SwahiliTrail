@@ -324,7 +324,7 @@ export default function HotelsPage() {
                 onChange={(e) => {
                   const next = e.target.value;
                   setAreaPreference(next);
-                  // Default vibe is coastal — swap when the traveler picks inland Kenya.
+                  // Default vibe is coastal - swap when the traveler picks inland Kenya.
                   const inland = [
                     "Nairobi",
                     "Maasai Mara",
