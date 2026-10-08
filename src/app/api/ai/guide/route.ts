@@ -56,13 +56,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const quota = await assertAiQuota(userId);
-  if (!quota.ok) {
-    return NextResponse.json(quota.responseBody, { status: 402 });
-  }
-
   try {
     const input = bodySchema.parse(await req.json());
+    const quota = await assertAiQuota(userId, "guide", input.message);
+    if (!quota.ok) {
+      return NextResponse.json(quota.responseBody, {
+        status: quota.httpStatus,
+      });
+    }
+
     const preferredLabel =
       GUIDE_LANGUAGES.find((l) => l.code === input.language)?.native ??
       "English";
@@ -104,7 +106,10 @@ Places: ${context}`,
       { role: "assistant" as const, content: plainReply },
     ];
 
-    const nextQuota = await consumeAiQuota(userId, "guide");
+    const nextQuota = await consumeAiQuota(userId, "guide", {
+      requestHash: quota.requestHash,
+      plan: quota.plan,
+    });
 
     const supabase = createAdminClient();
     if (supabase) {
