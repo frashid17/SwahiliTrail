@@ -157,7 +157,7 @@ export function SignUpForm() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Join Swahili Trail - AI trip planning for the Kenyan coast."
+      subtitle="Create an account to save trips and guide chats for Tana River."
     >
       <button
         type="button"
