@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import {
   EXPLORE_FILTERS,
   placesForCategory,
@@ -13,9 +15,13 @@ import { cn } from "@/lib/utils";
 
 export function ThingsToDoSection() {
   const [category, setCategory] = useState<ExploreCategory>("all");
+  const { regionId, region } = useKenyaLocation();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const items = useMemo(() => placesForCategory(category), [category]);
+  const items = useMemo(
+    () => placesForCategory(category, regionId),
+    [category, regionId],
+  );
 
   function scrollBy(dir: -1 | 1) {
     const el = scrollerRef.current;
@@ -34,8 +40,9 @@ export function ThingsToDoSection() {
             Places to start
           </h2>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Filter the list, then open a place for maps, booking tips, and
-            reviews when available.
+            Pick a region like Nanyuki or Nairobi, then open a place for maps,
+            booking tips, and reviews.
+            {region ? ` Showing ${region.label}.` : ""}
           </p>
         </div>
         <Link
@@ -47,7 +54,11 @@ export function ThingsToDoSection() {
         </Link>
       </div>
 
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-6">
+        <KenyaLocationFilter />
+      </div>
+
+      <div className="mt-4 flex items-center gap-3">
         <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {EXPLORE_FILTERS.map((filter) => {
             const active = filter.id === category;
@@ -71,38 +82,44 @@ export function ThingsToDoSection() {
       </div>
 
       <div className="relative mt-8">
-        <div
-          ref={scrollerRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
-        >
-          {items.map((item) => (
-            <Link
-              key={item.id}
-              href={`/explore/${item.id}`}
-              className="group relative h-[22rem] w-[min(78vw,17.5rem)] shrink-0 snap-start overflow-hidden rounded-2xl sm:h-[26rem] sm:w-72"
-            >
-              <Image
-                src={item.imageUrl}
-                alt={item.name}
-                fill
-                sizes="(max-width: 640px) 78vw, 288px"
-                className="object-cover transition duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-brand-deep/25 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 px-5 pb-5">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-aqua">
-                  {item.area} · {item.vibe}
-                </p>
-                <p className="mt-1 font-display text-xl text-white sm:text-2xl">
-                  {item.name}
-                </p>
-                <p className="mt-1 line-clamp-2 text-xs text-white/75">
-                  {item.blurb}
-                </p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {items.length === 0 ? (
+          <p className="rounded-2xl border border-border bg-surface px-5 py-8 text-center text-sm text-muted">
+            No places in this region for that filter. Try All Kenya.
+          </p>
+        ) : (
+          <div
+            ref={scrollerRef}
+            className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
+          >
+            {items.map((item) => (
+              <Link
+                key={item.id}
+                href={`/explore/${item.id}`}
+                className="group relative h-[22rem] w-[min(78vw,17.5rem)] shrink-0 snap-start overflow-hidden rounded-2xl sm:h-[26rem] sm:w-72"
+              >
+                <Image
+                  src={item.imageUrl}
+                  alt={item.name}
+                  fill
+                  sizes="(max-width: 640px) 78vw, 288px"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-brand-deep/25 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 px-5 pb-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-aqua">
+                    {item.area} · {item.vibe}
+                  </p>
+                  <p className="mt-1 font-display text-xl text-white sm:text-2xl">
+                    {item.name}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-xs text-white/75">
+                    {item.blurb}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className="pointer-events-none absolute inset-y-0 left-0 right-0 hidden items-center justify-between md:flex">
           <button
