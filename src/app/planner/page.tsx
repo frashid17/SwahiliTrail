@@ -19,7 +19,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CoastalOrbs } from "@/components/coastal-accents";
+import { AiTypingPanel } from "@/components/ai-typing-panel";
+import {
+  consumeAiNdjsonStream,
+  extractStreamingJsonString,
+} from "@/lib/ai/ndjson-stream";
 import {
   carHiresForMode,
   type TransportMode,
@@ -170,6 +174,11 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [streamDraft, setStreamDraft] = useState<{
+    title: string;
+    summary: string;
+    stay: string;
+  } | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
 
@@ -217,6 +226,8 @@ export default function PlannerPage() {
     setError(null);
     setSaveNote(null);
     setShowCalendarMenu(false);
+    setPlan(null);
+    setStreamDraft({ title: "", summary: "", stay: "" });
     try {
       const res = await fetch("/api/ai/plan", {
         method: "POST",
@@ -233,12 +244,38 @@ export default function PlannerPage() {
           cart,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
-      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
+      const data = await consumeAiNdjsonStream<{
+        type: "done";
+        plan: Plan;
+        quota?: AiQuotaStatus;
+      }>(res, {
+        onDelta: (_chunk, full) => {
+          setStreamDraft({
+            title: extractStreamingJsonString(full, "title") ?? "",
+            summary: extractStreamingJsonString(full, "summary") ?? "",
+            stay: extractStreamingJsonString(full, "recommendedStay") ?? "",
+          });
+        },
+      });
+      if (data.quota) applyQuota(data.quota);
       setPlan(data.plan);
+      setStreamDraft(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const payload =
+        err && typeof err === "object"
+          ? (err as {
+              error?: string;
+              message?: string;
+              code?: string;
+              priceUsdPerMonth?: number;
+            })
+          : {};
+      setError(
+        payload.code
+          ? aiQuotaErrorMessage(payload)
+          : payload.message || payload.error || "Something went wrong",
+      );
+      setStreamDraft(null);
     } finally {
       setLoading(false);
     }
@@ -310,25 +347,25 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
+    <div className="paper-grain coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
       <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
-        <aside className="relative flex shrink-0 flex-col rounded-2xl border border-border bg-surface/85 shadow-sm backdrop-blur sm:rounded-3xl lg:min-h-0 lg:overflow-hidden">
-          <CoastalOrbs />
+        <aside className="relative flex shrink-0 flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:overflow-hidden">
           <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:text-xs">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
                 Trip Planner
               </p>
-              <h1 className="mt-1.5 font-display text-2xl text-ocean-deep sm:mt-2 sm:text-3xl">
+              <h1 className="mt-1.5 font-display text-2xl tracking-tight text-ocean-deep sm:mt-2 sm:text-3xl">
                 Plan days in Kenya
               </h1>
               <p className="mt-1.5 text-sm text-muted sm:mt-2">
                 <span className="lg:hidden">
-                  Set days, stay, and transport. The plan shows up below.
+                  Set days, stay, and transport. The plan writes below as it
+                  builds.
                 </span>
                 <span className="hidden lg:inline">
-                  Set days, stay, and transport on the left. The day-by-day plan
-                  scrolls on the right.
+                  Set days, stay, and transport on the left. Watch the plan
+                  write on the right.
                 </span>
               </p>
             </div>
@@ -535,7 +572,7 @@ export default function PlannerPage() {
                       type="button"
                       onClick={() => toggleInterest(option)}
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                        "rounded-md border px-3 py-1.5 text-xs font-medium transition",
                         active
                           ? "border-aqua bg-ocean text-white"
                           : "border-aqua/30 bg-surface text-ocean-deep hover:border-aqua",
@@ -604,20 +641,20 @@ export default function PlannerPage() {
 
             <button
               type="button"
-              onClick={generate}
+              onClick={() => void generate()}
               disabled={
                 loading ||
                 interests.length === 0 ||
                 (quota != null && (quota.remaining ?? 0) <= 0)
               }
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="btn-solid w-full disabled:opacity-60"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {loading ? "Building your trip…" : "Generate full trip + budget"}
+              {loading ? "Writing your trip…" : "Generate full trip + budget"}
             </button>
             {error ? <p className="text-sm text-coral">{error}</p> : null}
 
@@ -693,12 +730,27 @@ export default function PlannerPage() {
           </div>
         </aside>
 
-        <section className="relative flex min-h-[min(20rem,55dvh)] flex-col rounded-2xl border border-border bg-surface/70 shadow-sm sm:rounded-3xl lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-          <CoastalOrbs className="opacity-40" />
+        <section className="relative flex min-h-[min(20rem,55dvh)] flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <div className="relative z-[1] p-3 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            {!plan ? (
-              <div className="flex min-h-[10rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
-                Your plan will show here - days, stay tip, transport notes, and
+            {loading && streamDraft ? (
+              <div className="space-y-4">
+                <AiTypingPanel
+                  title="Writing your itinerary"
+                  text={[
+                    streamDraft.title && `Title: ${streamDraft.title}`,
+                    streamDraft.summary && `\n${streamDraft.summary}`,
+                    streamDraft.stay && `\nStay: ${streamDraft.stay}`,
+                  ]
+                    .filter(Boolean)
+                    .join("")}
+                />
+                <p className="text-xs text-muted">
+                  Days and budget fill in as the draft finishes…
+                </p>
+              </div>
+            ) : !plan ? (
+              <div className="flex min-h-[10rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
+                Your plan will write here — days, stay tip, transport notes, and
                 a rough cost.
               </div>
             ) : (
@@ -724,7 +776,7 @@ export default function PlannerPage() {
                         type="button"
                         onClick={addToMyTrips}
                         className={cn(
-                          "inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold",
+                          "inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold",
                           alreadySaved
                             ? "bg-ocean text-on-brand"
                             : "bg-coral text-white",
@@ -740,7 +792,7 @@ export default function PlannerPage() {
                       <button
                         type="button"
                         onClick={downloadPlan}
-                        className="inline-flex items-center gap-2 rounded-full border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
+                        className="inline-flex items-center gap-2 rounded-md border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
                       >
                         <Download className="h-4 w-4" />
                         Download PDF
@@ -749,7 +801,7 @@ export default function PlannerPage() {
                         <button
                           type="button"
                           onClick={() => setShowCalendarMenu((v) => !v)}
-                          className="inline-flex items-center gap-2 rounded-full border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
+                          className="inline-flex items-center gap-2 rounded-md border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
                         >
                           <Calendar className="h-4 w-4" />
                           Add to calendar
@@ -890,7 +942,7 @@ export default function PlannerPage() {
                         Day {day.day}
                       </p>
                       {day.estimatedDayCostKes != null ? (
-                        <p className="rounded-full bg-foam px-3 py-1 text-xs font-medium text-ocean-deep">
+                        <p className="rounded-md bg-foam px-3 py-1 text-xs font-medium text-ocean-deep">
                           ~KES {day.estimatedDayCostKes.toLocaleString()} / day
                         </p>
                       ) : null}
