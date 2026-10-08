@@ -58,14 +58,15 @@ export default function WildlifePage() {
           <div className="max-w-3xl">
             <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
               <Trees className="h-4 w-4" />
-              Kenya Wildlife Service
+              Tana River first · coast after
             </p>
             <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-              Parks, reserves & marine life
+              Wildlife around Hola & the delta
             </h1>
             <p className="mt-3 text-muted">
-              Open a site for details and traveler reviews, or save it to your
-              trip list for the AI Planner.
+              Start with the primate reserve and delta wetlands. Coast parks sit
+              further down for day trips or overnight safari. Open a card for
+              details, or save it to your trip list.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -79,7 +80,7 @@ export default function WildlifePage() {
               href="/planner"
               className="inline-flex items-center justify-center rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white"
             >
-              Build safari + coast trip
+              Plan a wildlife day
             </Link>
           </div>
         </FadeIn>
