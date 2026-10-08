@@ -54,15 +54,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Allow location for Live now conditions, sign in, then try Planner, Hotels, Guide, Explore, and Analytics.
 
-## Monetization: AI limits & Trail Plus ($4/mo)
+## Monetization: AI fair-use caps & Trail Plus ($4/mo)
 
-Free accounts get **3 AI uses per calendar month**, shared across:
+AI is rate-limited for **both free and paid** users (see `src/lib/ai/guardrails.ts`):
 
-- Guide (`/api/ai/guide`)
-- Trip Planner (`/api/ai/plan`)
-- Stay & Eat matcher (`/api/ai/hotels`)
+| Plan | /min | /hour | /day | /month |
+|------|------|-------|------|--------|
+| Free | 2 | 5 | 3 | 3 |
+| Trail Plus | 6 | 40 | 150 | 1000 |
 
-**Trail Plus** unlocks unlimited AI via **Paystack** checkout.
+Shared across Guide, Planner, and Stay & Eat. Also blocks spam/overlong input and identical retries within 45s.
+
+**Trail Plus** raises fair-use caps via **Paystack** checkout (not unlimited).
 
 ### 1. Supabase tables
 
