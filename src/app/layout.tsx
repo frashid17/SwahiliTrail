@@ -18,7 +18,7 @@ const body = Figtree({
 export const metadata: Metadata = {
   title: "Swahili Trail · Kenya travel platform",
   description:
-    "Plan trips across Kenya — Nairobi, safari circuits, the Rift Valley, and the Swahili coast. Match stays, ask a multilingual guide, follow events, and open visitor analytics.",
+    "Plan trips across Kenya - Nairobi, safari circuits, the Rift Valley, and the Swahili coast. Match stays, ask a multilingual guide, follow events, and open visitor analytics.",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
