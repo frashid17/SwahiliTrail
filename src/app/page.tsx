@@ -1,18 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  BarChart3,
-  BedDouble,
-  Languages,
-  MapPin,
-  Sparkles,
-  ArrowRight,
-  Trees,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { TideBand } from "@/components/coastal-accents";
 import { CoastEventsSection } from "@/components/home/coast-events-section";
 import { CoastNowBar } from "@/components/home/coast-now-bar";
 import { ThingsToDoSection } from "@/components/home/things-to-do-section";
@@ -22,241 +13,234 @@ import { DESTINATION } from "@/lib/destination";
 const features = [
   {
     href: "/planner",
+    n: "01",
     title: "Trip Planner",
-    copy: "Build a multi-day plan for Nairobi, safari circuits, the Rift, or the coast - with a rough KES budget.",
-    icon: Sparkles,
+    copy: "Multi-day routes for Nairobi, safari circuits, the Rift, or the coast — with a rough KES budget.",
   },
   {
     href: "/hotels",
+    n: "02",
     title: "Stay & Eat",
-    copy: "Filter lodging and meals by budget and vibe across Kenya's main travel regions.",
-    icon: BedDouble,
+    copy: "Lodging and meals filtered by budget and vibe across Kenya’s main travel regions.",
   },
   {
     href: "/attractions",
+    n: "03",
     title: "Attractions",
     copy: "Culture, coast, and city stops. Save what you want into a trip list.",
-    icon: MapPin,
   },
   {
     href: "/wildlife",
+    n: "04",
     title: "Wildlife & nature",
-    copy: "Parks, reserves, and nature days from the Mara to Tsavo and the coast.",
-    icon: Trees,
+    copy: "Parks and nature days from the Mara to Tsavo and the coast.",
   },
   {
     href: "/guide",
+    n: "05",
     title: "Multilingual Guide",
     copy: "Ask about roads, food, lodging, or phrases. Replies in six languages.",
-    icon: Languages,
   },
   {
     href: "/analytics",
+    n: "06",
     title: "Destination Analytics",
-    copy: "Visitor trends and attraction interest for planners, hosts, and county teams.",
-    icon: BarChart3,
+    copy: "Visitor trends for planners, hosts, and county teams.",
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="coastal-grid">
-      <section className="relative min-h-[min(92vh,920px)] overflow-hidden">
+    <div className="paper-grain coastal-grid">
+      <section className="relative min-h-[min(88vh,860px)] overflow-hidden">
         <motion.div
           className="absolute inset-0"
-          initial={{ scale: 1.08 }}
-          animate={{ scale: 1.02 }}
-          transition={{ duration: 14, ease: "easeOut" }}
+          initial={{ scale: 1.04 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 10, ease: "easeOut" }}
         >
           <Image
-            src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&q=80"
-            alt="River delta meeting the ocean"
+            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=2400&q=80"
+            alt="Elephants crossing the savannah at golden hour"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-[68%_40%]"
+            className="object-cover object-[50%_40%]"
           />
         </motion.div>
 
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-deep/95 via-brand-deep/78 to-brand-deep/40 dark:from-brand-deep/97 dark:via-brand-deep/88 dark:to-brand-deep/55" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-transparent to-brand-deep/50 dark:from-brand-deep/95 dark:to-brand-deep/60" />
-        <div className="absolute inset-0 bg-black/20 dark:bg-black/45" />
-        <div className="coastal-shimmer absolute inset-0 opacity-40 mix-blend-soft-light dark:opacity-25" />
-        <div className="horizon-glow pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-aqua/25 to-transparent dark:from-aqua/15" />
+        {/* Legibility only — keep the photo readable, not a dark SaaS veil */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/15" />
 
-        <div className="relative mx-auto flex min-h-[min(88vh,860px)] max-w-6xl flex-col justify-center px-4 pb-44 pt-28 sm:px-6 sm:pb-40 md:pt-24">
-          <div className="max-w-3xl">
+        <div className="relative mx-auto flex min-h-[min(88vh,860px)] max-w-[90rem] flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20 lg:px-10">
+          <div className="max-w-2xl">
             <motion.p
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45 }}
-              className="text-xs font-semibold uppercase tracking-[0.18em] text-aqua sm:text-sm"
-            >
-              Kenya travel platform · {DESTINATION.regionShort}
-            </motion.p>
-
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.04 }}
-              className="mt-3 font-display text-5xl leading-[0.95] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-6xl md:text-7xl lg:text-8xl"
+              transition={{ duration: 0.55 }}
+              className="font-display text-[clamp(3.25rem,9vw,6.5rem)] leading-[0.92] tracking-tight text-white"
             >
               Swahili Trail
             </motion.p>
 
             <motion.h1
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.1 }}
-              className="mt-4 max-w-2xl text-xl font-medium leading-snug text-white/95 drop-shadow-md sm:mt-5 sm:text-2xl md:text-3xl"
+              transition={{ duration: 0.55, delay: 0.08 }}
+              className="mt-4 max-w-lg text-lg font-medium leading-snug text-white/95 sm:text-xl"
             >
               {DESTINATION.tagline}
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.18 }}
-              className="mt-4 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg"
+              transition={{ duration: 0.55, delay: 0.14 }}
+              className="mt-3 max-w-md text-sm leading-relaxed text-white/80 sm:text-base"
             >
               {DESTINATION.supportingLine}
             </motion.p>
 
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.26 }}
+              transition={{ duration: 0.55, delay: 0.22 }}
               className="mt-8 flex flex-wrap gap-3"
             >
-              <Link
-                href="/planner"
-                className="inline-flex items-center gap-2 rounded-full bg-coral px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-coral/30 transition hover:brightness-110"
-              >
+              <Link href="/planner" className="btn-solid">
                 Plan a trip
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                href="/explore"
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
-              >
+              <Link href="/explore" className="btn-ghost">
                 Explore places
               </Link>
             </motion.div>
-
-            <motion.div
-              aria-hidden
-              className="mt-10 h-px w-24 origin-left bg-gradient-to-r from-aqua to-transparent"
-              initial={{ scaleX: 0, opacity: 0 }}
-              animate={{ scaleX: 1, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-            />
           </div>
         </div>
+      </section>
 
-        <TideBand className="absolute inset-x-0 top-[52%] z-[2] h-16 opacity-100 sm:top-[50%] md:top-[48%]" />
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.5 }}
-          className="absolute inset-x-0 bottom-5 z-[3] px-4 sm:bottom-8 sm:px-6 md:bottom-10 md:px-10"
-        >
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:max-w-xl">
+      <section className="border-b border-border/70 bg-surface">
+        <div className="mx-auto flex max-w-[90rem] flex-col gap-4 px-4 py-6 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-10">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+              Conditions
+            </p>
+            <p className="mt-1 text-sm text-ocean-deep">
+              Weather for where you&apos;re headed — pick a region or use your
+              location.
+            </p>
+          </div>
+          <div className="flex w-full max-w-xl flex-col gap-3">
             <KenyaLocationFilter
               variant="select"
-              label="Conditions for"
-              onDark
-              className="[&_select]:border-white/25 [&_select]:bg-brand-deep/80 [&_select]:text-white [&_span]:text-white/80"
+              label="Show for"
+              className="[&_select]:rounded-md"
             />
-            <CoastNowBar className="sm:max-w-none" />
+            <CoastNowBar variant="light" className="sm:max-w-none" />
           </div>
-        </motion.div>
+        </div>
       </section>
 
       <ThingsToDoSection />
 
       <CoastEventsSection />
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+      <section className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.45 }}
+          className="max-w-xl"
         >
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-aqua">
-            What you can do here
-          </p>
-          <h2 className="mt-3 max-w-2xl font-display text-3xl text-ocean-deep sm:text-4xl">
-            Everything for the trip in one place
+          <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
+            Tools for the road
           </h2>
+          <p className="mt-3 text-muted leading-relaxed">
+            Six ways to plan and get around Kenya — no dashboard clutter.
+          </p>
         </motion.div>
 
-        <div className="mt-10 grid gap-8 md:grid-cols-2 md:gap-x-12 md:gap-y-10">
+        <div className="mt-12 divide-y divide-border/80 border-y border-border/80">
           {features.map((feature, index) => (
             <motion.div
               key={feature.href}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 12 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.45, delay: index * 0.06 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.35, delay: index * 0.04 }}
             >
-              <Link href={feature.href} className="group block">
-                <div className="flex items-start gap-4">
-                  <span className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-ocean text-white transition group-hover:scale-105 group-hover:bg-brand-deep">
-                    <feature.icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="font-display text-2xl text-ocean-deep transition group-hover:text-ocean">
-                      {feature.title}
-                    </h3>
-                    <p className="mt-2 text-muted leading-relaxed">
-                      {feature.copy}
-                    </p>
-                    <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-aqua">
-                      Open
-                      <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-                    </span>
-                  </div>
+              <Link
+                href={feature.href}
+                className="group grid gap-3 py-6 sm:grid-cols-[4rem_1fr_auto] sm:items-baseline sm:gap-8"
+              >
+                <span className="font-display text-sm text-muted tabular-nums">
+                  {feature.n}
+                </span>
+                <div>
+                  <h3 className="font-display text-xl text-ocean-deep transition group-hover:text-ocean sm:text-2xl">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+                    {feature.copy}
+                  </p>
                 </div>
+                <span className="inline-flex items-center gap-1 text-sm font-semibold text-coral opacity-80 transition group-hover:translate-x-0.5 group-hover:opacity-100">
+                  Open
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
               </Link>
             </motion.div>
           ))}
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-y border-border/60 bg-brand-deep">
-        <div className="coastal-shimmer pointer-events-none absolute inset-0 opacity-30" />
-        <div className="relative mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 md:grid-cols-[1.2fr_1fr] md:items-center md:py-16">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=2000&q=80"
+            alt="Dhow on the Kenyan coast at dusk"
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-brand-deep/75" />
+        </div>
+        <div className="relative mx-auto grid max-w-[90rem] gap-8 px-4 py-16 sm:px-6 md:grid-cols-[1.3fr_1fr] md:items-end md:py-20 lg:px-10">
           <motion.div
-            initial={{ opacity: 0, x: -16 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.45 }}
           >
-            <h2 className="font-display text-3xl text-on-brand sm:text-4xl">
-              Built for travelers and the places that host them.
+            <h2 className="font-display text-3xl tracking-tight text-on-brand sm:text-4xl">
+              For travelers — and the places that host them.
             </h2>
-            <p className="mt-4 max-w-xl text-on-brand/75 leading-relaxed">
-              Swahili Trail helps visitors plan Kenya trips — city, safari, Rift,
-              and coast — while giving hosts and county teams a clear view of
-              what people ask for and where they go.
+            <p className="mt-4 max-w-lg text-on-brand/80 leading-relaxed">
+              Plan city, safari, Rift, and coast trips. Hosts and county teams
+              get a clearer view of what people ask for and where they go.
             </p>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 16 }}
-            whileInView={{ opacity: 1, x: 0 }}
+          <motion.ul
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-3 text-sm text-on-brand/80"
+            transition={{ duration: 0.45, delay: 0.08 }}
+            className="space-y-2.5 text-sm text-on-brand/85"
           >
-            <p>Plan itineraries with budgets in KES</p>
-            <p>Match hotels, meals, and wildlife days</p>
-            <p>Ask a local guide in six languages</p>
-            <p className="text-on-brand/60">
-              Save trips to your account and pick up anywhere
-            </p>
-          </motion.div>
+            <li className="border-l-2 border-coral pl-3">
+              Itineraries with budgets in KES
+            </li>
+            <li className="border-l-2 border-coral/70 pl-3">
+              Hotels, meals, and wildlife days
+            </li>
+            <li className="border-l-2 border-coral/50 pl-3">
+              A local guide in six languages
+            </li>
+            <li className="border-l-2 border-white/25 pl-3 text-on-brand/65">
+              Save trips and pick up anywhere
+            </li>
+          </motion.ul>
         </div>
       </section>
     </div>
