@@ -107,7 +107,7 @@ export function hydrateHotels(hotels: Hotel[]): Hotel[] {
     .filter((hotel): hotel is Hotel => Boolean(hotel?.id && hotel?.name));
 }
 
-/** Aliases for Stay & Eat area filter — never silently fall back to other regions. */
+/** Aliases for Stay & Eat area filter - never silently fall back to other regions. */
 const STAY_AREA_ALIASES: Record<string, string[]> = {
   Nairobi: [
     "nairobi",
@@ -202,7 +202,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["design", "pool", "spa", "Westlands", "Nairobi"],
     vibe: "Design-forward city stay",
     description:
-      "Stylish Gigiri hotel near UN offices and Westlands dining — strong pool deck and suites for couples.",
+      "Stylish Gigiri hotel near UN offices and Westlands dining - strong pool deck and suites for couples.",
     amenities: ["Wi-Fi", "Pool", "Spa", "Restaurant", "Bar"],
     imageGradient: "from-slate-800 via-amber-600 to-rose-400",
     imageUrl:
@@ -256,7 +256,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["luxury", "spa", "pool", "family", "Nairobi"],
     vibe: "Full-service city resort feel",
     description:
-      "Large Westlands hotel with spa, multiple restaurants, and a pool — practical for couples and families in Nairobi.",
+      "Large Westlands hotel with spa, multiple restaurants, and a pool - practical for couples and families in Nairobi.",
     amenities: ["Wi-Fi", "Pool", "Spa", "Breakfast", "Kids club"],
     imageGradient: "from-rose-800 via-amber-500 to-yellow-400",
     imageUrl:
@@ -274,7 +274,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["airport", "pool", "views", "Nairobi"],
     vibe: "Park-view layover base",
     description:
-      "Hotel overlooking Nairobi National Park — handy for JKIA arrivals and short city stays with a pool.",
+      "Hotel overlooking Nairobi National Park - handy for JKIA arrivals and short city stays with a pool.",
     amenities: ["Wi-Fi", "Pool", "Restaurant", "Airport shuttle", "Gym"],
     imageGradient: "from-lime-800 via-emerald-600 to-teal-400",
     imageUrl:
@@ -292,7 +292,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["heritage", "garden", "breakfast", "Nairobi"],
     vibe: "Historic garden hotel",
     description:
-      "Classic Nairobi hotel with courtyard gardens — central for museums, CBD, and evening outings.",
+      "Classic Nairobi hotel with courtyard gardens - central for museums, CBD, and evening outings.",
     amenities: ["Wi-Fi", "Breakfast", "Restaurant", "Garden", "Gym"],
     imageGradient: "from-stone-700 via-amber-600 to-orange-400",
     imageUrl:
@@ -310,7 +310,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["airport", "pool", "business", "Nairobi"],
     vibe: "Practical city / airport base",
     description:
-      "Modern mid-range hotel near JKIA and the city — pool, gym, and solid value for short Nairobi stays.",
+      "Modern mid-range hotel near JKIA and the city - pool, gym, and solid value for short Nairobi stays.",
     amenities: ["Wi-Fi", "Pool", "Gym", "Restaurant", "Breakfast"],
     imageGradient: "from-cyan-800 via-teal-500 to-sky-400",
     imageUrl:
@@ -328,7 +328,7 @@ const HOTELS_BASE: Hotel[] = [
     tags: ["suite", "pool", "family", "Nairobi"],
     vibe: "Apartment-style city stay",
     description:
-      "Suite-style rooms in Parklands with a pool — good for couples or families who want space in Nairobi.",
+      "Suite-style rooms in Parklands with a pool - good for couples or families who want space in Nairobi.",
     amenities: ["Wi-Fi", "Pool", "Kitchenette", "Breakfast", "Parking"],
     imageGradient: "from-indigo-800 via-blue-600 to-cyan-400",
     imageUrl:
