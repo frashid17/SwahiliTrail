@@ -8,7 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  // Public stakeholder dashboard — no auth required
+  // Public destination analytics — no auth required
   let recentEvents: { event_type: string; created_at: string }[] = [];
   const supabase = await createClient();
   if (supabase) {
@@ -38,6 +38,6 @@ export async function GET() {
     markets: SOURCE_MARKETS,
     sentiment: SENTIMENT_THEMES,
     recentEvents,
-    note: "Sample visitor numbers for Tana River and nearby coast - useful for an IBS 2026 brief.",
+    note: "Sample visitor numbers for Kenya destinations - for planners, hosts, and county teams.",
   });
 }
