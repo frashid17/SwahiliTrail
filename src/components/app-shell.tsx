@@ -14,7 +14,7 @@ export function SiteFooter() {
           <BrandLogo />
           <p className="mt-3 max-w-md text-sm text-muted">
             Plan Kenya trips, match stays, ask a guide, and follow what&apos;s
-            on — from Nairobi to the coast.
+            on - from Nairobi to the coast.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-ocean-deep">
