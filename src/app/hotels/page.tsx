@@ -209,10 +209,10 @@ export default function HotelsPage() {
                 Stay & eat
               </p>
               <h1 className="mt-1.5 font-display text-2xl leading-tight text-ocean-deep sm:mt-2 sm:text-3xl">
-                Match coastal stays & tables
+                Find a stay or a meal
               </h1>
               <p className="mt-1.5 text-sm text-muted lg:hidden">
-                Tune budget and vibe, then match. Ranked results appear below.
+                Set budget and vibe, then match. Results appear below.
               </p>
             </div>
 
@@ -340,8 +340,8 @@ export default function HotelsPage() {
               {loading
                 ? "Matching…"
                 : mode === "hotels"
-                  ? "Match hotels with AI"
-                  : "Match restaurants with AI"}
+                  ? "Match hotels"
+                  : "Match restaurants"}
             </button>
             {error ? <p className="text-sm text-coral">{error}</p> : null}
             {cartNote ? <p className="text-sm text-aqua">{cartNote}</p> : null}
@@ -383,13 +383,13 @@ export default function HotelsPage() {
 
             {mode === "hotels" && hotels.length === 0 ? (
               <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched hotels will rank here after you run the AI matcher.
+                Matched hotels will show here after you run the matcher.
               </div>
             ) : null}
 
             {mode === "restaurants" && restaurants.length === 0 ? (
               <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched restaurants will rank here after you run the AI matcher.
+                Matched restaurants will show here after you run the matcher.
               </div>
             ) : null}
 
