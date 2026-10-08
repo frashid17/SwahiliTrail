@@ -38,34 +38,33 @@ import { cn } from "@/lib/utils";
 const WELCOME: GuideMessage = {
   role: "assistant",
   content:
-    "Karibu! 🌊 I'm your Swahili Trail guide - think of me as your coastal buddy.\n\nAsk about beaches, Fort Jesus, food, ferries, or local phrases. Write in English, Deutsch, Français, Kiswahili, 中文, or العربية and I'll match your language.\n\nWhat are you most curious about first?",
+    "Karibu. I can help with Tana River - Hola, the delta, roads, food, wildlife, and IBS 2026 week.\n\nWrite in English, Kiswahili, Français, Deutsch, 中文, or العربية and I'll reply in the same language.\n\nWhat do you need first?",
 };
 
 const starters = [
   {
-    label: "Old Town half-day",
-    prompt: "What should I see in Old Town in half a day?",
+    label: "IBS 2026 weekend",
+    prompt: "I am attending IBS 2026 in Hola. What should I see around Tana River in 2 days?",
   },
   {
-    label: "CBD to Diani",
-    prompt: "How do I get from Mombasa CBD to Diani?",
+    label: "Tana Delta day",
+    prompt: "Plan a day trip to the Tana Delta and Kipini - boats, birds, and practical tips.",
   },
   {
-    label: "Restaurant Swahili",
-    prompt: "Teach me useful Swahili phrases for a restaurant.",
+    label: "Hola to Garsen",
+    prompt: "How do I get from Hola to Garsen and what should I budget?",
   },
   {
-    label: "Mama Ngina sunset",
-    prompt: "Is Mama Ngina Waterfront good at sunset?",
-  },
-  {
-    label: "Safe beach tips",
-    prompt:
-      "What should first-time visitors know about swimming at Nyali Beach?",
+    label: "Primate reserve",
+    prompt: "What should first-time visitors know before visiting Tana River Primate National Reserve?",
   },
   {
     label: "Local food",
-    prompt: "What coastal dishes should I try in Mombasa this week?",
+    prompt: "What local dishes should I try in Tana River County this week?",
+  },
+  {
+    label: "Swahili phrases",
+    prompt: "Teach me useful Kiswahili phrases for markets and greetings in Tana River.",
   },
 ];
 
@@ -226,11 +225,11 @@ export default function GuidePage() {
             Multilingual guide
           </p>
           <h1 className="mt-1.5 font-display text-2xl leading-tight text-on-brand sm:mt-2 sm:text-3xl">
-            Ask the coast anything
+          Ask about Hola
           </h1>
           <p className="mt-1.5 text-sm text-on-brand/80 sm:mt-2">
-            Gemini answers in your language - ferries, food, heritage, and
-            practical Mombasa tips.
+            Roads, lodging, food, the delta, or IBS week. Answers in your
+            language.
           </p>
         </div>
       </div>
