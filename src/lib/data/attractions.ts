@@ -18,6 +18,82 @@ export type Attraction = {
 
 const ATTRACTIONS_BASE: Attraction[] = [
   {
+    id: "tana-delta",
+    name: "Tana River Delta",
+    category: "nature",
+    area: "Tana Delta",
+    blurb: "Mangroves, birdlife, and the river meeting the Indian Ocean.",
+    about:
+      "The Tana Delta is one of Kenya's major wetland systems. Visitors come for birdwatching, boat trips, mangrove landscapes, and fishing communities. Pair with Kipini if you want to see where the river meets the sea.",
+    tips: [
+      "Go with a local boat operator who knows channels and tides",
+      "Carry mosquito protection and sun cover",
+      "Ask about community guidelines before photographing people or ceremonies",
+    ],
+    durationHours: 4,
+    estCostKes: 3500,
+    familyFriendly: true,
+    imageUrl: img.beachTropical,
+    websiteUrl: null,
+  },
+  {
+    id: "hola-ibs",
+    name: "Hola Innovation Hub Circuit",
+    category: "culture",
+    area: "Hola",
+    blurb: "County HQ around IBS 2026 - meetings, demos, and youth venues.",
+    about:
+      "Hola is the county seat and host town for Innovation and Business Summit 2026. Use it as a base for summit days, partner meetings, and short visits to nearby river communities.",
+    tips: [
+      "Book lodging early during summit week (7–10 Oct 2026)",
+      "Confirm venue gate times with organizers",
+      "Combine with a delta day trip if your schedule allows",
+    ],
+    durationHours: 3,
+    estCostKes: 0,
+    familyFriendly: true,
+    imageUrl: img.mamaNginaWaterfront,
+    websiteUrl: null,
+  },
+  {
+    id: "tana-primate-reserve",
+    name: "Tana River Primate National Reserve",
+    category: "wildlife",
+    area: "Tana River",
+    blurb: "Rare riverine forest habitat protecting endemic Tana River primates.",
+    about:
+      "This reserve protects fragments of riverine forest along the lower Tana and is known for endemic primates and birdlife. Visits usually need advance planning with guides who understand access rules and seasonal conditions.",
+    tips: [
+      "Arrange a guide through recognized operators",
+      "Expect rough access roads in wet periods",
+      "Support community conservation messaging",
+    ],
+    durationHours: 5,
+    estCostKes: 4500,
+    familyFriendly: false,
+    imageUrl: img.hallerParkGiraffe,
+    websiteUrl: "https://www.kws.go.ke/",
+  },
+  {
+    id: "kipini-coast",
+    name: "Kipini & river mouth",
+    category: "beach",
+    area: "Tana Delta",
+    blurb: "Where the Tana meets the sea - quieter than the south coast resorts.",
+    about:
+      "Kipini sits near the Tana River mouth. Good for fishing culture, quiet coast time, and seeing how river and ocean livelihoods meet.",
+    tips: [
+      "Check tide and road conditions before travel",
+      "Pack water and snacks - services can be sparse",
+      "Respect landing and fishing spaces",
+    ],
+    durationHours: 4,
+    estCostKes: 2000,
+    familyFriendly: true,
+    imageUrl: img.nyaliBeach,
+    websiteUrl: null,
+  },
+  {
     id: "fort-jesus",
     name: "Fort Jesus",
     category: "heritage",
