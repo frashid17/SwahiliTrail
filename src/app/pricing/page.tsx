@@ -8,22 +8,25 @@ import { Suspense, useEffect } from "react";
 import { AiQuotaBanner, useAiQuota } from "@/components/ai-quota-banner";
 import { PaystackUpgradeButton } from "@/components/paystack-upgrade-button";
 import {
+  AI_CAPS,
   FREE_AI_QUOTA,
+  TRAIL_PLUS_DAILY_CAP,
+  TRAIL_PLUS_MONTHLY_CAP,
   TRAIL_PLUS_PRICE_USD,
 } from "@/lib/ai/quota";
 
 const freeFeatures = [
   `${FREE_AI_QUOTA} AI uses per month`,
+  `Abuse caps: ${AI_CAPS.free.perMinute}/min · ${AI_CAPS.free.perHour}/hour`,
   "Guide, Planner, and Stay & Eat",
   "Explore places and events",
-  "Save trips to your account",
 ];
 
 const plusFeatures = [
-  "Unlimited AI queries",
+  `Up to ${TRAIL_PLUS_DAILY_CAP} AI uses per day`,
+  `Up to ${TRAIL_PLUS_MONTHLY_CAP} AI uses per month`,
+  `Burst protection: ${AI_CAPS.trail_plus.perMinute}/min · ${AI_CAPS.trail_plus.perHour}/hour`,
   "Guide, Planner, and Stay & Eat",
-  "Priority for new AI tools",
-  "Secure checkout (card or M-Pesa where available)",
 ];
 
 function BillingNotice() {
@@ -34,7 +37,7 @@ function BillingNotice() {
   const messages: Record<string, { ok: boolean; text: string }> = {
     success: {
       ok: true,
-      text: "Trail Plus is active. Your AI bar is now unlimited.",
+      text: "Trail Plus is active. Higher fair-use AI limits are unlocked.",
     },
     failed: {
       ok: false,
@@ -79,7 +82,7 @@ function PricingContent() {
     if (params.get("billing") === "success") void refresh();
   }, [params, refresh]);
 
-  const isPlus = quota?.unlimited;
+  const isPlus = quota?.plan === "trail_plus";
 
   return (
     <div className="coastal-grid min-h-[80vh]">
@@ -92,8 +95,8 @@ function PricingContent() {
         </h1>
         <p className="mt-3 max-w-2xl text-muted">
           Start free with {FREE_AI_QUOTA} AI queries a month. Upgrade to Trail
-          Plus for ${TRAIL_PLUS_PRICE_USD}/month when you need unlimited Guide,
-          Planner, and Stay &amp; Eat matches.
+          Plus for ${TRAIL_PLUS_PRICE_USD}/month for higher fair-use limits on
+          Guide, Planner, and Stay &amp; Eat.
         </p>
 
         <BillingNotice />
@@ -105,7 +108,7 @@ function PricingContent() {
         </Show>
 
         <div className="mt-10 grid gap-5 md:grid-cols-2">
-          <div className="rounded-3xl border border-border bg-surface p-6 sm:p-8">
+          <div className="rounded-md border border-border bg-surface p-6 sm:p-8">
             <p className="text-sm font-semibold uppercase tracking-wider text-muted">
               Free
             </p>
@@ -122,7 +125,7 @@ function PricingContent() {
                   key={f}
                   className="flex items-start gap-2 text-sm text-ocean-deep"
                 >
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-aqua" />
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-ocean" />
                   {f}
                 </li>
               ))}
@@ -130,72 +133,61 @@ function PricingContent() {
             <Show
               when="signed-out"
               fallback={
-                <Link
-                  href="/guide"
-                  className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-semibold text-ocean-deep transition hover:border-aqua/40"
-                >
+                <Link href="/guide" className="btn-outline mt-8 w-full">
                   Continue free
                 </Link>
               }
             >
-              <Link
-                href="/sign-up"
-                className="mt-8 inline-flex w-full items-center justify-center rounded-full border border-border px-5 py-3 text-sm font-semibold text-ocean-deep transition hover:border-aqua/40"
-              >
+              <Link href="/sign-up" className="btn-outline mt-8 w-full">
                 Create free account
               </Link>
             </Show>
           </div>
 
-          <div className="relative overflow-hidden rounded-3xl border border-aqua/40 bg-brand-deep p-6 text-on-brand sm:p-8">
-            <div className="coastal-shimmer pointer-events-none absolute inset-0 opacity-25" />
-            <div className="relative">
-              <p className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-aqua">
-                <Sparkles className="h-3.5 w-3.5" />
-                Trail Plus
-              </p>
-              <p className="mt-2 font-display text-4xl">
-                ${TRAIL_PLUS_PRICE_USD}
-                <span className="text-lg font-normal text-on-brand/65">
-                  /mo
-                </span>
-              </p>
-              <p className="mt-2 text-sm text-on-brand/75">
-                Unlimited AI across Guide, Planner, and Stay &amp; Eat.
-              </p>
-              <ul className="mt-6 space-y-2.5">
-                {plusFeatures.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2 text-sm text-on-brand/90"
-                  >
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-aqua" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
+          <div className="rounded-md border border-brand-deep bg-brand-deep p-6 text-on-brand sm:p-8">
+            <p className="inline-flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-aqua">
+              <Sparkles className="h-3.5 w-3.5" />
+              Trail Plus
+            </p>
+            <p className="mt-2 font-display text-4xl text-on-brand">
+              ${TRAIL_PLUS_PRICE_USD}
+              <span className="text-lg font-normal text-on-brand/65">/mo</span>
+            </p>
+            <p className="mt-2 text-sm text-on-brand/75">
+              Higher fair-use AI across Guide, Planner, and Stay &amp; Eat.
+            </p>
+            <ul className="mt-6 space-y-2.5">
+              {plusFeatures.map((f) => (
+                <li
+                  key={f}
+                  className="flex items-start gap-2 text-sm text-on-brand/90"
+                >
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-aqua" />
+                  {f}
+                </li>
+              ))}
+            </ul>
 
-              <div className="mt-8">
-                {isPlus ? (
-                  <p className="rounded-full border border-aqua/40 bg-aqua/15 px-5 py-3 text-center text-sm font-semibold text-aqua">
-                    You are on Trail Plus
-                  </p>
-                ) : (
-                  <Show
-                    when="signed-in"
-                    fallback={
-                      <Link
-                        href="/sign-in?redirect_url=/pricing"
-                        className="inline-flex w-full items-center justify-center rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white"
-                      >
-                        Sign in to upgrade
-                      </Link>
-                    }
-                  >
-                    <PaystackUpgradeButton />
-                  </Show>
-                )}
-              </div>
+            <div className="mt-8">
+              {isPlus ? (
+                <p className="rounded-md border border-on-brand/30 bg-on-brand/10 px-5 py-3 text-center text-sm font-semibold text-on-brand">
+                  You are on Trail Plus
+                </p>
+              ) : (
+                <Show
+                  when="signed-in"
+                  fallback={
+                    <Link
+                      href="/sign-in?redirect_url=/pricing"
+                      className="btn-solid w-full"
+                    >
+                      Sign in to upgrade
+                    </Link>
+                  }
+                >
+                  <PaystackUpgradeButton />
+                </Show>
+              )}
             </div>
           </div>
         </div>
