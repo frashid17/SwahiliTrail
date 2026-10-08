@@ -20,59 +20,69 @@ export type Hotel = {
 export const COAST_AREAS = [
   {
     value: "whole-coast",
-    label: "Tana River & coast corridor",
-    hint: "Hola, delta, Garsen, Kipini, plus coast day trips",
+    label: "Anywhere in Kenya",
+    hint: "Nairobi, safari circuits, Rift Valley, and the coast",
   },
   {
-    value: "Hola",
-    label: "Hola",
-    hint: "County HQ · IBS 2026 summit base",
+    value: "Nairobi",
+    label: "Nairobi",
+    hint: "Capital · museums, nightlife, park day trips",
   },
   {
-    value: "Tana Delta",
-    label: "Tana Delta / Kipini",
-    hint: "Mangroves, fishing landings, river mouth",
+    value: "Maasai Mara",
+    label: "Maasai Mara",
+    hint: "Safari lodges and camps",
   },
   {
-    value: "Garsen",
-    label: "Garsen",
-    hint: "Gateway town on the Lamu–Malindi corridor",
+    value: "Amboseli",
+    label: "Amboseli",
+    hint: "Elephants and Kilimanjaro views",
   },
   {
-    value: "Ngao",
-    label: "Ngao & river villages",
-    hint: "Pokomo heritage along the lower Tana",
+    value: "Nakuru / Naivasha",
+    label: "Nakuru / Naivasha",
+    hint: "Rift lakes, Hell's Gate, flamingos",
   },
-  { value: "Nyali", label: "Nyali", hint: "North-coast day-trip option" },
   {
-    value: "Bamburi",
-    label: "Bamburi",
-    hint: "Near Haller Park",
+    value: "Nanyuki / Mount Kenya",
+    label: "Nanyuki / Mount Kenya",
+    hint: "Highlands, climbs, and ranch stays",
+  },
+  {
+    value: "Kisumu",
+    label: "Kisumu / Lake Victoria",
+    hint: "Western Kenya lake city",
   },
   {
     value: "Mombasa Old Town",
-    label: "Mombasa Old Town",
-    hint: "Heritage day trip further down the coast",
+    label: "Mombasa",
+    hint: "Island city · Old Town and north coast",
   },
-  {
-    value: "Mama Ngina Waterfront",
-    label: "Mama Ngina Waterfront",
-    hint: "Harbor city day trip",
-  },
-  {
-    value: "Shanzu",
-    label: "Shanzu / north coast",
-    hint: "Resorts between Nyali and Mtwapa",
-  },
+  { value: "Nyali", label: "Nyali", hint: "North-coast beach resorts" },
   {
     value: "Diani Beach",
     label: "Diani Beach",
-    hint: "South-coast white sand day trip",
+    hint: "South-coast white sand",
+  },
+  {
+    value: "Watamu / Malindi",
+    label: "Watamu / Malindi",
+    hint: "Marine parks and north coast",
+  },
+  {
+    value: "Lamu",
+    label: "Lamu",
+    hint: "UNESCO island town",
+  },
+  {
+    value: "Hola",
+    label: "Hola / Tana River",
+    hint: "Delta and river-county base",
   },
   {
     value: "Kilifi",
     label: "Kilifi",
-    hint: "Creek-side stop on the north coast",
+    hint: "Creek-side north coast",
   },
 ] as const;
 
@@ -91,24 +101,241 @@ export function resolveHotel(hotel: Pick<Hotel, "id">): Hotel | null {
 }
 
 export function hydrateHotels(hotels: Hotel[]): Hotel[] {
+  // Prefer live catalogue data when id matches; keep AI-discovered stays as-is.
   return hotels
-    .map((hotel) => resolveHotel(hotel))
-    .filter((hotel): hotel is Hotel => Boolean(hotel));
+    .map((hotel) => resolveHotel(hotel) ?? hotel)
+    .filter((hotel): hotel is Hotel => Boolean(hotel?.id && hotel?.name));
+}
+
+/** Aliases for Stay & Eat area filter — never silently fall back to other regions. */
+const STAY_AREA_ALIASES: Record<string, string[]> = {
+  Nairobi: [
+    "nairobi",
+    "westlands",
+    "karen",
+    "kilimani",
+    "langata",
+    "gigiri",
+    "upper hill",
+    "jkia",
+  ],
+  "Maasai Mara": ["maasai mara", "masai mara", "mara", "narok", "talek"],
+  Amboseli: ["amboseli", "loitokitok", "kimana"],
+  "Nakuru / Naivasha": [
+    "nakuru",
+    "naivasha",
+    "elementaita",
+    "hell's gate",
+    "hells gate",
+  ],
+  "Nanyuki / Mount Kenya": [
+    "nanyuki",
+    "mount kenya",
+    "mt kenya",
+    "laikipia",
+    "naro moru",
+  ],
+  Kisumu: ["kisumu", "lake victoria", "kisumu / lake victoria"],
+  "Mombasa Old Town": [
+    "mombasa",
+    "old town",
+    "mombasa old town",
+    "mombasa cbd",
+    "mama ngina",
+  ],
+  Nyali: ["nyali"],
+  "Diani Beach": ["diani", "diani beach", "ukunda"],
+  "Watamu / Malindi": ["watamu", "malindi", "north coast"],
+  Lamu: ["lamu", "shela"],
+  Hola: ["hola", "tana", "tana river", "tana delta"],
+};
+
+function placeMatchesArea(
+  areaLabel: string,
+  tags: string[],
+  selectedArea: string,
+): boolean {
+  const aliases =
+    STAY_AREA_ALIASES[selectedArea]?.map((a) => a.toLowerCase()) ?? [
+      selectedArea.toLowerCase(),
+    ];
+  const hay = `${areaLabel} ${tags.join(" ")}`.toLowerCase();
+  return aliases.some(
+    (alias) => hay.includes(alias) || alias.includes(areaLabel.toLowerCase()),
+  );
 }
 
 export function hotelsForArea(area: string): Hotel[] {
   if (!area || area === "whole-coast") return HOTELS;
-  const needle = area.toLowerCase();
-  const filtered = HOTELS.filter(
-    (h) =>
-      h.area.toLowerCase().includes(needle) ||
-      needle.includes(h.area.toLowerCase()) ||
-      h.tags.some((t) => t.toLowerCase().includes(needle)),
-  );
-  return filtered.length > 0 ? filtered : HOTELS;
+  // Strict: empty means “nothing in this area”, not “show the whole country”.
+  return HOTELS.filter((h) => placeMatchesArea(h.area, h.tags, area));
 }
 
+export { placeMatchesArea, STAY_AREA_ALIASES };
+
 const HOTELS_BASE: Hotel[] = [
+  {
+    id: "nairobi-serena",
+    name: "Nairobi Serena Hotel",
+    area: "Nairobi",
+    rating: 4.6,
+    pricePerNight: 22000,
+    currency: "KES",
+    tags: ["city", "pool", "spa", "business", "Nairobi"],
+    vibe: "Central city calm",
+    description:
+      "Garden-courtyard hotel in central Nairobi with a pool, spa, and easy access to museums and CBD meetings.",
+    amenities: ["Wi-Fi", "Pool", "Spa", "Restaurant", "Gym"],
+    imageGradient: "from-emerald-800 via-teal-600 to-cyan-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.serenahotels.com/nairobi",
+    bookingUrl: "https://www.booking.com/hotel/ke/nairobi-serena.html",
+  },
+  {
+    id: "tribe-hotel",
+    name: "Tribe Hotel",
+    area: "Gigiri, Nairobi",
+    rating: 4.7,
+    pricePerNight: 28000,
+    currency: "KES",
+    tags: ["design", "pool", "spa", "Westlands", "Nairobi"],
+    vibe: "Design-forward city stay",
+    description:
+      "Stylish Gigiri hotel near UN offices and Westlands dining — strong pool deck and suites for couples.",
+    amenities: ["Wi-Fi", "Pool", "Spa", "Restaurant", "Bar"],
+    imageGradient: "from-slate-800 via-amber-600 to-rose-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.tribehotel.com/",
+    bookingUrl: "https://www.booking.com/hotel/ke/tribe.html",
+  },
+  {
+    id: "hemingways-nairobi",
+    name: "Hemingways Nairobi",
+    area: "Karen, Nairobi",
+    rating: 4.8,
+    pricePerNight: 45000,
+    currency: "KES",
+    tags: ["luxury", "spa", "romantic", "Karen", "Nairobi"],
+    vibe: "Quiet Karen luxury",
+    description:
+      "Boutique luxury in Karen with spa treatments, gardens, and easy giraffe-centre day trips.",
+    amenities: ["Wi-Fi", "Spa", "Pool", "Restaurant", "Butler"],
+    imageGradient: "from-amber-800 via-orange-500 to-rose-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.hemingways-collection.com/nairobi/",
+    bookingUrl: "https://www.booking.com/hotel/ke/hemingways-nairobi.html",
+  },
+  {
+    id: "sankara-nairobi",
+    name: "Sankara Nairobi",
+    area: "Westlands, Nairobi",
+    rating: 4.6,
+    pricePerNight: 26000,
+    currency: "KES",
+    tags: ["rooftop", "business", "pool", "Westlands", "Nairobi"],
+    vibe: "Westlands urban polish",
+    description:
+      "Westlands hotel with rooftop dining, a compact pool, and walkable access to shopping and nightlife.",
+    amenities: ["Wi-Fi", "Pool", "Gym", "Restaurant", "Rooftop"],
+    imageGradient: "from-blue-900 via-cyan-600 to-teal-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.sankara.com/",
+    bookingUrl: "https://www.booking.com/hotel/ke/sankara-nairobi.html",
+  },
+  {
+    id: "villa-rosa",
+    name: "Villa Rosa Kempinski",
+    area: "Westlands, Nairobi",
+    rating: 4.7,
+    pricePerNight: 32000,
+    currency: "KES",
+    tags: ["luxury", "spa", "pool", "family", "Nairobi"],
+    vibe: "Full-service city resort feel",
+    description:
+      "Large Westlands hotel with spa, multiple restaurants, and a pool — practical for couples and families in Nairobi.",
+    amenities: ["Wi-Fi", "Pool", "Spa", "Breakfast", "Kids club"],
+    imageGradient: "from-rose-800 via-amber-500 to-yellow-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d0?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.kempinski.com/en/villa-rosa",
+    bookingUrl: "https://www.booking.com/hotel/ke/villa-rosa-kempinski.html",
+  },
+  {
+    id: "ole-sereni",
+    name: "Ole Sereni Hotel",
+    area: "Nairobi",
+    rating: 4.4,
+    pricePerNight: 18000,
+    currency: "KES",
+    tags: ["airport", "pool", "views", "Nairobi"],
+    vibe: "Park-view layover base",
+    description:
+      "Hotel overlooking Nairobi National Park — handy for JKIA arrivals and short city stays with a pool.",
+    amenities: ["Wi-Fi", "Pool", "Restaurant", "Airport shuttle", "Gym"],
+    imageGradient: "from-lime-800 via-emerald-600 to-teal-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.ole-sereni.com/",
+    bookingUrl: "https://www.booking.com/hotel/ke/ole-sereni.html",
+  },
+  {
+    id: "fairmont-norfolk",
+    name: "Fairmont The Norfolk",
+    area: "Nairobi",
+    rating: 4.5,
+    pricePerNight: 24000,
+    currency: "KES",
+    tags: ["heritage", "garden", "breakfast", "Nairobi"],
+    vibe: "Historic garden hotel",
+    description:
+      "Classic Nairobi hotel with courtyard gardens — central for museums, CBD, and evening outings.",
+    amenities: ["Wi-Fi", "Breakfast", "Restaurant", "Garden", "Gym"],
+    imageGradient: "from-stone-700 via-amber-600 to-orange-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1618773928122-d162df870cd4?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.fairmont.com/norfolk-hotel-nairobi/",
+    bookingUrl: "https://www.booking.com/hotel/ke/fairmont-the-norfolk.html",
+  },
+  {
+    id: "eka-hotel",
+    name: "Eka Hotel Nairobi",
+    area: "Nairobi",
+    rating: 4.3,
+    pricePerNight: 14000,
+    currency: "KES",
+    tags: ["airport", "pool", "business", "Nairobi"],
+    vibe: "Practical city / airport base",
+    description:
+      "Modern mid-range hotel near JKIA and the city — pool, gym, and solid value for short Nairobi stays.",
+    amenities: ["Wi-Fi", "Pool", "Gym", "Restaurant", "Breakfast"],
+    imageGradient: "from-cyan-800 via-teal-500 to-sky-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1596436889106-be35e843f974?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: "https://www.ekahotel.com/",
+    bookingUrl: "https://www.booking.com/hotel/ke/eka-nairobi.html",
+  },
+  {
+    id: "concord-hotel",
+    name: "The Concord Hotel & Suites",
+    area: "Parklands, Nairobi",
+    rating: 4.2,
+    pricePerNight: 12000,
+    currency: "KES",
+    tags: ["suite", "pool", "family", "Nairobi"],
+    vibe: "Apartment-style city stay",
+    description:
+      "Suite-style rooms in Parklands with a pool — good for couples or families who want space in Nairobi.",
+    amenities: ["Wi-Fi", "Pool", "Kitchenette", "Breakfast", "Parking"],
+    imageGradient: "from-indigo-800 via-blue-600 to-cyan-400",
+    imageUrl:
+      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80",
+    websiteUrl: null,
+    bookingUrl: "https://www.booking.com/hotel/ke/the-concord-and-suites.html",
+  },
   {
     id: "nyali-breeze",
     name: "Serena Beach Resort & Spa",
