@@ -82,10 +82,17 @@ export type EventsFeed = {
   refreshedAt: string;
 };
 
-export function isTanaRiverEvent(event: CoastEvent) {
+/** Curated calendar / Kenya-focused listings vs noisy international imports */
+export function isKenyaFocusEvent(event: CoastEvent) {
+  if (event.source === "coast-calendar") return true;
   const hay = `${event.area} ${event.venue} ${event.title} ${event.category}`.toLowerCase();
-  return /tana|hola|garsen|kipini|ngao|delta|ibs\b|jumuiya/.test(hay);
+  return /kenya|nairobi|mombasa|diani|nakuru|naivasha|kisumu|lamu|malindi|watamu|kilifi|tsavo|mara|amboseli|tana|hola|garsen|kipini|jumuiya|nyali|bamburi/.test(
+    hay,
+  );
 }
+
+/** @deprecated use isKenyaFocusEvent */
+export const isTanaRiverEvent = isKenyaFocusEvent;
 
 function eventEndMs(event: CoastEvent) {
   if (event.endsAt) return new Date(event.endsAt).getTime();
@@ -109,18 +116,18 @@ export function rankEvents(events: CoastEvent[], nowMs = Date.now()) {
     const aLive = isHappeningNow(a, nowMs) ? 0 : 1;
     const bLive = isHappeningNow(b, nowMs) ? 0 : 1;
     if (aLive !== bLive) return aLive - bLive;
-    // 2) Tana River / IBS / Hola / delta before coast corridor
-    const aTana = isTanaRiverEvent(a) ? 0 : 1;
-    const bTana = isTanaRiverEvent(b) ? 0 : 1;
-    if (aTana !== bTana) return aTana - bTana;
+    // 2) Kenya-focused listings before sparse imports
+    const aKe = isKenyaFocusEvent(a) ? 0 : 1;
+    const bKe = isKenyaFocusEvent(b) ? 0 : 1;
+    if (aKe !== bKe) return aKe - bKe;
     // 3) Soonest start
     return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
   });
 
-  // Keep all Tana River dates; trim dense coast/Ticketmaster noise so Hola stays visible.
-  const tana = active.filter(isTanaRiverEvent);
-  const other = active.filter((e) => !isTanaRiverEvent(e)).slice(0, 8);
-  return [...tana, ...other];
+  // Keep curated Kenya dates; trim dense Ticketmaster noise.
+  const kenya = active.filter(isKenyaFocusEvent);
+  const other = active.filter((e) => !isKenyaFocusEvent(e)).slice(0, 8);
+  return [...kenya, ...other];
 }
 
 async function fetchTicketmasterNear(
@@ -152,9 +159,9 @@ export async function fetchEventsFeed(): Promise<EventsFeed> {
   const sources: EventsFeed["sources"] = [
     {
       id: "coast-calendar",
-      label: "Tana River & coast calendar",
+      label: "Kenya events calendar",
       live: true,
-      note: "IBS 2026 and county listings first, then wider coast dates.",
+      note: "Curated Kenya dates first, then live Ticketmaster listings.",
     },
   ];
 
@@ -164,13 +171,13 @@ export async function fetchEventsFeed(): Promise<EventsFeed> {
 
   if (key) {
     try {
-      // Prefer Tana Delta / Hola radius; also pull a lighter Mombasa pass for corridor day trips.
-      const [tanaHits, coastHits] = await Promise.all([
-        fetchTicketmasterNear(key, lat, lon, 200),
-        fetchTicketmasterNear(key, -4.0435, 39.6682, 80),
+      // Nairobi hub + Mombasa coast coverage across the country.
+      const [nairobiHits, coastHits] = await Promise.all([
+        fetchTicketmasterNear(key, lat, lon, 250),
+        fetchTicketmasterNear(key, -4.0435, 39.6682, 120),
       ]);
       const seen = new Set(live.map((e) => e.id));
-      for (const ev of [...tanaHits, ...coastHits]) {
+      for (const ev of [...nairobiHits, ...coastHits]) {
         if (seen.has(ev.id)) continue;
         seen.add(ev.id);
         live.push(ev);
@@ -179,7 +186,7 @@ export async function fetchEventsFeed(): Promise<EventsFeed> {
         id: "ticketmaster",
         label: "Ticketmaster",
         live: true,
-        note: "Live listings near Tana River and the coast corridor.",
+        note: "Live listings near Nairobi and the coast.",
       });
     } catch {
       sources.push({
