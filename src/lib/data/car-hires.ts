@@ -9,7 +9,7 @@ export type CarHire = {
   note: string;
 };
 
-/** Established Kenya / coast car hire & transfer operators (demo catalogue). */
+/** Established Kenya / coast car hire & transfer operators (seed catalogue). */
 export const CAR_HIRES: CarHire[] = [
   {
     id: "avis-kenya",
