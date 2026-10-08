@@ -1,5 +1,6 @@
 import { COAST_IMAGES as img } from "@/lib/data/coast-images";
 import { placePhoto } from "@/lib/data/place-photo-urls";
+import { filterByKenyaRegion } from "@/lib/kenya-regions";
 
 export type ExploreCategory =
   | "all"
@@ -584,7 +585,107 @@ const EXPLORE_PLACES_BASE: ExplorePlace[] = [
     priceHint: "Donation / entry",
     bookingHint: "Check the centre's site or Watamu hotels for slots.",
   },
+  {
+    id: "nairobi-carnivore",
+    name: "Carnivore Restaurant Nairobi",
+    category: "food",
+    area: "Nairobi",
+    blurb: "Famous all-you-can-eat grill - a Nairobi institution.",
+    about:
+      "The Carnivore is a classic Nairobi dinner stop: skewers of grilled meats, lively tables, and a tourist-friendly menu. Book ahead on weekends.",
+    vibe: "Grill · lively",
+    tags: ["restaurant", "nyama choma", "nairobi", "dinner"],
+    imageUrl: img.grill,
+    websiteUrl: "https://www.tamarind.co.ke/carnivore/",
+    mapsUrl: "https://maps.google.com/?q=Carnivore+Restaurant+Nairobi",
+    googleQuery: "Carnivore Restaurant Nairobi",
+    tripadvisorUrl:
+      "https://www.tripadvisor.com/Restaurant_Review-g294207-d793347-Reviews-Carnivore_Restaurant-Nairobi.html",
+    hoursHint: "Lunch and dinner",
+    priceHint: "Mid to high · set meat feast options",
+    bookingHint: "Reserve online or by phone for weekend evenings.",
+  },
+  {
+    id: "karura-trails",
+    name: "Karura Forest trails",
+    category: "trails",
+    area: "Nairobi",
+    blurb: "Marked walking and cycling loops inside the capital.",
+    about:
+      "Buy a day ticket and pick a waterfall or cave loop. Popular with Nairobi residents on weekends.",
+    vibe: "Urban nature",
+    tags: ["hike", "cycle", "nairobi", "forest"],
+    imageUrl: img.forestTrail,
+    websiteUrl: null,
+    mapsUrl: "https://maps.google.com/?q=Karura+Forest+Nairobi",
+    googleQuery: "Karura Forest Nairobi",
+    tripadvisorUrl:
+      "https://www.tripadvisor.com/Attraction_Review-g294207-d2217698-Reviews-Karura_Forest-Nairobi.html",
+    hoursHint: "Daylight hours",
+    priceHint: "Day entry fee",
+    bookingHint: "Pay at official gates; no advance ticket needed.",
+  },
+  {
+    id: "nanyuki-equator",
+    name: "Nanyuki equator stops",
+    category: "heritage",
+    area: "Nanyuki",
+    blurb: "Photo stops and highland town energy on the equator line.",
+    about:
+      "Classic traveler pause between Nairobi and northern circuits. Pair with coffee in town before Ol Pejeta or Mount Kenya.",
+    vibe: "Photo · town",
+    tags: ["equator", "nanyuki", "highland"],
+    imageUrl: img.cultureCraft,
+    websiteUrl: null,
+    mapsUrl: "https://maps.google.com/?q=Equator+Nanyuki",
+    googleQuery: "Equator crossing Nanyuki",
+    tripadvisorUrl: "https://www.tripadvisor.com/Search?q=Nanyuki%20equator",
+    hoursHint: "Daytime",
+    priceHint: "Free · tip optional for demos",
+    bookingHint: "No ticket; agree tips before water-flow demos.",
+  },
+  {
+    id: "mount-kenya-trails",
+    name: "Mount Kenya forest trails",
+    category: "trails",
+    area: "Nanyuki / Mount Kenya",
+    blurb: "Guided highland walks from Nanyuki and Naro Moru trailheads.",
+    about:
+      "Short forest days or multi-day climbs. Always use licensed mountain guides for overnight routes.",
+    vibe: "Alpine hike",
+    tags: ["hike", "mount kenya", "nanyuki"],
+    imageUrl: img.forestTrail,
+    websiteUrl: "https://www.kws.go.ke/",
+    mapsUrl: "https://maps.google.com/?q=Mount+Kenya+National+Park",
+    googleQuery: "Mount Kenya National Park Nanyuki",
+    tripadvisorUrl:
+      "https://www.tripadvisor.com/Attraction_Review-g1721781-d319086-Reviews-Mount_Kenya_National_Park-Naro_Moru_Central_Province.html",
+    hoursHint: "Early starts",
+    priceHint: "Park fees + guide",
+    bookingHint: "Book via Nanyuki operators; pack warm layers.",
+  },
+  {
+    id: "hells-gate-bike",
+    name: "Hell's Gate cycling",
+    category: "adventure",
+    area: "Naivasha",
+    blurb: "Bike among cliffs and wildlife in the Rift Valley.",
+    about:
+      "Hire bikes at the gate, ride to the gorge, then walk the canyon floor. A favorite active day from Nairobi.",
+    vibe: "Active · day trip",
+    tags: ["bike", "naivasha", "adventure"],
+    imageUrl: img.shimbaHills,
+    websiteUrl: "https://www.kws.go.ke/",
+    mapsUrl: "https://maps.google.com/?q=Hells+Gate+National+Park",
+    googleQuery: "Hell's Gate National Park Naivasha",
+    tripadvisorUrl:
+      "https://www.tripadvisor.com/Attraction_Review-g317070-d479918-Reviews-Hell_s_Gate_National_Park-Naivasha_Rift_Valley_Province.html",
+    hoursHint: "Morning to mid-afternoon",
+    priceHint: "Park fee + bike hire",
+    bookingHint: "Self-drive or day tour; bikes at the main gate.",
+  },
 ];
+
 
 export const EXPLORE_PLACES: ExplorePlace[] = EXPLORE_PLACES_BASE.map((p) => ({
   ...p,
@@ -595,7 +696,17 @@ export function getExplorePlace(id: string) {
   return EXPLORE_PLACES.find((p) => p.id === id) ?? null;
 }
 
-export function placesForCategory(category: ExploreCategory) {
-  if (category === "all") return EXPLORE_PLACES;
-  return EXPLORE_PLACES.filter((p) => p.category === category);
+export function placesForCategory(
+  category: ExploreCategory,
+  regionId?: string | null,
+) {
+  const byCategory =
+    category === "all"
+      ? EXPLORE_PLACES
+      : EXPLORE_PLACES.filter((p) => p.category === category);
+  return filterByKenyaRegion(
+    byCategory,
+    regionId,
+    (p) => `${p.area} ${p.name} ${p.tags.join(" ")} ${p.blurb}`,
+  );
 }
