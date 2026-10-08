@@ -16,9 +16,9 @@ const body = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Swahili Trail - AI Coastal Tourism Companion",
+  title: "Swahili Trail · Tana River · IBS 2026",
   description:
-    "AI itineraries, hotel matching, multilingual guides, and tourism analytics for Mombasa - built for AI and Digital Tourism Day 2026.",
+    "Plan trips around Hola and the Tana Delta, match stays, ask a multilingual guide, and open visitor analytics. Built for Innovation and Business Summit 2026.",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
