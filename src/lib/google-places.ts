@@ -138,7 +138,7 @@ export async function fetchGooglePlacePhotoUrl(
       }
     }
 
-    // Some text-search hits omit photos — fetch place details.
+    // Some text-search hits omit photos - fetch place details.
     if (!photoName && ranked[0]?.id) {
       const placeId = normalizePlaceResourceId(ranked[0].id);
       const detailRes = await fetch(
