@@ -3,6 +3,7 @@ import {
   MOMBASA_COORDS,
   type CoastNowPayload,
 } from "@/lib/coast-now";
+import { DESTINATION } from "@/lib/destination";
 
 const { lat: LAT, lon: LON, tz: TZ } = MOMBASA_COORDS;
 
@@ -128,7 +129,7 @@ export async function GET() {
     }
 
     const payload: CoastNowPayload = {
-      location: "Mombasa",
+        location: DESTINATION.coords.label,
       temperatureC: Math.round(temp),
       sunrise: formatHm(sunriseIso),
       sunset: formatHm(sunsetIso),
