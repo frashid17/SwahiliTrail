@@ -27,7 +27,7 @@ export type GenerateOptions = {
   model?: string;
   maxOutputTokens?: number;
   temperature?: number;
-  /** Gemini 3.x thinking level — keep MINIMAL for low latency. */
+  /** Gemini 3.x thinking level - keep MINIMAL for low latency. */
   thinkingLevel?: "MINIMAL" | "LOW" | "MEDIUM" | "HIGH";
 };
 
