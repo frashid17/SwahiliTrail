@@ -166,7 +166,7 @@ export function SignInForm() {
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to Swahili Trail to continue your coastal journey."
+      subtitle="Sign in to save trips, guide chats, and stay matches."
     >
       <button
         type="button"
