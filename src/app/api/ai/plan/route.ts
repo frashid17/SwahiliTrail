@@ -98,13 +98,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const quota = await assertAiQuota(userId);
-  if (!quota.ok) {
-    return NextResponse.json(quota.responseBody, { status: 402 });
-  }
-
   try {
     const input = bodySchema.parse(await req.json());
+    const fingerprint = [
+      input.days,
+      input.budget,
+      input.pace,
+      input.companions,
+      input.stayArea ?? "",
+      input.interests.join(","),
+      (input.cart ?? []).map((c) => c.id).join(","),
+    ].join("|");
+    const quota = await assertAiQuota(userId, "plan", fingerprint);
+    if (!quota.ok) {
+      return NextResponse.json(quota.responseBody, {
+        status: quota.httpStatus,
+      });
+    }
 
     const cartIds = new Set((input.cart ?? []).map((c) => c.id));
 
@@ -249,7 +259,10 @@ Cover all ${input.days} days. Short concrete strings. Realistic KES for the part
 
     const cleanPlan = sanitizeAiStrings(plan);
 
-    const nextQuota = await consumeAiQuota(userId, "plan");
+    const nextQuota = await consumeAiQuota(userId, "plan", {
+      requestHash: quota.requestHash,
+      plan: quota.plan,
+    });
 
     const supabase = createAdminClient();
     if (supabase) {
