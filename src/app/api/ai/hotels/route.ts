@@ -55,17 +55,18 @@ export async function POST(req: Request) {
 
     const areaInstruction =
       area === "whole-coast"
-        ? "Traveler wants options from the whole Kenyan coast around Mombasa."
+        ? "Traveler wants options across Tana River County and the Jumuiya coast corridor."
         : `Traveler prefers the ${area} area.`;
 
     const match = await generateJson<MatchResult>(
-      `Match ${isHotels ? "hotels" : "restaurants"} for a Mombasa / Kenyan coast traveler.
+      `Match ${isHotels ? "hotels" : "restaurants"} for a traveler exploring Tana River County and the Kenyan coast corridor.
 Budget max ${isHotels ? "per night" : "per meal"}: ${input.budgetMax} KES
 Desired vibe: ${input.vibe}
 Travelers: ${input.travelers}
 Must-haves: ${input.mustHaves.join(", ") || "none"}
 Area preference: ${area}
 ${areaInstruction}
+Prefer Hola / Tana Delta / Garsen when catalogue allows; otherwise use the closest coast-corridor fits and say so.
 
 Catalogue (only use these ids):
 ${catalogue}
@@ -78,7 +79,7 @@ Return JSON:
 }
 Rank as many good fits as possible from the catalogue (aim for 5 to 8 ids when available).
 Use exact names from the catalogue in rationale/tips.`,
-      `You are a ${isHotels ? "hotel" : "restaurant"} matching engine for Swahili Trail. Only recommend items from the provided catalogue.`,
+      `You match ${isHotels ? "hotels" : "restaurants"} for Swahili Trail travelers in Tana River and nearby coast towns. Only recommend items from the provided catalogue. Write rationale and tips in plain language - no marketing buzzwords.`,
     );
 
     const validIds = new Set(catalogueSource.map((item) => item.id));
