@@ -3,8 +3,11 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import type { CoastEvent } from "@/lib/data/coast-events";
+import { filterByKenyaRegion } from "@/lib/kenya-regions";
 
 function formatEventWhen(iso: string) {
   const d = new Date(iso);
@@ -27,8 +30,19 @@ function formatEventWhen(iso: string) {
 
 export function CoastEventsSection() {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const { regionId, region } = useKenyaLocation();
   const [events, setEvents] = useState<CoastEvent[]>([]);
   const [sourceNote, setSourceNote] = useState("Loading events…");
+
+  const filtered = useMemo(
+    () =>
+      filterByKenyaRegion(
+        events,
+        regionId,
+        (e) => `${e.area} ${e.venue} ${e.title} ${e.category}`,
+      ).slice(0, 12),
+    [events, regionId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -41,12 +55,10 @@ export function CoastEventsSection() {
           sources: { label: string; live: boolean; note: string }[];
         };
         if (cancelled) return;
-        setEvents(json.events.slice(0, 12));
+        setEvents(json.events);
         const live = json.sources.filter((s) => s.live).map((s) => s.label);
         setSourceNote(
-          live.length
-            ? live.join(" · ")
-            : "Local calendar only",
+          live.length ? live.join(" · ") : "Local calendar only",
         );
       } catch {
         if (!cancelled) setSourceNote("Events unavailable right now");
@@ -76,14 +88,16 @@ export function CoastEventsSection() {
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-coral">
               <span aria-hidden className="h-px w-8 bg-coral" />
-              Happening now · Tana River first
+              Happening now · Kenya
             </p>
             <h2 className="mt-3 font-display text-3xl text-on-brand sm:text-4xl md:text-5xl">
-              IBS week and nearby dates
+              {region
+                ? `What\u2019s on in ${region.label}`
+                : "What\u2019s on across Kenya"}
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-brand/65 sm:text-base">
-              Summit sessions in Hola, delta trips, and a few coast corridor
-              dates. Open a card for venue and booking notes.
+              Pick a region to focus the list — Nairobi, Nanyuki, the Mara, the
+              coast, and more.
             </p>
             <p className="mt-2 text-xs text-on-brand/45">{sourceNote}</p>
           </div>
@@ -114,50 +128,54 @@ export function CoastEventsSection() {
           </div>
         </div>
 
+        <div className="mt-6">
+          <KenyaLocationFilter label="Show events in" onDark />
+        </div>
+
         <div
           ref={scrollerRef}
           className="mt-10 flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
         >
-          {events.map((event) => (
-            <Link
-              key={event.id}
-              href={`/events/${event.id}`}
-              className="flex w-[min(85vw,18.5rem)] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-black/25 ring-1 ring-white/10 transition hover:ring-coral/40 sm:w-72"
-            >
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <Image
-                  src={event.imageUrl}
-                  alt=""
-                  fill
-                  sizes="300px"
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-on-brand/45">
-                  {formatEventWhen(event.startsAt)}
-                </p>
-                <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-on-brand">
-                  {event.title}
-                </h3>
-                <p className="mt-1 text-sm text-on-brand/55">{event.venue}</p>
-                <div className="mt-auto flex items-center justify-between gap-2 pt-4">
-                  <span className="text-xs text-on-brand/45">
-                    {/tana|hola|garsen|kipini|ngao|delta|ibs/i.test(
-                      `${event.area} ${event.title}`,
-                    )
-                      ? "Tana River"
-                      : event.source === "ticketmaster"
-                        ? "Ticketmaster"
-                        : "Coast"}
-                  </span>
-                  <span className="text-sm font-semibold text-coral">
-                    View event →
-                  </span>
+          {filtered.length === 0 ? (
+            <p className="text-sm text-on-brand/55">
+              No events in this region right now. Try All Kenya.
+            </p>
+          ) : (
+            filtered.map((event) => (
+              <Link
+                key={event.id}
+                href={`/events/${event.id}`}
+                className="flex w-[min(85vw,18.5rem)] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-black/25 ring-1 ring-white/10 transition hover:ring-coral/40 sm:w-72"
+              >
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <Image
+                    src={event.imageUrl}
+                    alt=""
+                    fill
+                    sizes="300px"
+                    className="object-cover"
+                  />
                 </div>
-              </div>
-            </Link>
-          ))}
+                <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-on-brand/45">
+                    {formatEventWhen(event.startsAt)}
+                  </p>
+                  <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-on-brand">
+                    {event.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-on-brand/55">{event.venue}</p>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+                    <span className="text-xs text-on-brand/45">
+                      {event.area?.split(",")[0]?.trim() || "Kenya"}
+                    </span>
+                    <span className="text-sm font-semibold text-coral">
+                      View event →
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </div>
     </section>
