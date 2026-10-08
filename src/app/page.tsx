@@ -15,7 +15,7 @@ const features = [
     href: "/planner",
     n: "01",
     title: "Trip Planner",
-    copy: "Multi-day routes for Nairobi, safari circuits, the Rift, or the coast — with a rough KES budget.",
+    copy: "Multi-day routes for Nairobi, safari circuits, the Rift, or the coast - with a rough KES budget.",
   },
   {
     href: "/hotels",
@@ -69,7 +69,7 @@ export default function HomePage() {
           />
         </motion.div>
 
-        {/* Legibility only — keep the photo readable, not a dark SaaS veil */}
+        {/* Legibility only - keep the photo readable, not a dark SaaS veil */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/15" />
 
         <div className="relative mx-auto flex min-h-[min(88vh,860px)] max-w-[90rem] flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20 lg:px-10">
@@ -126,7 +126,7 @@ export default function HomePage() {
               Conditions
             </p>
             <p className="mt-1 text-sm text-ocean-deep">
-              Weather for where you&apos;re headed — pick a region or use your
+              Weather for where you&apos;re headed - pick a region or use your
               location.
             </p>
           </div>
@@ -157,7 +157,7 @@ export default function HomePage() {
             Tools for the road
           </h2>
           <p className="mt-3 text-muted leading-relaxed">
-            Six ways to plan and get around Kenya — no dashboard clutter.
+            Six ways to plan and get around Kenya - no dashboard clutter.
           </p>
         </motion.div>
 
@@ -214,7 +214,7 @@ export default function HomePage() {
             transition={{ duration: 0.45 }}
           >
             <h2 className="font-display text-3xl tracking-tight text-on-brand sm:text-4xl">
-              For travelers — and the places that host them.
+              For travelers - and the places that host them.
             </h2>
             <p className="mt-4 max-w-lg text-on-brand/80 leading-relaxed">
               Plan city, safari, Rift, and coast trips. Hosts and county teams
