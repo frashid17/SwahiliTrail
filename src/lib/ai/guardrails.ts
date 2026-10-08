@@ -164,7 +164,7 @@ export async function assertAiGuardrails(input: {
       ok: false,
       status: 429,
       responseBody: {
-        error: `Slow down — max ${caps.perMinute} AI requests per minute on your plan.`,
+        error: `Slow down - max ${caps.perMinute} AI requests per minute on your plan.`,
         code: "AI_RATE_LIMITED",
         retryAfterSeconds: 60,
         limit: caps.perMinute,
