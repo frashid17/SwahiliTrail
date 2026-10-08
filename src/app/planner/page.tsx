@@ -605,7 +605,11 @@ export default function PlannerPage() {
             <button
               type="button"
               onClick={generate}
-              disabled={loading || interests.length === 0}
+              disabled={
+                loading ||
+                interests.length === 0 ||
+                (quota != null && (quota.remaining ?? 0) <= 0)
+              }
               className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {loading ? (
