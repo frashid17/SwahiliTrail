@@ -22,7 +22,7 @@ export type CoastEvent = {
   source: EventSource;
 };
 
-/** Curated coast calendar — always available; enriched with real ticket platforms. */
+/** Curated coast calendar - always available; enriched with real ticket platforms. */
 export const COAST_EVENTS: CoastEvent[] = [
   {
     id: "ibs-2026",
@@ -386,7 +386,7 @@ export const COAST_EVENTS: CoastEvent[] = [
   {
     id: "karura-sunrise-run",
     title: "Karura Forest Sunrise Run",
-    venue: "Karura Forest — Limuru Road gate",
+    venue: "Karura Forest - Limuru Road gate",
     area: "Nairobi",
     startsAt: "2026-10-12T06:30:00+03:00",
     endsAt: "2026-10-12T08:30:00+03:00",
