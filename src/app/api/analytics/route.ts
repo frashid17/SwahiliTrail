@@ -31,13 +31,13 @@ export async function GET() {
       peakMonth: peak.month,
       peakVisitors: peak.visitors,
       avgSatisfaction: 4.6,
-      internationalShare: 38,
+      internationalShare: 28,
     },
     monthly: MONTHLY_VISITORS,
     attractions: TOP_ATTRACTIONS,
     markets: SOURCE_MARKETS,
     sentiment: SENTIMENT_THEMES,
     recentEvents,
-    note: "Demo dataset inspired by coastal tourism patterns for Mombasa stakeholder storytelling.",
+    note: "Sample visitor numbers for Tana River and nearby coast - useful for an IBS 2026 brief.",
   });
 }
