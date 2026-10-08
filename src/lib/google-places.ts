@@ -1,9 +1,4 @@
 import type { ExplorePlace } from "@/lib/data/explore-places";
-import { DESTINATION } from "@/lib/destination";
-
-const PLACES_BIAS = DESTINATION.placesBias;
-/** Places API (New) max radius for location bias circle (meters). */
-const MAX_BIAS_RADIUS_M = 50_000;
 
 type SearchHit = {
   id: string;
@@ -46,14 +41,8 @@ async function searchText(
         "places.id,places.displayName,places.rating,places.userRatingCount",
     },
     body: JSON.stringify({
-      textQuery,
+      textQuery: `${textQuery}, Kenya`,
       regionCode: "KE",
-      locationBias: {
-        circle: {
-          center: PLACES_BIAS,
-          radius: MAX_BIAS_RADIUS_M,
-        },
-      },
       maxResultCount: 5,
     }),
     next: { revalidate: 86400 },
@@ -82,6 +71,138 @@ async function searchText(
       rating: p.rating,
       reviewCount: p.userRatingCount,
     }));
+}
+
+/**
+ * Resolve a unique Google Places photo URL for a named venue in Kenya.
+ * Used for AI-matched stays/restaurants that are not in our photo catalogue.
+ */
+export async function fetchGooglePlacePhotoUrl(
+  name: string,
+  area: string,
+): Promise<string | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey || !name.trim()) return null;
+
+  const query = `${name.trim()} ${area.trim()} Kenya`.replace(/\s+/g, " ");
+
+  try {
+    const searchRes = await fetch(
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "places.id,places.displayName,places.photos,places.userRatingCount",
+        },
+        body: JSON.stringify({
+          textQuery: query,
+          regionCode: "KE",
+          maxResultCount: 3,
+        }),
+        cache: "no-store",
+      },
+    );
+
+    if (!searchRes.ok) {
+      console.error(
+        "[google-places photo search]",
+        query,
+        searchRes.status,
+        await searchRes.text(),
+      );
+      return null;
+    }
+
+    const searchJson = (await searchRes.json()) as {
+      places?: {
+        id?: string;
+        displayName?: { text?: string };
+        photos?: { name?: string }[];
+        userRatingCount?: number;
+      }[];
+    };
+
+    const ranked = [...(searchJson.places ?? [])].sort(
+      (a, b) => (b.userRatingCount ?? 0) - (a.userRatingCount ?? 0),
+    );
+
+    let photoName: string | undefined;
+    for (const hit of ranked) {
+      const candidate = hit.photos?.[0]?.name;
+      if (candidate) {
+        photoName = candidate;
+        break;
+      }
+    }
+
+    // Some text-search hits omit photos — fetch place details.
+    if (!photoName && ranked[0]?.id) {
+      const placeId = normalizePlaceResourceId(ranked[0].id);
+      const detailRes = await fetch(
+        `https://places.googleapis.com/v1/places/${placeId}`,
+        {
+          headers: {
+            "X-Goog-Api-Key": apiKey,
+            "X-Goog-FieldMask": "id,displayName,photos",
+          },
+          cache: "no-store",
+        },
+      );
+      if (detailRes.ok) {
+        const detail = (await detailRes.json()) as {
+          photos?: { name?: string }[];
+        };
+        photoName = detail.photos?.[0]?.name;
+      }
+    }
+
+    if (!photoName) return null;
+
+    const mediaRes = await fetch(
+      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=1200&skipHttpRedirect=true`,
+      {
+        headers: { "X-Goog-Api-Key": apiKey },
+        cache: "no-store",
+      },
+    );
+    if (!mediaRes.ok) return null;
+
+    const media = (await mediaRes.json()) as { photoUri?: string };
+    return media.photoUri || null;
+  } catch (err) {
+    console.error(
+      "[google-places photo]",
+      name,
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}
+
+/** Attach unique Google photos to a list of named places (parallel, capped). */
+export async function attachGooglePhotos<T extends { name: string; area: string; imageUrl: string; id: string }>(
+  items: T[],
+): Promise<T[]> {
+  return Promise.all(
+    items.map(async (item, index) => {
+      const needsPhoto =
+        item.id.startsWith("ai-") ||
+        item.imageUrl.includes("unsplash.com") ||
+        item.imageUrl.includes("wikimedia.org");
+
+      if (!needsPhoto) return item;
+
+      const photoUrl = await fetchGooglePlacePhotoUrl(item.name, item.area);
+      if (!photoUrl) return item;
+
+      // Tiny delay stagger is unnecessary with Promise.all; keep unique URLs as returned.
+      void index;
+      return { ...item, imageUrl: photoUrl };
+    }),
+  );
 }
 
 export async function resolveGooglePlaceId(
