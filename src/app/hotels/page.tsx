@@ -18,7 +18,11 @@ import {
   aiQuotaErrorMessage,
   useAiQuota,
 } from "@/components/ai-quota-banner";
-import { CoastalOrbs } from "@/components/coastal-accents";
+import { AiTypingPanel } from "@/components/ai-typing-panel";
+import {
+  consumeAiNdjsonStream,
+  extractStreamingJsonString,
+} from "@/lib/ai/ndjson-stream";
 import type { AiQuotaStatus } from "@/lib/ai/quota";
 import { COAST_AREAS, hydrateHotels, hotelPrimaryLink } from "@/lib/data/hotels";
 import type { Hotel } from "@/lib/data/hotels";
@@ -62,6 +66,7 @@ export default function HotelsPage() {
   const [mustHaves, setMustHaves] = useState<string[]>(["Wi-Fi", "Pool"]);
   const [areaPreference, setAreaPreference] = useState("whole-coast");
   const [loading, setLoading] = useState(false);
+  const [streamDraft, setStreamDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -115,6 +120,16 @@ export default function HotelsPage() {
   async function match() {
     setLoading(true);
     setError(null);
+    setStreamDraft("");
+    if (mode === "hotels") {
+      setHotels([]);
+      setHotelRationale(null);
+      setHotelTips([]);
+    } else {
+      setRestaurants([]);
+      setRestaurantRationale(null);
+      setRestaurantTips([]);
+    }
     try {
       const res = await fetch("/api/ai/hotels", {
         method: "POST",
@@ -128,15 +143,25 @@ export default function HotelsPage() {
           areaPreference,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
-      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
+      const data = await consumeAiNdjsonStream<{
+        type: "done";
+        hotels?: Hotel[];
+        restaurants?: Restaurant[];
+        rationale?: string;
+        tips?: string[];
+        quota?: AiQuotaStatus;
+      }>(res, {
+        onDelta: (_chunk, full) => {
+          setStreamDraft(extractStreamingJsonString(full, "rationale") ?? "");
+        },
+      });
+      if (data.quota) applyQuota(data.quota);
 
       const nextHotels = hydrateHotels((data.hotels ?? []) as Hotel[]);
       const nextRestaurants = hydrateRestaurants(
         (data.restaurants ?? []) as Restaurant[],
       );
-      const nextRationale = data.rationale as string;
+      const nextRationale = (data.rationale as string) || "";
       const nextTips = (data.tips ?? []) as string[];
       const savedAt = new Date().toISOString();
 
@@ -163,8 +188,23 @@ export default function HotelsPage() {
         setRestaurantRationale(nextRationale);
         setRestaurantTips(nextTips);
       }
+      setStreamDraft("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const payload =
+        err && typeof err === "object"
+          ? (err as {
+              error?: string;
+              message?: string;
+              code?: string;
+              priceUsdPerMonth?: number;
+            })
+          : {};
+      setError(
+        payload.code
+          ? aiQuotaErrorMessage(payload)
+          : payload.message || payload.error || "Something went wrong",
+      );
+      setStreamDraft("");
     } finally {
       setLoading(false);
     }
@@ -207,26 +247,26 @@ export default function HotelsPage() {
   const tips = mode === "hotels" ? hotelTips : restaurantTips;
 
   return (
-    <div className="coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
+    <div className="paper-grain coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
       <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
-        <aside className="relative flex shrink-0 flex-col rounded-2xl border border-border bg-surface/85 shadow-sm backdrop-blur sm:rounded-3xl lg:min-h-0 lg:overflow-hidden">
-          <CoastalOrbs />
+        <aside className="relative flex shrink-0 flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:overflow-hidden">
           <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:text-xs">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
                 Stay & eat
               </p>
-              <h1 className="mt-1.5 font-display text-2xl leading-tight text-ocean-deep sm:mt-2 sm:text-3xl">
+              <h1 className="mt-1.5 font-display text-2xl tracking-tight text-ocean-deep sm:mt-2 sm:text-3xl">
                 Find a stay or a meal
               </h1>
               <p className="mt-1.5 text-sm text-muted lg:hidden">
-                Set budget and vibe, then match. Results appear below.
+                Set budget and vibe, then match. Results write below as they
+                come in.
               </p>
             </div>
 
             <AiQuotaBanner quota={quota} />
 
-            <div className="grid grid-cols-2 gap-2 rounded-2xl bg-foam p-1">
+            <div className="grid grid-cols-2 gap-1.5 rounded-md bg-foam p-1">
               {(
                 [
                   ["hotels", "Hotels", BedDouble],
@@ -238,9 +278,9 @@ export default function HotelsPage() {
                   type="button"
                   onClick={() => switchMode(value)}
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition",
+                    "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition",
                     mode === value
-                      ? "bg-ocean text-on-brand"
+                      ? "bg-brand-deep text-on-brand"
                       : "text-muted hover:text-ocean-deep",
                   )}
                 >
@@ -340,7 +380,7 @@ export default function HotelsPage() {
                       key={option}
                       type="button"
                       onClick={() => toggleMustHave(option)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                      className={`rounded-md px-3 py-1.5 text-xs font-medium ${
                         active
                           ? "bg-ocean text-on-brand"
                           : "bg-foam text-muted hover:bg-sand"
@@ -355,13 +395,13 @@ export default function HotelsPage() {
 
             <button
               type="button"
-              onClick={match}
+              onClick={() => void match()}
               disabled={
                 loading ||
                 !vibe.trim() ||
                 (quota != null && (quota.remaining ?? 0) <= 0)
               }
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="btn-solid w-full disabled:opacity-60"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -371,7 +411,7 @@ export default function HotelsPage() {
                 <UtensilsCrossed className="h-4 w-4" />
               )}
               {loading
-                ? "Matching…"
+                ? "Writing matches…"
                 : mode === "hotels"
                   ? "Match hotels"
                   : "Match restaurants"}
@@ -381,16 +421,17 @@ export default function HotelsPage() {
           </div>
         </aside>
 
-        <section className="relative flex min-h-[min(18rem,50dvh)] flex-col rounded-2xl border border-border bg-surface shadow-sm sm:rounded-3xl lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-          <CoastalOrbs className="opacity-50" />
+        <section className="relative flex min-h-[min(18rem,50dvh)] flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <div className="relative z-[1] shrink-0 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
-            <h2 className="font-display text-xl text-ocean-deep sm:text-2xl">
+            <h2 className="font-display text-xl tracking-tight text-ocean-deep sm:text-2xl">
               {mode === "hotels" ? "Matched stays" : "Matched restaurants"}
             </h2>
             <p className="mt-0.5 text-sm text-muted">
-              {resultCount > 0
-                ? `${resultCount} ranked option${resultCount === 1 ? "" : "s"}`
-                : "Run the matcher to see ranked results here."}
+              {loading
+                ? "Writing matches…"
+                : resultCount > 0
+                  ? `${resultCount} ranked option${resultCount === 1 ? "" : "s"}`
+                  : "Run the matcher to see ranked results here."}
               {restoredAt && mode === "hotels" && hotels.length > 0
                 ? ` · last hotel search ${new Date(restoredAt).toLocaleString()}`
                 : ""}
@@ -398,8 +439,15 @@ export default function HotelsPage() {
           </div>
 
           <div className="relative z-[1] space-y-3 p-3 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            {rationale ? (
-              <div className="rounded-2xl border border-border bg-foam/70 p-4 sm:rounded-3xl sm:p-5">
+            {loading ? (
+              <AiTypingPanel
+                title="Why these matches"
+                text={streamDraft}
+              />
+            ) : null}
+
+            {!loading && rationale ? (
+              <div className="rounded-md border border-border bg-foam/70 p-4 sm:p-5">
                 <h3 className="font-display text-lg text-ocean-deep sm:text-xl">
                   Why these matches
                 </h3>
@@ -414,15 +462,15 @@ export default function HotelsPage() {
               </div>
             ) : null}
 
-            {mode === "hotels" && hotels.length === 0 ? (
-              <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched hotels will show here after you run the matcher.
+            {!loading && mode === "hotels" && hotels.length === 0 ? (
+              <div className="flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:p-8 sm:text-base lg:min-h-[280px]">
+                Matched hotels will write here after you run the matcher.
               </div>
             ) : null}
 
-            {mode === "restaurants" && restaurants.length === 0 ? (
-              <div className="flex min-h-[8rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:rounded-3xl sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched restaurants will show here after you run the matcher.
+            {!loading && mode === "restaurants" && restaurants.length === 0 ? (
+              <div className="flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:p-8 sm:text-base lg:min-h-[280px]">
+                Matched restaurants will write here after you run the matcher.
               </div>
             ) : null}
 
@@ -435,7 +483,7 @@ export default function HotelsPage() {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm"
+                      className="overflow-hidden rounded-md border border-border bg-surface"
                     >
                       <div className="relative h-44 sm:h-52">
                         <Image
@@ -455,7 +503,7 @@ export default function HotelsPage() {
                               {hotel.name}
                             </h3>
                           </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ocean-deep backdrop-blur">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ocean-deep backdrop-blur">
                             <Star className="h-3.5 w-3.5 fill-coral text-coral" />
                             {hotel.rating}
                           </span>
@@ -470,7 +518,7 @@ export default function HotelsPage() {
                           {hotel.tags.slice(0, 4).map((tag) => (
                             <span
                               key={tag}
-                              className="rounded-full bg-foam px-2.5 py-1 text-xs text-muted"
+                              className="rounded-md bg-foam px-2.5 py-1 text-xs text-muted"
                             >
                               {tag}
                             </span>
@@ -481,7 +529,7 @@ export default function HotelsPage() {
                             href={primary.href}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2.5 text-sm font-semibold text-on-brand transition hover:bg-brand-deep"
+                            className="inline-flex items-center gap-2 rounded-md bg-ocean px-4 py-2.5 text-sm font-semibold text-on-brand transition hover:bg-brand-deep"
                           >
                             {primary.label}
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -491,7 +539,7 @@ export default function HotelsPage() {
                               href={hotel.bookingUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-full border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
+                              className="inline-flex items-center gap-2 rounded-md border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
                             >
                               Book on Booking.com
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -500,7 +548,7 @@ export default function HotelsPage() {
                           <button
                             type="button"
                             onClick={() => addHotelToTrip(hotel)}
-                            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-ocean-deep hover:border-aqua/40"
+                            className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-ocean-deep hover:border-aqua/40"
                           >
                             <Plus className="h-3.5 w-3.5" />
                             Add to trip
@@ -516,7 +564,7 @@ export default function HotelsPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.03 }}
-                    className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm"
+                    className="overflow-hidden rounded-md border border-border bg-surface shadow-sm"
                   >
                     <div className="relative h-44 sm:h-52">
                       <Image
@@ -536,7 +584,7 @@ export default function HotelsPage() {
                             {restaurant.name}
                           </h3>
                         </div>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ocean-deep backdrop-blur">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-surface/90 px-2.5 py-1 text-xs font-semibold text-ocean-deep backdrop-blur">
                           <Star className="h-3.5 w-3.5 fill-coral text-coral" />
                           {restaurant.rating}
                         </span>
@@ -556,7 +604,7 @@ export default function HotelsPage() {
                             href={restaurant.websiteUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full bg-ocean px-4 py-2.5 text-sm font-semibold text-on-brand"
+                            className="inline-flex items-center gap-2 rounded-md bg-ocean px-4 py-2.5 text-sm font-semibold text-on-brand"
                           >
                             Visit website
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -566,7 +614,7 @@ export default function HotelsPage() {
                           href={restaurant.mapsUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-full border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
+                          className="inline-flex items-center gap-2 rounded-md border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
                         >
                           <MapPin className="h-3.5 w-3.5" />
                           Open in Maps
@@ -574,7 +622,7 @@ export default function HotelsPage() {
                         <button
                           type="button"
                           onClick={() => addRestaurantToTrip(restaurant)}
-                          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-ocean-deep hover:border-aqua/40"
+                          className="inline-flex items-center gap-2 rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-ocean-deep hover:border-aqua/40"
                         >
                           <Plus className="h-3.5 w-3.5" />
                           Add to trip
