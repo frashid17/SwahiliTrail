@@ -1,14 +1,25 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateJson, sanitizeAiStrings } from "@/lib/ai/gemini";
+import {
+  fireAndForget,
+  generateJson,
+  sanitizeAiStrings,
+} from "@/lib/ai/gemini";
+import {
+  FREE_AI_QUOTA,
+  TRAIL_PLUS_PRICE_USD,
+  assertAiQuota,
+  consumeAiQuota,
+  type AiQuotaStatus,
+} from "@/lib/ai/quota";
 import { ATTRACTIONS } from "@/lib/data/attractions";
 import { carHiresForMode, type TransportMode } from "@/lib/data/car-hires";
 import { HOTELS } from "@/lib/data/hotels";
 import { RESTAURANTS } from "@/lib/data/restaurants";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { AI_REGION_CONTEXT, DESTINATION, SUMMIT } from "@/lib/destination";
+import { AI_REGION_CONTEXT, DESTINATION } from "@/lib/destination";
 
 const cartItemSchema = z.object({
   id: z.string(),
@@ -62,103 +73,166 @@ type PlanResult = {
   };
 };
 
+function quotaPayload(quota: AiQuotaStatus) {
+  return {
+    ...quota,
+    freeLimit: FREE_AI_QUOTA,
+    priceUsdPerMonth: TRAIL_PLUS_PRICE_USD,
+    upgradeUrl: "/pricing",
+  };
+}
+
+function interestScore(text: string, interests: string[]) {
+  const hay = text.toLowerCase();
+  let score = 0;
+  for (const interest of interests) {
+    const needle = interest.toLowerCase().trim();
+    if (needle && hay.includes(needle)) score += 2;
+  }
+  return score;
+}
+
 export async function POST(req: Request) {
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const quota = await assertAiQuota(userId);
+  if (!quota.ok) {
+    return NextResponse.json(quota.responseBody, { status: 402 });
+  }
+
   try {
     const input = bodySchema.parse(await req.json());
 
-    const attractions = ATTRACTIONS.map(
-      (a) =>
-        `${a.id} | ${a.name} (${a.category}, ${a.area}) ~${a.durationHours}h ~KES ${a.estCostKes}: ${a.blurb}`,
-    ).join("\n");
+    const cartIds = new Set((input.cart ?? []).map((c) => c.id));
 
-    const wildlife = WILDLIFE_SITES.map(
-      (w) =>
-        `${w.id} | ${w.name} (${w.type}, ${w.region}) ~KES ${w.estEntryKes}: ${w.blurb}`,
-    ).join("\n");
+    // Prefer wishlist + interest matches; keep catalogues short for speed.
+    const attractions = [...ATTRACTIONS]
+      .sort((a, b) => {
+        const sa =
+          (cartIds.has(a.id) ? 10 : 0) +
+          interestScore(`${a.name} ${a.category} ${a.area} ${a.blurb}`, input.interests);
+        const sb =
+          (cartIds.has(b.id) ? 10 : 0) +
+          interestScore(`${b.name} ${b.category} ${b.area} ${b.blurb}`, input.interests);
+        return sb - sa;
+      })
+      .slice(0, 18)
+      .map(
+        (a) =>
+          `${a.id}|${a.name}|${a.area}|${a.category}|~${a.durationHours}h|KES ${a.estCostKes}`,
+      )
+      .join("\n");
 
-    const hotels = HOTELS.map(
-      (h) =>
-        `${h.id} | ${h.name} | ${h.area} | KES ${h.pricePerNight}/night | ${h.vibe}`,
-    ).join("\n");
+    const wildlife = [...WILDLIFE_SITES]
+      .sort((a, b) => {
+        const sa =
+          (cartIds.has(a.id) ? 10 : 0) +
+          interestScore(`${a.name} ${a.type} ${a.region} ${a.blurb}`, input.interests);
+        const sb =
+          (cartIds.has(b.id) ? 10 : 0) +
+          interestScore(`${b.name} ${b.type} ${b.region} ${b.blurb}`, input.interests);
+        return sb - sa;
+      })
+      .slice(0, 12)
+      .map((w) => `${w.id}|${w.name}|${w.region}|KES ${w.estEntryKes}`)
+      .join("\n");
 
-    const restaurants = RESTAURANTS.map(
-      (r) =>
-        `${r.id} | ${r.name} | ${r.area} | avg KES ${r.avgMealKes} | ${r.cuisine}`,
-    ).join("\n");
+    const hotels = [...HOTELS]
+      .sort((a, b) => {
+        const sa =
+          (cartIds.has(a.id) ? 10 : 0) +
+          interestScore(`${a.name} ${a.area} ${a.vibe}`, input.interests);
+        const sb =
+          (cartIds.has(b.id) ? 10 : 0) +
+          interestScore(`${b.name} ${b.area} ${b.vibe}`, input.interests);
+        return sb - sa;
+      })
+      .slice(0, 10)
+      .map((h) => `${h.id}|${h.name}|${h.area}|KES ${h.pricePerNight}/n`)
+      .join("\n");
+
+    const restaurants = [...RESTAURANTS]
+      .sort((a, b) => {
+        const sa =
+          (cartIds.has(a.id) ? 10 : 0) +
+          interestScore(`${a.name} ${a.area} ${a.cuisine}`, input.interests);
+        const sb =
+          (cartIds.has(b.id) ? 10 : 0) +
+          interestScore(`${b.name} ${b.area} ${b.cuisine}`, input.interests);
+        return sb - sa;
+      })
+      .slice(0, 8)
+      .map((r) => `${r.id}|${r.name}|${r.area}|KES ${r.avgMealKes}|${r.cuisine}`)
+      .join("\n");
 
     const cartText =
       input.cart && input.cart.length > 0
         ? input.cart
             .map(
               (c) =>
-                `${c.type}:${c.id} | ${c.name} | ${c.area}${c.estCostKes != null ? ` | ~KES ${c.estCostKes}` : ""}`,
+                `${c.type}:${c.id}|${c.name}|${c.area}${c.estCostKes != null ? `|KES ${c.estCostKes}` : ""}`,
             )
             .join("\n")
-        : "(none selected)";
+        : "(none)";
 
     const budgetGuide =
       input.budget === "budget"
-        ? "Keep lodging under ~KES 9,000/night when possible and favor free/low-cost activities."
+        ? "Lodging under ~KES 9,000/night when possible; favor low-cost activities."
         : input.budget === "luxury"
-          ? "Allow nicer resorts, seafood dinners, and private transfers where useful."
-          : "Balance comfortable lodging with a mix of paid attractions and local meals.";
+          ? "Allow nicer resorts, seafood dinners, private transfers."
+          : "Balance comfortable lodging with paid attractions and local meals.";
 
     const transportMode = input.transportMode as TransportMode;
     const hires = carHiresForMode(transportMode);
     const transportGuide =
       transportMode === "none"
-        ? "Traveler prefers Uber/Bolt, taxis, and walking. Mention those in transport tips."
+        ? "Uber/Bolt, taxis, walking."
         : transportMode === "airport-pickup"
-          ? "Include Moi International Airport (MBA) pickup on day 1 and drop-off on the last day. Suggest booking ahead."
+          ? "MBA airport pickup day 1 + drop-off last day."
           : transportMode === "car-hire"
-            ? "Assume self-drive car hire for the trip. Factor fuel, parking, and Likoni ferry into tips and costs."
+            ? "Self-drive hire; fuel, parking, ferry."
             : transportMode === "chauffeur"
-              ? "Assume a hired car with driver for daily touring. Factor daily chauffeur rates into transport costs."
-              : "Include airport pickup plus multi-day car hire (self-drive or chauffeur). Factor both into the budget.";
+              ? "Car with driver daily."
+              : "Airport pickup + multi-day car hire.";
 
     const carHireText =
       hires.length > 0
         ? hires
-            .map(
-              (c) =>
-                `${c.name} | ${c.phoneDisplay} | ${c.websiteUrl} | ${c.areas}`,
-            )
+            .slice(0, 4)
+            .map((c) => `${c.name}|${c.phoneDisplay}|${c.areas}`)
             .join("\n")
         : "(none)";
 
+    const stayBase =
+      input.stayArea === "whole-coast" || !input.stayArea
+        ? "Anywhere in Kenya — pick best base for interests."
+        : `${input.stayArea} base.`;
+
+    // Cap output tokens by trip length so long plans don't wait on a 4k budget.
+    const maxOutputTokens = Math.min(2200, 500 + input.days * 220);
+
     const plan = await generateJson<PlanResult>(
-      `Create a ${input.days}-day trip plan centered on ${DESTINATION.regionLong} for ${input.partySize} traveler(s).
-Context: ${AI_REGION_CONTEXT}
-Summit backdrop: ${SUMMIT.shortName} (${SUMMIT.datesLabel}) in ${SUMMIT.town} - theme "${SUMMIT.theme}".
-Companions: ${input.companions}
+      `${input.days}-day Kenya plan for ${input.partySize} (${input.companions}).
+Region: ${DESTINATION.regionLong}. ${AI_REGION_CONTEXT}
 Interests: ${input.interests.join(", ")}
-Budget tier: ${input.budget}
-Pace: ${input.pace}
-Stay base area: ${
-        input.stayArea === "whole-coast" || !input.stayArea
-          ? "Tana River County (Hola / delta / Garsen) with optional Jumuiya coast day trips. Recommend the best base for their interests."
-          : `${input.stayArea} — prefer lodging and day plans that work well from this base.`
-      }
-${input.stayPreference ? `Extra stay note: ${input.stayPreference}` : ""}
-Transport preference: ${transportMode}
-${transportGuide}
+Budget: ${input.budget}. Pace: ${input.pace}. Stay: ${stayBase}
+${input.stayPreference ? `Stay note: ${input.stayPreference}` : ""}
+Transport: ${transportMode}. ${transportGuide}
 ${budgetGuide}
 
-Saved wishlist items (prioritize weaving these in when sensible):
+Wishlist:
 ${cartText}
 
-Trusted car hire / transfer contacts (mention by name when relevant; do not invent other phone numbers):
+Car hires (use real names/phones only):
 ${carHireText}
 
-Known attractions:
+Attractions:
 ${attractions}
 
-Wildlife / KWS options:
+Wildlife:
 ${wildlife}
 
 Hotels:
@@ -167,61 +241,36 @@ ${hotels}
 Restaurants:
 ${restaurants}
 
-Return JSON:
-{
-  "title": string,
-  "summary": string,
-  "recommendedStay": string,
-  "days": [{
-    "day": number,
-    "theme": string,
-    "morning": string,
-    "afternoon": string,
-    "evening": string,
-    "foodTip": string,
-    "transportTip": string,
-    "estimatedDayCostKes": number
-  }],
-  "packingTips": string[],
-  "localEtiquette": string[],
-  "budgetBreakdown": {
-    "lodgingKes": number,
-    "activitiesKes": number,
-    "foodKes": number,
-    "transportKes": number,
-    "contingencyKes": number,
-    "totalKes": number,
-    "notes": string
-  }
-}
-
-Rules:
-- Cover all ${input.days} days with concrete places and timing.
-- Prefer Tana River / delta experiences; use wider coast only when it clearly helps.
-- Include realistic KES cost estimates for the whole party when possible.
-- Mention heat, road conditions, river/delta practicalities, and cash/M-Pesa.
-- Tone: clear and local - like a county tourism officer writing notes, not marketing copy.
-- No emojis in titles or day themes unless necessary for clarity.
-- Plain text only inside strings (no markdown, no em dashes).
-- Avoid buzzwords like "unlock", "journey", "curate", "seamless", or "elevate".`,
-      "You plan trips for Swahili Trail across Tana River County and nearby coast towns. Be specific, local, and budget-aware.",
+Return JSON with keys: title, summary, recommendedStay, days[{day,theme,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes}], packingTips (max 3), localEtiquette (max 3), budgetBreakdown{lodgingKes,activitiesKes,foodKes,transportKes,contingencyKes,totalKes,notes}.
+Cover all ${input.days} days. Short concrete strings. Realistic KES for the party.`,
+      "Swahili Trail Kenya trip planner. Specific, local, budget-aware. No marketing fluff.",
+      { maxOutputTokens, temperature: 0.35 },
     );
 
     const cleanPlan = sanitizeAiStrings(plan);
 
+    const nextQuota = await consumeAiQuota(userId, "plan");
+
     const supabase = createAdminClient();
     if (supabase) {
-      await supabase.from("itineraries").insert({
-        user_id: userId,
-        title: cleanPlan.title,
-        days: input.days,
-        interests: input.interests,
-        budget: input.budget,
-        plan: cleanPlan,
-      });
+      fireAndForget(
+        Promise.resolve(
+          supabase.from("itineraries").insert({
+            user_id: userId,
+            title: cleanPlan.title,
+            days: input.days,
+            interests: input.interests,
+            budget: input.budget,
+            plan: cleanPlan,
+          }),
+        ),
+      );
     }
 
-    return NextResponse.json({ plan: cleanPlan });
+    return NextResponse.json({
+      plan: cleanPlan,
+      quota: quotaPayload(nextQuota),
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to generate itinerary";
