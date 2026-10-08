@@ -43,7 +43,7 @@ export const RESTAURANTS: Restaurant[] = [
     tags: ["grill", "group", "classic", "Nairobi"],
     vibe: "Nairobi grill institution",
     description:
-      "Famous all-you-can-eat grill — a classic Nairobi dinner for couples and groups.",
+      "Famous all-you-can-eat grill - a classic Nairobi dinner for couples and groups.",
     imageUrl: placePhoto("carnivore-nairobi", img.grill),
     websiteUrl: "https://www.tamarind.co.ke/carnivore/",
     mapsUrl: "https://maps.google.com/?q=Carnivore+Restaurant+Nairobi",
@@ -59,7 +59,7 @@ export const RESTAURANTS: Restaurant[] = [
     tags: ["romantic", "garden", "Karen", "Nairobi"],
     vibe: "Garden dining in Karen",
     description:
-      "Relaxed Karen favorite with a mixed menu — strong pick for couples after a day out south of town.",
+      "Relaxed Karen favorite with a mixed menu - strong pick for couples after a day out south of town.",
     imageUrl: placePhoto("talisman-karen", img.restaurantBeach),
     websiteUrl: null,
     mapsUrl: "https://maps.google.com/?q=Talisman+Restaurant+Karen",
@@ -75,7 +75,7 @@ export const RESTAURANTS: Restaurant[] = [
     tags: ["brunch", "garden", "Westlands", "Nairobi"],
     vibe: "Leafy Westlands brunch",
     description:
-      "Garden cafe energy in Westlands — good for brunch, light dinners, and wifi pauses.",
+      "Garden cafe energy in Westlands - good for brunch, light dinners, and wifi pauses.",
     imageUrl: placePhoto("about-thyme", img.barInterior),
     websiteUrl: null,
     mapsUrl: "https://maps.google.com/?q=About+Thyme+Westlands",
