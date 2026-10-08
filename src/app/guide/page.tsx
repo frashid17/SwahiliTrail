@@ -17,11 +17,17 @@ import {
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  AiQuotaBanner,
+  aiQuotaErrorMessage,
+  useAiQuota,
+} from "@/components/ai-quota-banner";
+import {
   CoastalOrbs,
   ShellMark,
   WaveDivider,
 } from "@/components/coastal-accents";
 import { GUIDE_LANGUAGES, type GuideLanguage } from "@/lib/data/attractions";
+import type { AiQuotaStatus } from "@/lib/ai/quota";
 import {
   createGuideSessionId,
   deleteGuideSession,
@@ -38,38 +44,39 @@ import { cn } from "@/lib/utils";
 const WELCOME: GuideMessage = {
   role: "assistant",
   content:
-    "Karibu. I can help with Tana River - Hola, the delta, roads, food, wildlife, and IBS 2026 week.\n\nWrite in English, Kiswahili, Français, Deutsch, 中文, or العربية and I'll reply in the same language.\n\nWhat do you need first?",
+    "Karibu. I can help with travel across Kenya - Nairobi, safari parks, the Rift Valley, the coast, roads, food, and what's on.\n\nWrite in English, Kiswahili, Français, Deutsch, 中文, or العربية and I'll reply in the same language.\n\nWhat do you need first?",
 };
 
 const starters = [
   {
-    label: "IBS 2026 weekend",
-    prompt: "I am attending IBS 2026 in Hola. What should I see around Tana River in 2 days?",
+    label: "Nairobi weekend",
+    prompt: "I have 2 days in Nairobi. What should I see and where should I eat?",
   },
   {
-    label: "Tana Delta day",
-    prompt: "Plan a day trip to the Tana Delta and Kipini - boats, birds, and practical tips.",
+    label: "Maasai Mara intro",
+    prompt: "Plan a first-time Maasai Mara safari - how many days, park fees, and practical tips.",
   },
   {
-    label: "Hola to Garsen",
-    prompt: "How do I get from Hola to Garsen and what should I budget?",
+    label: "Mombasa coast",
+    prompt: "What should I do on a 3-day Mombasa and Diani trip?",
   },
   {
-    label: "Primate reserve",
-    prompt: "What should first-time visitors know before visiting Tana River Primate National Reserve?",
+    label: "Rift Valley day",
+    prompt: "Plan a day trip from Nairobi to Nakuru or Naivasha - Hell's Gate, lakes, and budget.",
   },
   {
     label: "Local food",
-    prompt: "What local dishes should I try in Tana River County this week?",
+    prompt: "What Kenyan dishes should I try this week - from Nairobi nyama choma to coastal Swahili food?",
   },
   {
     label: "Swahili phrases",
-    prompt: "Teach me useful Kiswahili phrases for markets and greetings in Tana River.",
+    prompt: "Teach me useful Kiswahili phrases for markets, taxis, and greetings in Kenya.",
   },
 ];
 
 export default function GuidePage() {
   const { userId, isLoaded } = useAuth();
+  const { quota, applyQuota } = useAiQuota();
   const [language, setLanguage] = useState<GuideLanguage>("en");
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState(() => createGuideSessionId());
@@ -184,7 +191,8 @@ export default function GuidePage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
+      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
       const detected = (data.detectedLanguage as GuideLanguage) || language;
       if (detected !== language) setLanguage(detected);
       const withReply: GuideMessage[] = [
@@ -225,14 +233,16 @@ export default function GuidePage() {
             Multilingual guide
           </p>
           <h1 className="mt-1.5 font-display text-2xl leading-tight text-on-brand sm:mt-2 sm:text-3xl">
-          Ask about Hola
+            Ask about Kenya
           </h1>
           <p className="mt-1.5 text-sm text-on-brand/80 sm:mt-2">
-            Roads, lodging, food, the delta, or IBS week. Answers in your
+            Roads, lodging, food, parks, or local tips. Answers in your
             language.
           </p>
         </div>
       </div>
+
+      <AiQuotaBanner className="mb-4" quota={quota} />
 
       <button
         type="button"
@@ -405,7 +415,7 @@ export default function GuidePage() {
               </button>
               <span className="hidden items-center gap-1.5 rounded-full bg-foam px-3 py-1 text-xs font-semibold text-ocean sm:inline-flex">
                 <Sparkles className="h-3.5 w-3.5" />
-                Gemini
+                Trail Guide
               </span>
             </div>
           </div>
@@ -452,7 +462,7 @@ export default function GuidePage() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </span>
                 <div className="rounded-2xl rounded-bl-md border border-border/60 bg-surface px-3.5 py-3 text-sm leading-6 text-muted sm:rounded-3xl sm:px-5 sm:py-4 sm:leading-7">
-                  Charting a coastal answer… 🌊
+                  Charting an answer…
                 </div>
               </div>
             ) : null}
@@ -479,7 +489,13 @@ export default function GuidePage() {
               />
               <button
                 type="submit"
-                disabled={loading || !input.trim()}
+                disabled={
+                  loading ||
+                  !input.trim() ||
+                  (quota != null &&
+                    !quota.unlimited &&
+                    (quota.remaining ?? 0) <= 0)
+                }
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral text-white transition hover:brightness-110 disabled:opacity-45"
                 aria-label="Send"
               >
