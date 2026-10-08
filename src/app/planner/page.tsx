@@ -44,14 +44,21 @@ import {
   removeTripItem,
   type TripCartItem,
 } from "@/lib/trip-cart";
+import {
+  AiQuotaBanner,
+  aiQuotaErrorMessage,
+  useAiQuota,
+} from "@/components/ai-quota-banner";
+import type { AiQuotaStatus } from "@/lib/ai/quota";
 import { cn } from "@/lib/utils";
 
 const interestOptions = [
-  "Delta & river mouth",
-  "Culture & communities",
-  "Wildlife & nature",
-  "Agriculture & value chains",
-  "Innovation / summit",
+  "Wildlife & safari",
+  "Beaches & coast",
+  "Culture & heritage",
+  "Nairobi city",
+  "Rift Valley lakes",
+  "Mountains & hiking",
   "Food & local cuisine",
   "Photography",
   "Family activities",
@@ -139,11 +146,12 @@ function defaultStartDate() {
 
 export default function PlannerPage() {
   const { userId, isLoaded } = useAuth();
+  const { quota, applyQuota } = useAiQuota();
   const [days, setDays] = useState(5);
   const [interests, setInterests] = useState<string[]>([
-    "Delta & river mouth",
-    "Culture & communities",
-    "Innovation / summit",
+    "Wildlife & safari",
+    "Culture & heritage",
+    "Beaches & coast",
   ]);
   const [budget, setBudget] = useState<"budget" | "mid" | "luxury">("mid");
   const [pace, setPace] = useState<"relaxed" | "balanced" | "packed">(
@@ -152,7 +160,7 @@ export default function PlannerPage() {
   const [companions, setCompanions] = useState<
     "solo" | "couple" | "family" | "friends"
   >("family");
-  const [stayArea, setStayArea] = useState<string>("Hola");
+  const [stayArea, setStayArea] = useState<string>("whole-coast");
   const [partySize, setPartySize] = useState(3);
   const [transportMode, setTransportMode] =
     useState<TransportMode>("airport-pickup");
@@ -226,7 +234,8 @@ export default function PlannerPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
+      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
       setPlan(data.plan);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -311,7 +320,7 @@ export default function PlannerPage() {
                 Trip Planner
               </p>
               <h1 className="mt-1.5 font-display text-2xl text-ocean-deep sm:mt-2 sm:text-3xl">
-                Plan days in Tana River
+                Plan days in Kenya
               </h1>
               <p className="mt-1.5 text-sm text-muted sm:mt-2">
                 <span className="lg:hidden">
@@ -323,6 +332,8 @@ export default function PlannerPage() {
                 </span>
               </p>
             </div>
+
+            <AiQuotaBanner quota={quota} />
 
             <div className="rounded-2xl border border-border bg-foam/70 p-3">
               <div className="flex items-center justify-between gap-2">
@@ -387,7 +398,7 @@ export default function PlannerPage() {
 
             <label className="block">
               <span className="text-sm font-medium text-ocean-deep">
-                Days in Tana River / coast: {days}
+                Days in Kenya: {days}
               </span>
               <input
                 type="range"
