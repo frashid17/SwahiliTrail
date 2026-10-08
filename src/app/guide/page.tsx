@@ -245,7 +245,7 @@ export default function GuidePage() {
           Ask about Kenya
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Roads, lodging, food, parks, or local tips — in your language.
+          Roads, lodging, food, parks, or local tips - in your language.
         </p>
       </div>
 
