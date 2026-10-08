@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
+  CreditCard,
   KeyRound,
   LayoutDashboard,
   Loader2,
@@ -13,19 +14,32 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AccountBilling } from "@/components/auth/account-billing";
 import { CoastalOrbs } from "@/components/coastal-accents";
 import { FadeIn } from "@/components/fade-in";
 import { cn } from "@/lib/utils";
 
-type Tab = "profile" | "security";
+type Tab = "profile" | "security" | "billing";
+
+const TABS: Tab[] = ["profile", "security", "billing"];
+
+function tabFromSearch(value: string | null): Tab {
+  if (value && TABS.includes(value as Tab)) return value as Tab;
+  return "profile";
+}
 
 export function AccountManager() {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
-  const [tab, setTab] = useState<Tab>("profile");
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() =>
+    tabFromSearch(searchParams.get("tab")),
+  );
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [saving, setSaving] = useState(false);
   const [profileNote, setProfileNote] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -37,10 +51,22 @@ export function AccountManager() {
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
+    setTab(tabFromSearch(searchParams.get("tab")));
+  }, [searchParams]);
+
+  useEffect(() => {
     if (!user) return;
     setFirstName(user.firstName ?? "");
     setLastName(user.lastName ?? "");
+    setUsername(user.username ?? "");
   }, [user]);
+
+  function selectTab(next: Tab) {
+    setTab(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", next);
+    window.history.replaceState({}, "", url.toString());
+  }
 
   const displayName = useMemo(() => {
     if (!user) return "Traveler";
@@ -73,10 +99,19 @@ export function AccountManager() {
     setProfileError(null);
     setProfileNote(null);
     try {
-      await user.update({
+      const trimmedUsername = username.trim();
+      const updates: {
+        firstName: string | null;
+        lastName: string | null;
+        username?: string;
+      } = {
         firstName: firstName.trim() || null,
         lastName: lastName.trim() || null,
-      });
+      };
+      if (trimmedUsername && trimmedUsername !== (user.username ?? "")) {
+        updates.username = trimmedUsername;
+      }
+      await user.update(updates);
       setProfileNote("Profile updated.");
     } catch (err) {
       setProfileError(
@@ -128,10 +163,10 @@ export function AccountManager() {
             Swahili Trail
           </p>
           <h1 className="mt-2 font-display text-3xl text-ocean-deep sm:text-4xl">
-            Manage account
+            Account settings
           </h1>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Update your profile and password for Swahili Trail.
+            Profile, security, plan, payments, and receipts for Swahili Trail.
           </p>
         </FadeIn>
 
@@ -149,13 +184,19 @@ export function AccountManager() {
                 active={tab === "profile"}
                 icon={UserRound}
                 label="Profile"
-                onClick={() => setTab("profile")}
+                onClick={() => selectTab("profile")}
               />
               <NavButton
                 active={tab === "security"}
                 icon={Shield}
                 label="Security"
-                onClick={() => setTab("security")}
+                onClick={() => selectTab("security")}
+              />
+              <NavButton
+                active={tab === "billing"}
+                icon={CreditCard}
+                label="Plan & billing"
+                onClick={() => selectTab("billing")}
               />
               <div className="my-3 border-t border-border" />
               <Link
@@ -172,6 +213,13 @@ export function AccountManager() {
                 <Map className="h-4 w-4 text-aqua" />
                 My Trips
               </Link>
+              <Link
+                href="/pricing"
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-ocean-deep transition hover:bg-foam"
+              >
+                <CreditCard className="h-4 w-4 text-aqua" />
+                Pricing
+              </Link>
               <button
                 type="button"
                 onClick={() => void signOut({ redirectUrl: "/" })}
@@ -187,16 +235,30 @@ export function AccountManager() {
             <CoastalOrbs className="opacity-40" />
             <div className="relative z-[1] border-b border-border px-5 py-4 sm:px-6">
               <h2 className="font-display text-2xl text-ocean-deep">
-                {tab === "profile" ? "Profile details" : "Security"}
+                {tab === "profile"
+                  ? "Profile details"
+                  : tab === "security"
+                    ? "Security"
+                    : "Plan & billing"}
               </h2>
               <p className="mt-1 text-sm text-muted">
                 {tab === "profile"
                   ? "How you appear across Swahili Trail."
-                  : "Password and sign-in options."}
+                  : tab === "security"
+                    ? "Password and sign-in options."
+                    : "Your plan, invoices, payment history, and receipts."}
               </p>
             </div>
 
             <div className="relative z-[1] space-y-6 p-5 sm:p-6">
+              {tab === "billing" ? (
+                <AccountBilling
+                  highlightSuccess={
+                    searchParams.get("billing") === "success"
+                  }
+                />
+              ) : null}
+
               {tab === "profile" ? (
                 <>
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -248,6 +310,28 @@ export function AccountManager() {
                         />
                       </Field>
                     </div>
+                    <Field label="Username" htmlFor="username">
+                      <input
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className={fieldClass}
+                        autoComplete="username"
+                        placeholder="Optional display username"
+                      />
+                    </Field>
+                    <Field label="Primary email" htmlFor="emailReadonly">
+                      <input
+                        id="emailReadonly"
+                        value={primaryEmail ?? ""}
+                        readOnly
+                        className={cn(fieldClass, "opacity-80")}
+                      />
+                      <p className="mt-1 text-xs text-muted">
+                        Email is managed through your sign-in provider. Contact
+                        support to change a verified address.
+                      </p>
+                    </Field>
                     {profileError ? (
                       <p className="text-sm text-coral">{profileError}</p>
                     ) : null}
@@ -317,7 +401,7 @@ export function AccountManager() {
                     )}
                   </div>
                 </>
-              ) : (
+              ) : tab === "security" ? (
                 <>
                   <div className="rounded-2xl border border-border bg-foam/60 p-4">
                     <p className="flex items-center gap-2 text-sm font-semibold text-ocean-deep">
@@ -406,7 +490,7 @@ export function AccountManager() {
                     </button>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           </section>
         </div>
