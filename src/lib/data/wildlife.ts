@@ -4,14 +4,15 @@ import { placePhoto } from "@/lib/data/place-photo-urls";
 export type WildlifeSite = {
   id: string;
   name: string;
-  type: "national-park" | "reserve" | "sanctuary" | "marine";
+  type: "national-park" | "reserve" | "sanctuary" | "marine" | "wetland";
   region: string;
   blurb: string;
   about: string;
   tips: string[];
   highlights: string[];
   bestFor: string[];
-  dayTripFromMombasa: boolean;
+  /** True when a same-day visit from Hola / Garsen / Mombasa is realistic */
+  dayTripPossible: boolean;
   estEntryKes: number;
   durationHours: number;
   imageUrl: string;
@@ -19,17 +20,149 @@ export type WildlifeSite = {
   bookingTip: string;
 };
 
-/** Coastal and nearby Kenya Wildlife Service / wildlife experiences */
+/** Tana River first, then optional coast-corridor extensions */
 const WILDLIFE_SITES_BASE: WildlifeSite[] = [
+  {
+    id: "tana-primate-reserve",
+    name: "Tana River Primate National Reserve",
+    type: "reserve",
+    region: "Tana River",
+    blurb:
+      "Riverine forest protecting endemic Tana River red colobus and crested mangabey.",
+    about:
+      "This KWS reserve protects fragments of gallery forest along the lower Tana. It is one of the few places left for the Tana River red colobus and Tana River crested mangabey. Visits need a guide who knows current access roads and seasonal water levels.",
+    tips: [
+      "Arrange a guide through recognized operators or the county tourism desk",
+      "Expect rough access roads in the rains",
+      "Bring binoculars - primates move high in the canopy",
+      "Support community conservation messaging around the reserve",
+    ],
+    highlights: [
+      "Tana River red colobus",
+      "Crested mangabey",
+      "Riverine forest",
+      "Birdlife",
+    ],
+    bestFor: ["primates", "birding", "conservation"],
+    dayTripPossible: true,
+    estEntryKes: 2200,
+    durationHours: 5,
+    imageUrl: img.forestTrail,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip:
+      "Book a local guide from Hola or Garsen; confirm road conditions the day before.",
+  },
+  {
+    id: "tana-delta-wetlands",
+    name: "Tana Delta wetlands & birding",
+    type: "wetland",
+    region: "Tana Delta / Kipini",
+    blurb:
+      "Mangroves, channels, and migratory birds where the river spreads toward the sea.",
+    about:
+      "The Tana Delta is a major wetland system. Boat mornings from Kipini or nearby landings show mangroves, fishing channels, and strong birdlife - especially in migration seasons. Go with a local crew who know tides and community boundaries.",
+    tips: [
+      "Confirm tides and departure time the night before",
+      "Carry cash or M-Pesa for the boat crew",
+      "Wear shoes you can get wet; pack sun cover and insect repellent",
+      "Ask before photographing people at landings",
+    ],
+    highlights: [
+      "Mangrove channels",
+      "Waterbirds",
+      "Fishing livelihoods",
+      "River mouth views",
+    ],
+    bestFor: ["birding", "boats", "day trip"],
+    dayTripPossible: true,
+    estEntryKes: 2500,
+    durationHours: 4,
+    imageUrl: img.beachTropical,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip:
+      "Ask your hotel or the summit info desk for a vetted Kipini boat contact.",
+  },
+  {
+    id: "arawale-reserve",
+    name: "Arawale National Reserve",
+    type: "reserve",
+    region: "Tana River / Garissa border",
+    blurb:
+      "Dry bush and riverine habitat historically linked to Hirola antelope conservation.",
+    about:
+      "Arawale sits on the northern edge of Tana River country toward Garissa. Access is remote and seasonal. It is mainly of interest to visitors working with guides on arid-land wildlife and Hirola conservation stories - not a casual half-day stop.",
+    tips: [
+      "Only go with an experienced operator who knows current access",
+      "Carry water and spare fuel - services are sparse",
+      "Treat this as a specialist trip, not a casual add-on",
+    ],
+    highlights: ["Arid bush", "Hirola conservation story", "Remote landscape"],
+    bestFor: ["specialist safari", "conservation"],
+    dayTripPossible: false,
+    estEntryKes: 2000,
+    durationHours: 10,
+    imageUrl: img.tsavoEastElephants,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip:
+      "Plan with a licensed operator; check security and road advisories first.",
+  },
+  {
+    id: "kipini-river-mouth",
+    name: "Kipini river-mouth wildlife",
+    type: "wetland",
+    region: "Kipini, Tana Delta",
+    blurb:
+      "Quieter coast edge of the delta - shorebirds, mangroves, and fishing landings.",
+    about:
+      "Kipini sits near where the Tana meets the Indian Ocean. It is quieter than south-coast resorts and works well after a boat morning: walk the landing area, watch shorebirds, and talk with fishers about current conditions.",
+    tips: [
+      "Check road conditions from Garsen before travel",
+      "Pack water and snacks - services can be sparse",
+      "Respect landing and fishing spaces",
+    ],
+    highlights: ["Shorebirds", "Mangrove edge", "River mouth"],
+    bestFor: ["birding", "quiet coast", "day trip"],
+    dayTripPossible: true,
+    estEntryKes: 0,
+    durationHours: 3,
+    imageUrl: img.nyaliBeach,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip:
+      "Combine with a delta boat morning; no formal park gate at the landing.",
+  },
+  {
+    id: "tsavo-east",
+    name: "Tsavo East National Park",
+    type: "national-park",
+    region: "Taita-Taveta / coast hinterland",
+    blurb:
+      "Vast savannah with red elephants - the nearest big-park safari from the Tana corridor.",
+    about:
+      "Tsavo East is the classic big-park option if you have time for an overnight after IBS week. Red elephants, open skies, and Mudanda Rock. Reach it via the Malindi–Mombasa corridor with a licensed operator.",
+    tips: [
+      "Book a licensed operator; overnight is better than a rushed day",
+      "Carry dust protection for cameras",
+      "Combine Mudanda Rock viewpoints with afternoon drives",
+    ],
+    highlights: ["Red elephants", "Mudanda Rock", "Lugard Falls", "Predators"],
+    bestFor: ["safari", "overnight", "wildlife"],
+    dayTripPossible: false,
+    estEntryKes: 3600,
+    durationHours: 24,
+    imageUrl: img.tsavoEastElephants,
+    kwsUrl: "https://www.kws.go.ke/tsavo-east-national-park",
+    bookingTip:
+      "Best as 1–2 nights with a licensed safari operator from the coast corridor.",
+  },
   {
     id: "shimba-hills",
     name: "Shimba Hills National Reserve",
     type: "reserve",
     region: "Kwale (south of Mombasa)",
     blurb:
-      "Closest major KWS reserve to Mombasa - coastal rainforest, elephants, and Sheldrick Falls.",
+      "Coast rainforest day trip - elephants, sable antelope, and Sheldrick Falls.",
     about:
-      "Shimba Hills is the nearest major reserve to Mombasa: coastal rainforest, elephants, and Sheldrick Falls. Ideal as a full day trip from Diani or Mombasa with a licensed guide.",
+      "Shimba Hills is a full day from Mombasa or Diani: coastal rainforest, elephants, and Sheldrick Falls. Treat it as a coast-corridor extension after your Tana River days, not the default base.",
     tips: [
       "Start early for cooler game drives",
       "Wear closed shoes for short waterfall walks",
@@ -37,7 +170,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     ],
     highlights: ["Sable antelope", "Elephants", "Sheldrick Falls", "Forest views"],
     bestFor: ["day trip", "nature", "photography"],
-    dayTripFromMombasa: true,
+    dayTripPossible: true,
     estEntryKes: 2200,
     durationHours: 8,
     imageUrl: img.shimbaHills,
@@ -45,45 +178,22 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     bookingTip: "Arrange a guided day safari from Diani or Mombasa; start early.",
   },
   {
-    id: "tsavo-east",
-    name: "Tsavo East National Park",
-    type: "national-park",
-    region: "Taita-Taveta / Coast hinterland",
-    blurb:
-      "Vast savannah park famous for red elephants and big skies - classic Coastal Circuit safari.",
-    about:
-      "Tsavo East is a vast savannah park known for red elephants, open skies, and classic Coastal Circuit safari scenery. Plan at least one overnight rather than a rushed day trip.",
-    tips: [
-      "Book a licensed operator from Mombasa",
-      "Carry dust protection for cameras",
-      "Combine Mudanda Rock viewpoints with afternoon game drives",
-    ],
-    highlights: ["Red elephants", "Mudanda Rock", "Lugard Falls", "Predators"],
-    bestFor: ["safari", "overnight", "wildlife"],
-    dayTripFromMombasa: false,
-    estEntryKes: 3600,
-    durationHours: 24,
-    imageUrl: img.tsavoEastElephants,
-    kwsUrl: "https://www.kws.go.ke/tsavo-east-national-park",
-    bookingTip: "Best as 1-2 nights with a licensed safari operator from Mombasa.",
-  },
-  {
     id: "tsavo-west",
     name: "Tsavo West National Park",
     type: "national-park",
     region: "Taita-Taveta",
     blurb:
-      "Volcanic landscapes, Mzima Springs, and Ngulia rhino sanctuary - dramatic Tsavo scenery.",
+      "Volcanic landscapes, Mzima Springs, and Ngulia rhino country.",
     about:
-      "Tsavo West offers volcanic landscapes, Mzima Springs, and rhino sanctuary country. It pairs well with Tsavo East on a multi-day circuit from the coast.",
+      "Tsavo West pairs with Tsavo East on a multi-day circuit. Mzima Springs and rhino sanctuary areas are the usual highlights. Plan overnight lodging.",
     tips: [
       "Mzima Springs is a highlight - allow time",
-      "Overnight lodges make the journey worthwhile",
+      "Overnight lodges make the drive worthwhile",
       "Ask operators about Ngulia access rules",
     ],
     highlights: ["Mzima Springs", "Ngulia Rhino Sanctuary", "Chaimu Crater"],
     bestFor: ["safari", "photography", "overnight"],
-    dayTripFromMombasa: false,
+    dayTripPossible: false,
     estEntryKes: 3600,
     durationHours: 24,
     imageUrl: img.tsavoWestMzima,
@@ -96,9 +206,9 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     type: "reserve",
     region: "Kilifi / Malindi area",
     blurb:
-      "East Africa's largest coastal forest - birding, endemic species, and quiet nature walks.",
+      "East Africa's largest coastal forest - birding and quiet walks near Malindi.",
     about:
-      "Arabuko Sokoke is East Africa's largest coastal forest - quiet trails, birding, and endemic species. Pair it with Gede Ruins or Watamu for a full north-coast nature day.",
+      "Arabuko Sokoke is a north-coast nature day: forest trails, birding, and endemic species. Pair with Gede Ruins or Watamu if you are already on that corridor.",
     tips: [
       "Bring binoculars for birding",
       "Hire a local forest guide if available",
@@ -106,7 +216,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     ],
     highlights: ["Birding", "Forest walks", "Endemic species"],
     bestFor: ["birding", "nature", "day trip"],
-    dayTripFromMombasa: true,
+    dayTripPossible: true,
     estEntryKes: 1500,
     durationHours: 6,
     imageUrl: img.arabukoSokoke,
@@ -119,9 +229,9 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     type: "marine",
     region: "Watamu",
     blurb:
-      "Snorkeling and reef life in one of Kenya's marine parks - boats from Watamu beaches.",
+      "Snorkeling and reef life - boats from Watamu beaches.",
     about:
-      "Watamu Marine National Park is a snorkel and reef day out of Watamu beaches. Glass-bottom and snorkel boats make it accessible for families when seas are calm.",
+      "A snorkel and reef day out of Watamu. Glass-bottom and snorkel boats work well for families when seas are calm. Optional after Tana River if you continue down the coast.",
     tips: [
       "Check tide and weather with your boat captain",
       "Use reef-safe sunscreen",
@@ -129,7 +239,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     ],
     highlights: ["Snorkeling", "Coral reefs", "Dolphins (seasonal)"],
     bestFor: ["water", "families", "day trip"],
-    dayTripFromMombasa: true,
+    dayTripPossible: true,
     estEntryKes: 2000,
     durationHours: 6,
     imageUrl: img.watamuMarine,
@@ -142,9 +252,9 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     type: "marine",
     region: "Shimoni / Wasini",
     blurb:
-      "South-coast marine park known for dolphins, snorkeling, and Wasini Island seafood lunches.",
+      "South-coast marine park - dolphins, snorkeling, and Wasini Island lunches.",
     about:
-      "Kisite Mpunguti is the South Coast marine highlight - dolphins, snorkeling, and Wasini seafood lunches via Shimoni boats. One of the best full-day water experiences from Mombasa or Diani.",
+      "Kisite Mpunguti is a full water day via Shimoni boats. Dolphins, snorkeling, and Wasini seafood. Treat it as a south-coast extension, not a Tana River default.",
     tips: [
       "Join a reputable Shimoni operator",
       "Confirm whether park fees are included",
@@ -152,7 +262,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     ],
     highlights: ["Dolphins", "Snorkeling", "Wasini Island"],
     bestFor: ["water", "day trip", "families"],
-    dayTripFromMombasa: true,
+    dayTripPossible: true,
     estEntryKes: 2200,
     durationHours: 8,
     imageUrl: img.kisiteMpunguti,
@@ -165,17 +275,17 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     type: "sanctuary",
     region: "Bamburi, Mombasa",
     blurb:
-      "Not a KWS park, but a must-do coastal wildlife sanctuary - giraffes, hippos, and nature walks.",
+      "Easy sanctuary near Bamburi - giraffes, hippos, and short walks.",
     about:
-      "Haller Park is not a KWS park, but it is a must-do coastal sanctuary: giraffes, hippos, and easy trails minutes from Bamburi Beach. Perfect when you want wildlife without a long drive.",
+      "Not a KWS park. Useful if you are already in Mombasa and want wildlife without a long drive. Giraffes, hippos, and family-friendly trails.",
     tips: [
       "Tickets are sold on arrival",
-      "Great half-day with children",
+      "Good half-day with children",
       "Combine with a north-coast beach afternoon",
     ],
     highlights: ["Giraffes", "Hippos", "Family walks"],
     bestFor: ["families", "half day", "easy access"],
-    dayTripFromMombasa: true,
+    dayTripPossible: true,
     estEntryKes: 1500,
     durationHours: 2.5,
     imageUrl: img.hallerParkGiraffe,
