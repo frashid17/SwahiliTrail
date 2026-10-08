@@ -104,7 +104,7 @@ input[type="datetime-local"] {
     );
 }
 
-/* Quiet paper grain — reads handmade, not neon SaaS */
+/* Quiet paper grain - reads handmade, not neon SaaS */
 .paper-grain {
   position: relative;
 }
