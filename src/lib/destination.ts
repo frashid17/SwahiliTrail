@@ -20,9 +20,9 @@ export const DESTINATION = {
     latitude: -1.2921,
     longitude: 36.8219,
   },
-  tagline: "Your travel platform for all of Kenya.",
+  tagline: "Plan Kenya the way locals talk about it.",
   supportingLine:
-    "Plan safaris, city days, and coast escapes. Match stays, ask a guide in six languages, and follow what's on — from Nairobi to the Mara, Amboseli, and the Swahili coast.",
+    "Safaris, city days, and coast weekends — with stays, a guide in six languages, and what's on nearby.",
 } as const;
 
 /** Optional calendar event — not product framing */
