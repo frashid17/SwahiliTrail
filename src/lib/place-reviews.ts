@@ -58,7 +58,7 @@ export function addPlaceReview(
   return loadReviewsForPlace(review.placeType, review.placeId);
 }
 
-/** Compress image file to a data URL for local demo storage */
+/** Compress image file to a data URL for local storage */
 export function fileToReviewImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith("image/")) {
