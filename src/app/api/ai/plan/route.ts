@@ -8,6 +8,7 @@ import { HOTELS } from "@/lib/data/hotels";
 import { RESTAURANTS } from "@/lib/data/restaurants";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { AI_REGION_CONTEXT, DESTINATION, SUMMIT } from "@/lib/destination";
 
 const cartItemSchema = z.object({
   id: z.string(),
@@ -131,16 +132,18 @@ export async function POST(req: Request) {
         : "(none)";
 
     const plan = await generateJson<PlanResult>(
-      `Create a ${input.days}-day Mombasa / Kenyan coast trip plan for ${input.partySize} traveler(s).
+      `Create a ${input.days}-day trip plan centered on ${DESTINATION.regionLong} for ${input.partySize} traveler(s).
+Context: ${AI_REGION_CONTEXT}
+Summit backdrop: ${SUMMIT.shortName} (${SUMMIT.datesLabel}) in ${SUMMIT.town} - theme "${SUMMIT.theme}".
 Companions: ${input.companions}
 Interests: ${input.interests.join(", ")}
 Budget tier: ${input.budget}
 Pace: ${input.pace}
 Stay base area: ${
-      input.stayArea === "whole-coast" || !input.stayArea
-        ? "Whole Kenyan coast around Mombasa (island, north coast, Diani, Kilifi). Recommend the best base for their interests."
-        : `${input.stayArea} — prefer lodging and day plans that work well from this base.`
-    }
+        input.stayArea === "whole-coast" || !input.stayArea
+          ? "Tana River County (Hola / delta / Garsen) with optional Jumuiya coast day trips. Recommend the best base for their interests."
+          : `${input.stayArea} — prefer lodging and day plans that work well from this base.`
+      }
 ${input.stayPreference ? `Extra stay note: ${input.stayPreference}` : ""}
 Transport preference: ${transportMode}
 ${transportGuide}
@@ -194,13 +197,14 @@ Return JSON:
 
 Rules:
 - Cover all ${input.days} days with concrete places and timing.
+- Prefer Tana River / delta experiences; use wider coast only when it clearly helps.
 - Include realistic KES cost estimates for the whole party when possible.
-- Mention ferries, heat, and cash/M-Pesa practicalities.
-- Tone: warm and inviting for travelers - short vivid phrases, not dry encyclopedic text.
-- Day themes may include 1-2 relevant emojis (beach, wildlife, food, sunset).
-- Packing and etiquette tips can start with a fitting emoji.
-- Plain text only inside strings (no markdown, no em dashes).`,
-      "You are Swahili Trail's expert coastal trip curator for Mombasa tourism. Be specific, local, budget-aware, and make the traveler excited for each day.",
+- Mention heat, road conditions, river/delta practicalities, and cash/M-Pesa.
+- Tone: clear and local - like a county tourism officer writing notes, not marketing copy.
+- No emojis in titles or day themes unless necessary for clarity.
+- Plain text only inside strings (no markdown, no em dashes).
+- Avoid buzzwords like "unlock", "journey", "curate", "seamless", or "elevate".`,
+      "You plan trips for Swahili Trail across Tana River County and nearby coast towns. Be specific, local, and budget-aware.",
     );
 
     const cleanPlan = sanitizeAiStrings(plan);
