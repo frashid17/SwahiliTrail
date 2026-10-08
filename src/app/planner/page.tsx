@@ -47,14 +47,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const interestOptions = [
-  "Beach & sunsets",
-  "Heritage & Old Town",
-  "Food & Swahili cuisine",
+  "Delta & river mouth",
+  "Culture & communities",
   "Wildlife & nature",
-  "Nightlife",
-  "Family activities",
+  "Agriculture & value chains",
+  "Innovation / summit",
+  "Food & local cuisine",
   "Photography",
-  "Water sports",
+  "Family activities",
 ];
 
 const transportOptions: {
@@ -141,9 +141,9 @@ export default function PlannerPage() {
   const { userId, isLoaded } = useAuth();
   const [days, setDays] = useState(5);
   const [interests, setInterests] = useState<string[]>([
-    "Beach & sunsets",
-    "Heritage & Old Town",
-    "Family activities",
+    "Delta & river mouth",
+    "Culture & communities",
+    "Innovation / summit",
   ]);
   const [budget, setBudget] = useState<"budget" | "mid" | "luxury">("mid");
   const [pace, setPace] = useState<"relaxed" | "balanced" | "packed">(
@@ -152,7 +152,7 @@ export default function PlannerPage() {
   const [companions, setCompanions] = useState<
     "solo" | "couple" | "family" | "friends"
   >("family");
-  const [stayArea, setStayArea] = useState<string>("whole-coast");
+  const [stayArea, setStayArea] = useState<string>("Hola");
   const [partySize, setPartySize] = useState(3);
   const [transportMode, setTransportMode] =
     useState<TransportMode>("airport-pickup");
@@ -308,19 +308,18 @@ export default function PlannerPage() {
           <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:text-xs">
-                AI Trip Planner
+                Trip Planner
               </p>
               <h1 className="mt-1.5 font-display text-2xl text-ocean-deep sm:mt-2 sm:text-3xl">
-                Curate a full coast trip
+                Plan days in Tana River
               </h1>
               <p className="mt-1.5 text-sm text-muted sm:mt-2">
                 <span className="lg:hidden">
-                  Set days, stay, transport, and activities. Your curated trip
-                  appears below.
+                  Set days, stay, and transport. The plan shows up below.
                 </span>
                 <span className="hidden lg:inline">
-                  Set days, stay, transport, and activities. Results scroll on
-                  the right while this panel stays put.
+                  Set days, stay, and transport on the left. The day-by-day plan
+                  scrolls on the right.
                 </span>
               </p>
             </div>
@@ -388,7 +387,7 @@ export default function PlannerPage() {
 
             <label className="block">
               <span className="text-sm font-medium text-ocean-deep">
-                Days in Mombasa: {days}
+                Days in Tana River / coast: {days}
               </span>
               <input
                 type="range"
@@ -427,7 +426,7 @@ export default function PlannerPage() {
               </select>
               <span className="mt-1 block text-xs text-muted">
                 {COAST_AREAS.find((a) => a.value === stayArea)?.hint ??
-                  "Not sure? Pick whole coast and the AI will suggest a fit."}
+                  "Not sure? Pick whole coast and we'll suggest a fit."}
               </span>
             </label>
 
@@ -684,8 +683,8 @@ export default function PlannerPage() {
           <div className="relative z-[1] p-3 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {!plan ? (
               <div className="flex min-h-[10rem] items-center justify-center rounded-2xl border border-dashed border-ocean/30 bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
-                Your curated trip will land here - day plans, stay suggestion,
-                car-hire contacts, and a damage cost estimate.
+                Your plan will show here - days, stay tip, transport notes, and
+                a rough cost.
               </div>
             ) : (
               <motion.div
