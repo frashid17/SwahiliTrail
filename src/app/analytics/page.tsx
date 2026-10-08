@@ -67,7 +67,7 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="coastal-grid flex min-h-[60vh] items-center justify-center px-4">
-        <p className="text-muted">Loading tourism analytics…</p>
+        <p className="text-muted">Loading destination analytics…</p>
       </div>
     );
   }
@@ -76,10 +76,10 @@ export default function AnalyticsPage() {
     <div className="coastal-grid min-h-[80vh]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
-          Tourism Analytics
+          Destination Analytics
         </p>
         <h1 className="mt-2 font-display text-4xl text-ocean-deep">
-          Destination pulse
+          Tana River pulse
         </h1>
         <p className="mt-3 max-w-2xl text-muted">{data.note}</p>
 
