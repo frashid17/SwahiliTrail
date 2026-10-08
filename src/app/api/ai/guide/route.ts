@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   fireAndForget,
-  generateJson,
   sanitizeAiStrings,
+  streamGenerateContent,
 } from "@/lib/ai/gemini";
+import { ndjsonResponse } from "@/lib/ai/ndjson-stream";
 import {
   FREE_AI_QUOTA,
   TRAIL_PLUS_PRICE_USD,
@@ -36,11 +37,6 @@ const bodySchema = z.object({
     .optional(),
 });
 
-type GuideResult = {
-  reply: string;
-  detectedLanguage: (typeof langCodes)[number];
-};
-
 function quotaPayload(quota: AiQuotaStatus) {
   return {
     ...quota,
@@ -48,6 +44,19 @@ function quotaPayload(quota: AiQuotaStatus) {
     priceUsdPerMonth: TRAIL_PLUS_PRICE_USD,
     upgradeUrl: "/pricing",
   };
+}
+
+function parseGuideOutput(raw: string, fallback: (typeof langCodes)[number]) {
+  const text = toPlainText(raw.trim());
+  const match = text.match(/^LANG:(\w+)\s*\n+([\s\S]*)$/i);
+  if (!match) {
+    return { reply: text, detectedLanguage: fallback };
+  }
+  const code = match[1]!.toLowerCase();
+  const detected = langCodes.includes(code as (typeof langCodes)[number])
+    ? (code as (typeof langCodes)[number])
+    : fallback;
+  return { reply: match[2]!.trim(), detectedLanguage: detected };
 }
 
 export async function POST(req: Request) {
@@ -68,17 +77,16 @@ export async function POST(req: Request) {
     const preferredLabel =
       GUIDE_LANGUAGES.find((l) => l.code === input.language)?.native ??
       "English";
-
-    // Compact place list (names only) — blurbs slow the model for little gain.
     const context = ATTRACTIONS.map((a) => `${a.name} (${a.area})`).join("; ");
-
     const recentHistory = (input.history ?? []).slice(-6);
     const historyText = recentHistory
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
 
-    const result = await generateJson<GuideResult>(
-      `Conversation:
+    return ndjsonResponse(async (emit) => {
+      let accumulated = "";
+      for await (const chunk of streamGenerateContent(
+        `Conversation:
 ${historyText || "(new)"}
 
 User: ${input.message}
@@ -86,66 +94,74 @@ UI language fallback: ${preferredLabel} (${input.language})
 
 Detect user language → reply in that language (de/fr/sw/zh/ar/en). Use UI language only if unclear.
 
-Return JSON: {"reply": string, "detectedLanguage": "en"|"sw"|"fr"|"de"|"zh"|"ar"}
-Keep reply to 2-4 short paragraphs plus one follow-up question.`,
-      `Local guide for ${DESTINATION.regionLong} (Swahili Trail).
+Output format (strict):
+Line 1: LANG:<code>  (one of en, sw, fr, de, zh, ar)
+Then a blank line
+Then the reply: 2-4 short paragraphs plus one follow-up question.
+Do not use JSON or markdown.`,
+        `Local guide for ${DESTINATION.regionLong} (Swahili Trail).
 ${AI_REGION_CONTEXT}
 Be concrete (places, timing, transport, rough KES). No brochure tone.
 Places: ${context}`,
-      { maxOutputTokens: 900, temperature: 0.45 },
-    );
+        { maxOutputTokens: 900, temperature: 0.45, json: false },
+      )) {
+        accumulated += chunk;
+        emit({ type: "delta", text: chunk });
+      }
 
-    const clean = sanitizeAiStrings(result);
-    const detected = langCodes.includes(clean.detectedLanguage)
-      ? clean.detectedLanguage
-      : input.language;
-    const plainReply = toPlainText(clean.reply);
-
-    const messages = [
-      ...(input.history ?? []),
-      { role: "assistant" as const, content: plainReply },
-    ];
-
-    const nextQuota = await consumeAiQuota(userId, "guide", {
-      requestHash: quota.requestHash,
-      plan: quota.plan,
-    });
-
-    const supabase = createAdminClient();
-    if (supabase) {
-      fireAndForget(
-        (async () => {
-          if (input.sessionId) {
-            const now = new Date().toISOString();
-            await supabase.from("guide_sessions").upsert(
-              {
-                id: input.sessionId,
-                user_id: userId,
-                title: titleFromMessages(messages),
-                language: detected,
-                messages,
-                updated_at: now,
-              },
-              { onConflict: "id" },
-            );
-          }
-          await supabase.from("analytics_events").insert({
-            user_id: userId,
-            event_type: "guide_message",
-            payload: {
-              language: detected,
-              preferredLanguage: input.language,
-              sessionId: input.sessionId,
-            },
-          });
-        })(),
+      const { reply, detectedLanguage } = parseGuideOutput(
+        sanitizeAiStrings(accumulated),
+        input.language,
       );
-    }
+      const plainReply = toPlainText(reply);
 
-    return NextResponse.json({
-      reply: plainReply,
-      detectedLanguage: detected,
-      quota: quotaPayload(nextQuota),
+      const messages = [
+        ...(input.history ?? []),
+        { role: "assistant" as const, content: plainReply },
+      ];
+
+      const nextQuota = await consumeAiQuota(userId, "guide", {
+        requestHash: quota.requestHash,
+        plan: quota.plan,
+      });
+
+      const supabase = createAdminClient();
+      if (supabase) {
+        fireAndForget(
+          (async () => {
+            if (input.sessionId) {
+              const now = new Date().toISOString();
+              await supabase.from("guide_sessions").upsert(
+                {
+                  id: input.sessionId,
+                  user_id: userId,
+                  title: titleFromMessages(messages),
+                  language: detectedLanguage,
+                  messages,
+                  updated_at: now,
+                },
+                { onConflict: "id" },
+              );
+            }
+            await supabase.from("analytics_events").insert({
+              user_id: userId,
+              event_type: "guide_message",
+              payload: {
+                language: detectedLanguage,
+                preferredLanguage: input.language,
+                sessionId: input.sessionId,
+              },
+            });
+          })(),
+        );
+      }
+
+      emit({
+        type: "done",
+        reply: plainReply,
+        detectedLanguage,
+        quota: quotaPayload(nextQuota),
+      });
     });
   } catch (error) {
     const message =
