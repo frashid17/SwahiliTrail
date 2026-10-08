@@ -1,5 +1,6 @@
 import { placePhoto } from "@/lib/data/place-photo-urls";
 import { COAST_IMAGES as img } from "@/lib/data/coast-images";
+import { placeMatchesArea } from "@/lib/data/hotels";
 
 export type Restaurant = {
   id: string;
@@ -19,23 +20,82 @@ export type Restaurant = {
 
 export function restaurantsForArea(area: string): Restaurant[] {
   if (!area || area === "whole-coast") return RESTAURANTS;
-  const needle = area.toLowerCase();
-  const filtered = RESTAURANTS.filter(
-    (r) =>
-      r.area.toLowerCase().includes(needle) ||
-      needle.includes(r.area.toLowerCase()) ||
-      r.tags.some((t) => t.toLowerCase().includes(needle)),
-  );
-  return filtered.length > 0 ? filtered : RESTAURANTS;
+  // Strict: do not fall back to other regions when the area has no listings.
+  return RESTAURANTS.filter((r) => placeMatchesArea(r.area, r.tags, area));
 }
 
 export function hydrateRestaurants(items: Restaurant[]): Restaurant[] {
+  // Prefer catalogue rows; keep AI-discovered restaurants as-is.
   return items
-    .map((item) => RESTAURANTS.find((r) => r.id === item.id) ?? null)
-    .filter((r): r is Restaurant => Boolean(r));
+    .map((item) => RESTAURANTS.find((r) => r.id === item.id) ?? item)
+    .filter((r): r is Restaurant => Boolean(r?.id && r?.name));
 }
 
 export const RESTAURANTS: Restaurant[] = [
+  {
+    id: "carnivore-nairobi",
+    name: "Carnivore Restaurant",
+    area: "Nairobi",
+    cuisine: "Grill / Kenyan",
+    priceLevel: "KES $$$",
+    avgMealKes: 4500,
+    rating: 4.5,
+    tags: ["grill", "group", "classic", "Nairobi"],
+    vibe: "Nairobi grill institution",
+    description:
+      "Famous all-you-can-eat grill — a classic Nairobi dinner for couples and groups.",
+    imageUrl: placePhoto("carnivore-nairobi", img.grill),
+    websiteUrl: "https://www.tamarind.co.ke/carnivore/",
+    mapsUrl: "https://maps.google.com/?q=Carnivore+Restaurant+Nairobi",
+  },
+  {
+    id: "talisman-karen",
+    name: "Talisman Restaurant",
+    area: "Karen, Nairobi",
+    cuisine: "International / Fusion",
+    priceLevel: "KES $$$",
+    avgMealKes: 3800,
+    rating: 4.6,
+    tags: ["romantic", "garden", "Karen", "Nairobi"],
+    vibe: "Garden dining in Karen",
+    description:
+      "Relaxed Karen favorite with a mixed menu — strong pick for couples after a day out south of town.",
+    imageUrl: placePhoto("talisman-karen", img.restaurantBeach),
+    websiteUrl: null,
+    mapsUrl: "https://maps.google.com/?q=Talisman+Restaurant+Karen",
+  },
+  {
+    id: "about-thyme",
+    name: "About Thyme",
+    area: "Westlands, Nairobi",
+    cuisine: "Cafe / International",
+    priceLevel: "KES $$",
+    avgMealKes: 2200,
+    rating: 4.4,
+    tags: ["brunch", "garden", "Westlands", "Nairobi"],
+    vibe: "Leafy Westlands brunch",
+    description:
+      "Garden cafe energy in Westlands — good for brunch, light dinners, and wifi pauses.",
+    imageUrl: placePhoto("about-thyme", img.barInterior),
+    websiteUrl: null,
+    mapsUrl: "https://maps.google.com/?q=About+Thyme+Westlands",
+  },
+  {
+    id: "java-westlands",
+    name: "Java House Westlands",
+    area: "Westlands, Nairobi",
+    cuisine: "Cafe / Casual",
+    priceLevel: "KES $",
+    avgMealKes: 1200,
+    rating: 4.2,
+    tags: ["cafe", "breakfast", "wifi", "Nairobi"],
+    vibe: "Easy Nairobi cafe",
+    description:
+      "Reliable coffee and casual plates between shopping and meetings in Westlands.",
+    imageUrl: placePhoto("java-westlands", img.barInterior),
+    websiteUrl: "https://www.javahouseafrica.com/",
+    mapsUrl: "https://maps.google.com/?q=Java+House+Westlands",
+  },
   {
     id: "tamarind-mombasa",
     name: "Tamarind Restaurant",
