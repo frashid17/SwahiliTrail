@@ -16,31 +16,32 @@ import { TideBand } from "@/components/coastal-accents";
 import { CoastEventsSection } from "@/components/home/coast-events-section";
 import { CoastNowBar } from "@/components/home/coast-now-bar";
 import { ThingsToDoSection } from "@/components/home/things-to-do-section";
-import { SUMMIT } from "@/lib/destination";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { DESTINATION } from "@/lib/destination";
 
 const features = [
   {
     href: "/planner",
     title: "Trip Planner",
-    copy: "Build a multi-day plan for Hola, the delta, or a coast side trip - with a rough KES budget.",
+    copy: "Build a multi-day plan for Nairobi, safari circuits, the Rift, or the coast - with a rough KES budget.",
     icon: Sparkles,
   },
   {
     href: "/hotels",
     title: "Stay & Eat",
-    copy: "Filter lodging and meals by budget and vibe. Start in Hola, then widen if you need to.",
+    copy: "Filter lodging and meals by budget and vibe across Kenya's main travel regions.",
     icon: BedDouble,
   },
   {
     href: "/attractions",
     title: "Attractions",
-    copy: "Delta stops, wildlife, and culture. Save what you want into a trip list.",
+    copy: "Culture, coast, and city stops. Save what you want into a trip list.",
     icon: MapPin,
   },
   {
     href: "/wildlife",
     title: "Wildlife & nature",
-    copy: "Primate reserve notes, delta habitats, and day-trip options further down the coast.",
+    copy: "Parks, reserves, and nature days from the Mara to Tsavo and the coast.",
     icon: Trees,
   },
   {
@@ -52,7 +53,7 @@ const features = [
   {
     href: "/analytics",
     title: "Destination Analytics",
-    copy: "Simple charts for visitor trends and attraction interest - useful in a stakeholder brief.",
+    copy: "Visitor trends and attraction interest for planners, hosts, and county teams.",
     icon: BarChart3,
   },
 ];
@@ -91,7 +92,7 @@ export default function HomePage() {
               transition={{ duration: 0.45 }}
               className="text-xs font-semibold uppercase tracking-[0.18em] text-aqua sm:text-sm"
             >
-              {SUMMIT.shortName} · Hola · {SUMMIT.datesLabel}
+              Kenya travel platform · {DESTINATION.regionShort}
             </motion.p>
 
             <motion.p
@@ -109,7 +110,7 @@ export default function HomePage() {
               transition={{ duration: 0.55, delay: 0.1 }}
               className="mt-4 max-w-2xl text-xl font-medium leading-snug text-white/95 drop-shadow-md sm:mt-5 sm:text-2xl md:text-3xl"
             >
-              Trip tools for Tana River - built for IBS 2026.
+              {DESTINATION.tagline}
             </motion.h1>
 
             <motion.p
@@ -118,9 +119,7 @@ export default function HomePage() {
               transition={{ duration: 0.55, delay: 0.18 }}
               className="mt-4 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg"
             >
-              Plan days around Hola and the delta, find a place to sleep, ask the
-              guide in six languages, and pull a quick visitor brief. Summit
-              theme: {SUMMIT.theme}.
+              {DESTINATION.supportingLine}
             </motion.p>
 
             <motion.div
@@ -137,10 +136,10 @@ export default function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/events"
+                href="/explore"
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
               >
-                What&apos;s on this week
+                Explore places
               </Link>
             </motion.div>
 
@@ -162,8 +161,14 @@ export default function HomePage() {
           transition={{ delay: 0.45, duration: 0.5 }}
           className="absolute inset-x-0 bottom-5 z-[3] px-4 sm:bottom-8 sm:px-6 md:bottom-10 md:px-10"
         >
-          <div className="mx-auto max-w-6xl">
-            <CoastNowBar />
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:max-w-xl">
+            <KenyaLocationFilter
+              variant="select"
+              label="Conditions for"
+              onDark
+              className="[&_select]:border-white/25 [&_select]:bg-brand-deep/80 [&_select]:text-white [&_span]:text-white/80"
+            />
+            <CoastNowBar className="sm:max-w-none" />
           </div>
         </motion.div>
       </section>
@@ -183,7 +188,7 @@ export default function HomePage() {
             What you can do here
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-3xl text-ocean-deep sm:text-4xl">
-            Tools for the trip and the brief
+            Everything for the trip in one place
           </h2>
         </motion.div>
 
@@ -230,12 +235,12 @@ export default function HomePage() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="font-display text-3xl text-on-brand sm:text-4xl">
-              Showing at {SUMMIT.shortName} in Hola.
+              Built for travelers and the places that host them.
             </h2>
             <p className="mt-4 max-w-xl text-on-brand/75 leading-relaxed">
-              A working demo for county teams and visitors. Plan a stay, answer
-              guest questions, or walk a short brief on farming, tech, health,
-              and coast livelihoods.
+              Swahili Trail helps visitors plan Kenya trips — city, safari, Rift,
+              and coast — while giving hosts and county teams a clear view of
+              what people ask for and where they go.
             </p>
           </motion.div>
           <motion.div
@@ -245,14 +250,12 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-3 text-sm text-on-brand/80"
           >
-            <p>Theme: {SUMMIT.theme}</p>
-            <p>
-              {SUMMIT.datesLabel} · {SUMMIT.venue}
+            <p>Plan itineraries with budgets in KES</p>
+            <p>Match hotels, meals, and wildlife days</p>
+            <p>Ask a local guide in six languages</p>
+            <p className="text-on-brand/60">
+              Save trips to your account and pick up anywhere
             </p>
-            <p>
-              Host: {SUMMIT.host}
-            </p>
-            <p className="text-on-brand/60">{SUMMIT.hostRole}</p>
           </motion.div>
         </div>
       </section>
