@@ -131,8 +131,7 @@ export function AccountManager() {
             Manage account
           </h1>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Update your traveler profile and security settings for this coastal
-            companion.
+            Update your profile and password for Swahili Trail.
           </p>
         </FadeIn>
 
@@ -193,7 +192,7 @@ export function AccountManager() {
               <p className="mt-1 text-sm text-muted">
                 {tab === "profile"
                   ? "How you appear across Swahili Trail."
-                  : "Protect your coastal companion account."}
+                  : "Password and sign-in options."}
               </p>
             </div>
 
