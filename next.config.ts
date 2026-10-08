@@ -31,6 +31,23 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "images.clerk.dev",
       },
+      // Google Places photo CDN (AI-matched stays / restaurants)
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh4.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh5.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.googleusercontent.com",
+      },
     ],
   },
 };
