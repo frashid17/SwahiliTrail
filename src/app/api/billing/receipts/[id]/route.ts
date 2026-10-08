@@ -38,7 +38,7 @@ export async function GET(
         hour: "2-digit",
         minute: "2-digit",
       })
-    : "—";
+    : "-";
 
   const amount = formatMoney(payment.amount, payment.currency);
   const receiptNo = payment.receipt_number || payment.reference;
