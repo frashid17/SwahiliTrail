@@ -69,40 +69,28 @@ function normalizeQuota(
   const unlimited = Boolean(data.unlimited);
   const period = data.period || prev?.period || "";
 
-  // Subscribed → Trail Plus (only intentional “reset” of the free meter).
-  if (unlimited) {
-    return {
-      unlimited: true,
-      used: 0,
-      limit: null,
-      remaining: null,
-      period,
-      plan: "trail_plus",
-      freeLimit: FREE_AI_QUOTA,
-      priceUsdPerMonth:
-        typeof data.priceUsdPerMonth === "number"
-          ? data.priceUsdPerMonth
-          : (prev?.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD),
-      upgradeUrl: data.upgradeUrl || prev?.upgradeUrl || "/pricing",
-    };
-  }
+  const plan: UsagePayload["plan"] =
+    data.plan === "trail_plus" || unlimited ? "trail_plus" : "free";
+  const sessionBucket =
+    plan === "trail_plus" ? `day:${period}` : `month:${period}`;
 
   const incomingUsed =
     typeof data.used === "number" ? data.used : (prev?.used ?? 0);
   const sessionUsed =
-    userId && period ? readSessionUsed(userId, period) : 0;
+    userId && period ? readSessionUsed(userId, sessionBucket) : 0;
   const prevUsed =
-    prev && !prev.unlimited && prev.period === period ? prev.used : 0;
+    prev && prev.plan === plan && prev.period === period ? prev.used : 0;
 
-  // Free usage only goes up within a period (blocks stale refresh → 0).
+  // Usage only goes up within the active window (blocks stale refresh → 0).
   const used = Math.max(incomingUsed, sessionUsed, prevUsed);
   const limit =
     typeof data.limit === "number"
       ? data.limit
-      : (prev?.limit ?? FREE_AI_QUOTA);
+      : (prev?.limit ??
+        (plan === "trail_plus" ? prev?.dayLimit ?? 150 : FREE_AI_QUOTA));
   const remaining = Math.max(0, (limit ?? FREE_AI_QUOTA) - used);
 
-  if (userId && period) writeSessionUsed(userId, period, used);
+  if (userId && period) writeSessionUsed(userId, sessionBucket, used);
 
   return {
     unlimited: false,
@@ -110,7 +98,17 @@ function normalizeQuota(
     limit,
     remaining,
     period,
-    plan: "free",
+    plan,
+    dayUsed:
+      typeof data.dayUsed === "number" ? data.dayUsed : prev?.dayUsed,
+    dayLimit:
+      typeof data.dayLimit === "number" ? data.dayLimit : prev?.dayLimit,
+    monthUsed:
+      typeof data.monthUsed === "number" ? data.monthUsed : prev?.monthUsed,
+    monthLimit:
+      typeof data.monthLimit === "number"
+        ? data.monthLimit
+        : prev?.monthLimit,
     freeLimit:
       typeof data.freeLimit === "number"
         ? data.freeLimit
@@ -219,40 +217,34 @@ export function AiQuotaNavChip({ className = "" }: { className?: string }) {
 
   if (!isLoaded || !userId || !quota) return null;
 
-  if (quota.unlimited) {
-    return (
-      <Link
-        href="/pricing"
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border border-aqua/35 bg-aqua/10 px-2.5 py-1 text-xs font-semibold text-ocean-deep transition hover:bg-aqua/20",
-          className,
-        )}
-        title="Trail Plus — unlimited AI"
-      >
-        <Sparkles className="h-3.5 w-3.5 text-aqua" />
-        Plus
-      </Link>
-    );
-  }
-
   const used = quota.used;
   const limit = quota.limit ?? FREE_AI_QUOTA;
   const exhausted = used >= limit;
+  const plus = quota.plan === "trail_plus";
 
   return (
     <Link
       href="/pricing"
       className={cn(
-        "group flex min-w-[7.5rem] flex-col gap-1 rounded-full border px-2.5 py-1.5 transition",
+        "group flex min-w-[7.5rem] flex-col gap-1 rounded-md border px-2.5 py-1.5 transition",
         exhausted
           ? "border-coral/40 bg-coral/10 hover:bg-coral/15"
-          : "border-border bg-surface/80 hover:border-aqua/40",
+          : plus
+            ? "border-ocean/25 bg-foam hover:bg-sand/40"
+            : "border-border bg-surface hover:border-ocean/30",
         className,
       )}
-      title={`${used} of ${limit} free AI uses this month`}
+      title={
+        plus
+          ? `${used} of ${limit} AI uses today (fair use)`
+          : `${used} of ${limit} free AI uses this month`
+      }
     >
       <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
-        <span>AI</span>
+        <span className="inline-flex items-center gap-1">
+          {plus ? <Sparkles className="h-3 w-3 text-aqua" /> : null}
+          AI
+        </span>
         <span className={exhausted ? "text-coral" : "text-ocean-deep"}>
           {used}/{limit}
         </span>
@@ -271,27 +263,11 @@ export function AiQuotaBanner({
 }) {
   if (!quota) return null;
 
-  if (quota.unlimited) {
-    return (
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-2xl border border-aqua/30 bg-aqua/10 px-3.5 py-2.5 text-sm text-ocean-deep",
-          className,
-        )}
-      >
-        <Sparkles className="h-4 w-4 shrink-0 text-aqua" />
-        <span>
-          <span className="font-semibold">Trail Plus</span> — unlimited AI this
-          month
-        </span>
-      </div>
-    );
-  }
-
   const used = quota.used;
   const remaining = quota.remaining ?? 0;
   const limit = quota.limit ?? FREE_AI_QUOTA;
   const exhausted = remaining <= 0;
+  const plus = quota.plan === "trail_plus";
 
   return (
     <div
@@ -299,32 +275,49 @@ export function AiQuotaBanner({
         "rounded-2xl border px-3.5 py-3 text-sm text-ocean-deep",
         exhausted
           ? "border-coral/40 bg-coral/10"
-          : "border-border bg-foam/80",
+          : plus
+            ? "border-aqua/30 bg-aqua/10"
+            : "border-border bg-foam/80",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-semibold">
-            {used}/{limit} AI queries used
+            {plus ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-aqua" />
+                {used}/{limit} AI uses today
+              </span>
+            ) : (
+              <>
+                {used}/{limit} AI queries used
+              </>
+            )}
           </p>
           <p className="mt-0.5 text-xs text-muted">
             {exhausted
-              ? `Limit reached — Trail Plus is $${quota.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo`
-              : `${remaining} free ${remaining === 1 ? "use" : "uses"} left this month`}
+              ? plus
+                ? "Daily fair-use limit reached. Try again tomorrow."
+                : `Limit reached — Trail Plus is $${quota.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo`
+              : plus
+                ? `${remaining} left today · fair-use protection on`
+                : `${remaining} free ${remaining === 1 ? "use" : "uses"} left this month`}
           </p>
         </div>
-        <Link
-          href="/pricing"
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
-            exhausted
-              ? "bg-coral text-white hover:brightness-110"
-              : "border border-border bg-surface text-ocean-deep hover:border-aqua/40",
-          )}
-        >
-          {exhausted ? "Upgrade" : "Trail Plus"}
-        </Link>
+        {plus ? null : (
+          <Link
+            href="/pricing"
+            className={cn(
+              "inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+              exhausted
+                ? "bg-coral text-white hover:brightness-110"
+                : "border border-border bg-surface text-ocean-deep hover:border-aqua/40",
+            )}
+          >
+            {exhausted ? "Upgrade" : "Trail Plus"}
+          </Link>
+        )}
       </div>
       <div className="mt-2.5">
         <UsageMeter used={used} limit={limit} exhausted={exhausted} />
@@ -337,11 +330,15 @@ export function aiQuotaErrorMessage(data: {
   error?: string;
   code?: string;
   priceUsdPerMonth?: number;
+  retryAfterSeconds?: number;
 }) {
+  if (data.code === "AI_RATE_LIMITED" || data.code === "AI_ABUSE_BLOCKED") {
+    return data.error || "AI request blocked. Please wait and try again.";
+  }
   if (data.code === "AI_QUOTA_EXCEEDED") {
     return (
       data.error ||
-      `Free AI limit reached. Upgrade to Trail Plus ($${data.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo) for unlimited uses.`
+      `AI limit reached. Upgrade to Trail Plus ($${data.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo) for higher fair-use limits.`
     );
   }
   return data.error || "Request failed";
