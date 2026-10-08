@@ -750,7 +750,7 @@ export default function PlannerPage() {
               </div>
             ) : !plan ? (
               <div className="flex min-h-[10rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
-                Your plan will write here — days, stay tip, transport notes, and
+                Your plan will write here - days, stay tip, transport notes, and
                 a rough cost.
               </div>
             ) : (
