@@ -20,7 +20,7 @@ const tools = [
     href: "/planner",
     title: "Trip Planner",
     description:
-      "Multi-day plan for Hola or the delta, with a rough KES total.",
+      "Multi-day plan for Nairobi, safari, Rift, or coast — with a rough KES total.",
     icon: Sparkles,
     imageUrl: img.beachTropical,
     imageAlt: "Turquoise coastline for trip planning",
@@ -30,7 +30,7 @@ const tools = [
     href: "/hotels",
     title: "Stay & Eat",
     description:
-      "Filter lodging and meals by budget. Start near Hola if you can.",
+      "Filter lodging and meals by budget across Kenya's main regions.",
     icon: BedDouble,
     imageUrl: placePhoto("tamarind-mombasa", img.seafoodDining),
     imageAlt: "Coastal dining and stays",
@@ -50,7 +50,7 @@ const tools = [
     href: "/wildlife",
     title: "Wildlife",
     description:
-      "Primate reserve, delta wetlands, then coast parks if you have time.",
+      "Safari parks, reserves, and coast nature days across Kenya.",
     icon: PawPrint,
     imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
     imageAlt: "Riverine forest habitat",
@@ -70,7 +70,7 @@ const tools = [
     href: "/analytics",
     title: "Destination Analytics",
     description:
-      "Visitor charts and attraction interest for a short stakeholder brief.",
+      "Visitor charts and attraction interest for planners and hosts.",
     icon: BarChart3,
     imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
     imageAlt: "Mama Ngina waterfront",
@@ -80,22 +80,22 @@ const tools = [
 
 const highlights = [
   {
-    title: "Tana River Delta",
-    detail: "Delta · Kipini",
-    tip: "Go with a local boat operator and check tides first.",
-    imageUrl: placePhoto("tana-delta", img.beachTropical),
+    title: "Maasai Mara",
+    detail: "Safari · Big Five",
+    tip: "Allow at least two full game-drive days in the reserve.",
+    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
   },
   {
-    title: "Hola · IBS 2026",
-    detail: "Summit base · innovation",
-    tip: "Book lodging early for 7–10 October 2026.",
+    title: "Nairobi",
+    detail: "Capital · city base",
+    tip: "Museums, markets, and easy day trips to parks and the Rift.",
     imageUrl: placePhoto("hola-ibs", img.mamaNginaWaterfront),
   },
   {
-    title: "Primate Reserve",
-    detail: "Riverine forest wildlife",
-    tip: "Arrange a guide - access can be seasonal.",
-    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
+    title: "Diani & Mombasa",
+    detail: "Swahili coast",
+    tip: "Pair beach time with Old Town and a marine park day.",
+    imageUrl: placePhoto("tana-delta", img.beachTropical),
   },
 ];
 
@@ -138,8 +138,8 @@ export default async function DashboardPage() {
                 Karibu, {name}
               </h1>
               <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">
-                Plan a Tana River trip, find a stay, ask the guide, or open
-                analytics for an IBS brief.
+                Plan a Kenya trip, find a stay, ask the guide, or open
+                destination analytics.
               </p>
             </div>
 
@@ -270,14 +270,14 @@ export default async function DashboardPage() {
           <section className="relative overflow-hidden rounded-3xl bg-brand-deep p-6 text-on-brand sm:p-8">
             <Sunrise className="absolute -right-2 -top-2 h-28 w-28 text-aqua/20" />
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-aqua">
-              Demo tip
+              Getting started
             </p>
             <h2 className="mt-2 font-display text-2xl leading-snug sm:text-3xl">
-              Try the IBS demo path
+              Build your first trail
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-on-brand/75">
-              Build a 3-day Hola plan, match a stay near town, ask the guide in
-              Kiswahili, then open analytics for a short brief.
+              Start with a 5-day Kenya plan, match a stay for your base, then ask
+              the guide in Kiswahili for roads, food, and park tips.
             </p>
             <Link
               href="/planner"
