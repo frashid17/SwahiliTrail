@@ -31,11 +31,11 @@ export function ThingsToDoSection() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="font-display text-3xl text-ocean-deep sm:text-4xl md:text-5xl">
-            Top things to do
+            Places to start
           </h2>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Filter by vibe - nightlife shows real clubs, bars, and restaurants.
-            Tap any place for booking tips, maps, and live web reviews.
+            Filter the list, then open a place for maps, booking tips, and
+            reviews when available.
           </p>
         </div>
         <Link
