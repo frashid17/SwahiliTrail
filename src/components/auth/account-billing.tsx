@@ -46,7 +46,7 @@ type BillingPayload = {
 };
 
 function formatDate(iso: string | null) {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString("en-KE", {
     year: "numeric",
     month: "short",
@@ -225,7 +225,7 @@ export function AccountBilling({
           </div>
         ) : data.cancelAtPeriodEnd ? (
           <p className="mt-2 text-sm text-muted">
-            No upcoming invoice — renewal is turned off.
+            No upcoming invoice - renewal is turned off.
           </p>
         ) : (
           <p className="mt-2 text-sm text-muted">
