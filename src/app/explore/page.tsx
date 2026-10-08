@@ -33,7 +33,7 @@ export default function ExplorePage() {
             Places worth your time
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
-            Filter by region — Nanyuki, Nairobi, the coast, and more — then open
+            Filter by region - Nanyuki, Nairobi, the coast, and more - then open
             a place for booking tips and reviews.
           </p>
         </FadeIn>
