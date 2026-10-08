@@ -2,6 +2,7 @@
 
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Map,
@@ -95,7 +96,13 @@ export function AccountMenu({ className = "" }: { className?: string }) {
             <MenuLink
               href="/account"
               icon={Settings}
-              label="Manage account"
+              label="Account settings"
+              onClick={() => setOpen(false)}
+            />
+            <MenuLink
+              href="/account?tab=billing"
+              icon={CreditCard}
+              label="Plan & billing"
               onClick={() => setOpen(false)}
             />
             <MenuLink
