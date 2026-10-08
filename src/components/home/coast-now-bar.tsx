@@ -74,7 +74,7 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
       )}
       role="status"
       aria-live="polite"
-      aria-label="Live coast conditions for Mombasa"
+      aria-label="Live coast conditions for Tana River Delta"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2.5 sm:px-4 sm:py-3">
         <span className="inline-flex items-center gap-2">
@@ -90,13 +90,13 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
           </span>
         </span>
         <span className="truncate text-[11px] font-medium text-white/45 sm:text-xs">
-          {state.status === "ready" ? state.data.location : "Mombasa"}
+          {state.status === "ready" ? state.data.location : "Tana Delta"}
         </span>
       </div>
 
       {state.status === "loading" ? (
         <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
-          Updating coastal conditions…
+          Updating delta & coast conditions…
         </div>
       ) : state.status === "error" ? (
         <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
