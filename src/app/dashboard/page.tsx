@@ -20,7 +20,7 @@ const tools = [
     href: "/planner",
     title: "Trip Planner",
     description:
-      "Multi-day plan for Nairobi, safari, Rift, or coast — with a rough KES total.",
+      "Multi-day plan for Nairobi, safari, Rift, or coast - with a rough KES total.",
     icon: Sparkles,
     imageUrl: img.beachTropical,
     imageAlt: "Turquoise coastline for trip planning",
