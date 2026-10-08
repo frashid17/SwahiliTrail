@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   fireAndForget,
-  generateJson,
   sanitizeAiStrings,
+  streamGenerateContent,
 } from "@/lib/ai/gemini";
+import { ndjsonResponse } from "@/lib/ai/ndjson-stream";
 import {
   FREE_AI_QUOTA,
   TRAIL_PLUS_PRICE_USD,
@@ -224,8 +225,10 @@ export async function POST(req: Request) {
     // Cap output tokens by trip length so long plans don't wait on a 4k budget.
     const maxOutputTokens = Math.min(2200, 500 + input.days * 220);
 
-    const plan = await generateJson<PlanResult>(
-      `${input.days}-day Kenya plan for ${input.partySize} (${input.companions}).
+    return ndjsonResponse(async (emit) => {
+      let accumulated = "";
+      for await (const chunk of streamGenerateContent(
+        `${input.days}-day Kenya plan for ${input.partySize} (${input.companions}).
 Region: ${DESTINATION.regionLong}. ${AI_REGION_CONTEXT}
 Interests: ${input.interests.join(", ")}
 Budget: ${input.budget}. Pace: ${input.pace}. Stay: ${stayBase}
@@ -253,36 +256,48 @@ ${restaurants}
 
 Return JSON with keys: title, summary, recommendedStay, days[{day,theme,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes}], packingTips (max 3), localEtiquette (max 3), budgetBreakdown{lodgingKes,activitiesKes,foodKes,transportKes,contingencyKes,totalKes,notes}.
 Cover all ${input.days} days. Short concrete strings. Realistic KES for the party.`,
-      "Swahili Trail Kenya trip planner. Specific, local, budget-aware. No marketing fluff.",
-      { maxOutputTokens, temperature: 0.35 },
-    );
+        "Swahili Trail Kenya trip planner. Specific, local, budget-aware. No marketing fluff.",
+        { maxOutputTokens, temperature: 0.35, json: true },
+      )) {
+        accumulated += chunk;
+        emit({ type: "delta", text: chunk });
+      }
 
-    const cleanPlan = sanitizeAiStrings(plan);
+      let parsed: PlanResult;
+      try {
+        parsed = JSON.parse(accumulated) as PlanResult;
+      } catch {
+        throw new Error("Could not parse the trip plan. Please try again.");
+      }
 
-    const nextQuota = await consumeAiQuota(userId, "plan", {
-      requestHash: quota.requestHash,
-      plan: quota.plan,
-    });
+      const cleanPlan = sanitizeAiStrings(parsed);
 
-    const supabase = createAdminClient();
-    if (supabase) {
-      fireAndForget(
-        Promise.resolve(
-          supabase.from("itineraries").insert({
-            user_id: userId,
-            title: cleanPlan.title,
-            days: input.days,
-            interests: input.interests,
-            budget: input.budget,
-            plan: cleanPlan,
-          }),
-        ),
-      );
-    }
+      const nextQuota = await consumeAiQuota(userId, "plan", {
+        requestHash: quota.requestHash,
+        plan: quota.plan,
+      });
 
-    return NextResponse.json({
-      plan: cleanPlan,
-      quota: quotaPayload(nextQuota),
+      const supabase = createAdminClient();
+      if (supabase) {
+        fireAndForget(
+          Promise.resolve(
+            supabase.from("itineraries").insert({
+              user_id: userId,
+              title: cleanPlan.title,
+              days: input.days,
+              interests: input.interests,
+              budget: input.budget,
+              plan: cleanPlan,
+            }),
+          ),
+        );
+      }
+
+      emit({
+        type: "done",
+        plan: cleanPlan,
+        quota: quotaPayload(nextQuota),
+      });
     });
   } catch (error) {
     const message =
