@@ -82,30 +82,26 @@ export function CoastEventsSection() {
   }
 
   return (
-    <section className="bg-brand-deep">
+    <section className="border-y border-border/70 bg-foam/80">
       <div className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <p className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-coral">
-              <span aria-hidden className="h-px w-8 bg-coral" />
-              Happening now · Kenya
-            </p>
-            <h2 className="mt-3 font-display text-3xl text-on-brand sm:text-4xl md:text-5xl">
+            <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
               {region
-                ? `What\u2019s on in ${region.label}`
-                : "What\u2019s on across Kenya"}
+                ? `What’s on in ${region.label}`
+                : "What’s on across Kenya"}
             </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-brand/65 sm:text-base">
-              Pick a region to focus the list — Nairobi, Nanyuki, the Mara, the
-              coast, and more.
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
+              Focus the list by region — Nairobi, Nanyuki, the Mara, the coast,
+              and more.
             </p>
-            <p className="mt-2 text-xs text-on-brand/45">{sourceNote}</p>
+            <p className="mt-2 text-xs text-muted/80">{sourceNote}</p>
           </div>
 
           <div className="flex items-center gap-3">
             <Link
               href="/events"
-              className="text-sm font-semibold text-coral transition hover:brightness-110"
+              className="text-sm font-semibold text-coral transition hover:text-ocean"
             >
               View all events →
             </Link>
@@ -113,7 +109,7 @@ export function CoastEventsSection() {
               type="button"
               aria-label="Previous events"
               onClick={() => scrollBy(-1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-on-brand transition hover:border-coral/50 hover:text-coral"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-ocean-deep transition hover:border-ocean/30"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -121,7 +117,7 @@ export function CoastEventsSection() {
               type="button"
               aria-label="Next events"
               onClick={() => scrollBy(1)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-on-brand transition hover:border-coral/50 hover:text-coral"
+              className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-ocean-deep transition hover:border-ocean/30"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -129,15 +125,15 @@ export function CoastEventsSection() {
         </div>
 
         <div className="mt-6">
-          <KenyaLocationFilter label="Show events in" onDark />
+          <KenyaLocationFilter label="Show events in" />
         </div>
 
         <div
           ref={scrollerRef}
-          className="mt-10 flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
+          className="mt-10 flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
         >
           {filtered.length === 0 ? (
-            <p className="text-sm text-on-brand/55">
+            <p className="text-sm text-muted">
               No events in this region right now. Try All Kenya.
             </p>
           ) : (
@@ -145,31 +141,31 @@ export function CoastEventsSection() {
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
-                className="flex w-[min(85vw,18.5rem)] shrink-0 snap-start flex-col overflow-hidden rounded-2xl bg-black/25 ring-1 ring-white/10 transition hover:ring-coral/40 sm:w-72"
+                className="group flex w-[min(85vw,18.5rem)] shrink-0 snap-start flex-col sm:w-72"
               >
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-md">
                   <Image
                     src={event.imageUrl}
                     alt=""
                     fill
                     sizes="300px"
-                    className="object-cover"
+                    className="object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
-                <div className="flex flex-1 flex-col px-4 pb-4 pt-3.5">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-on-brand/45">
+                <div className="flex flex-1 flex-col pt-3.5">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
                     {formatEventWhen(event.startsAt)}
                   </p>
-                  <h3 className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-on-brand">
+                  <h3 className="mt-1.5 line-clamp-2 font-display text-lg leading-snug text-ocean-deep group-hover:text-ocean">
                     {event.title}
                   </h3>
-                  <p className="mt-1 text-sm text-on-brand/55">{event.venue}</p>
-                  <div className="mt-auto flex items-center justify-between gap-2 pt-4">
-                    <span className="text-xs text-on-brand/45">
+                  <p className="mt-1 text-sm text-muted">{event.venue}</p>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                    <span className="text-xs text-muted">
                       {event.area?.split(",")[0]?.trim() || "Kenya"}
                     </span>
                     <span className="text-sm font-semibold text-coral">
-                      View event →
+                      View →
                     </span>
                   </div>
                 </div>
