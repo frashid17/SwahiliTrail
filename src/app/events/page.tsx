@@ -51,14 +51,14 @@ export default function EventsPage() {
       <div className="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-10">
         <FadeIn>
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
-            Coast events
+            Events
           </p>
           <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-            What&apos;s on across the coast
+            What&apos;s on in Tana River (and nearby)
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
-            Open an event for venue details and a clear path to book tickets
-            (Quicket, eGotickets, Ticketmaster when connected).
+            IBS 2026 and county dates show first. Coast corridor listings sit
+            after that. Open a card for venue and how to book.
           </p>
           {refreshedAt ? (
             <p className="mt-2 text-xs text-muted">
