@@ -1,18 +1,18 @@
 # Swahili Trail
 
-Kenya travel platform — plan trips, match stays, ask a multilingual guide, follow events, and open visitor analytics across the country (Nairobi, safari circuits, Rift Valley, and the Swahili coast).
+Kenya travel platform - plan trips, match stays, ask a multilingual guide, follow events, and open visitor analytics across the country (Nairobi, safari circuits, Rift Valley, and the Swahili coast).
 
 ## Features
 
-- **AI Trip Planner** — Gemini builds day-by-day Kenya itineraries with rough KES budgets
-- **Hotel Matching** — ranks stays by budget, vibe, and region
-- **Explore & Attractions** — places, wildlife, and culture with booking tips
-- **Events** — Kenya calendar + optional Ticketmaster listings
-- **Live now** — temperature, sunrise/sunset (and tides on the coast) based on the visitor’s location
-- **Multilingual Guide** — chat in English, Kiswahili, French, German, Chinese, Arabic
-- **Destination Analytics** — visitor trends, attractions, markets, sentiment
-- **Auth** — Clerk (saved trips, guide history, stay matches)
-- **Database** — Supabase (optional; seed SQL included)
+- **AI Trip Planner** - Gemini builds day-by-day Kenya itineraries with rough KES budgets
+- **Hotel Matching** - ranks stays by budget, vibe, and region
+- **Explore & Attractions** - places, wildlife, and culture with booking tips
+- **Events** - Kenya calendar + optional Ticketmaster listings
+- **Live now** - temperature, sunrise/sunset (and tides on the coast) based on the visitor’s location
+- **Multilingual Guide** - chat in English, Kiswahili, French, German, Chinese, Arabic
+- **Destination Analytics** - visitor trends, attractions, markets, sentiment
+- **Auth** - Clerk (saved trips, guide history, stay matches)
+- **Database** - Supabase (optional; seed SQL included)
 
 ## Stack
 
