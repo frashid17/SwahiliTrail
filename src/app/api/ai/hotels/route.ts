@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
   fireAndForget,
-  generateJson,
   sanitizeAiStrings,
+  streamGenerateContent,
 } from "@/lib/ai/gemini";
+import { ndjsonResponse } from "@/lib/ai/ndjson-stream";
 import {
   aiPlaceToHotel,
   aiPlaceToRestaurant,
@@ -108,8 +109,10 @@ export async function POST(req: Request) {
       ? `HARD RULE: Every place MUST be in ${area} / ${region}. Never recommend the coast when the traveler chose inland (or vice versa). If vibe mentions beach but area is inland, adapt (pool, spa, views) inside ${area}.`
       : "Pick the best Kenya fits and state which region each place is in.";
 
-    const match = await generateJson<MatchResult>(
-      `Recommend ${isHotels ? "hotels / lodges / camps" : "restaurants"} for a Kenya traveler.
+    return ndjsonResponse(async (emit) => {
+      let accumulated = "";
+      for await (const chunk of streamGenerateContent(
+        `Recommend ${isHotels ? "hotels / lodges / camps" : "restaurants"} for a Kenya traveler.
 
 Budget max ${isHotels ? "per night" : "per meal"}: ${input.budgetMax} KES
 Vibe: ${input.vibe}
@@ -147,155 +150,174 @@ Rules:
 - priceKes = estimated ${isHotels ? "nightly" : "per-person meal"} cost in KES near the budget when possible.
 - Keep names accurate. Short descriptions (1-2 sentences). Tips max 3.
 - Stay inside the selected area.`,
-      `You recommend ${isHotels ? "stays" : "restaurants"} for Swahili Trail across Kenya. Prefer catalogue ids when they fit; otherwise suggest real places from knowledge. Plain language.`,
-      { maxOutputTokens: 1600, temperature: 0.4 },
-    );
+        `You recommend ${isHotels ? "stays" : "restaurants"} for Swahili Trail across Kenya. Prefer catalogue ids when they fit; otherwise suggest real places from knowledge. Plain language.`,
+        { maxOutputTokens: 1600, temperature: 0.4, json: true },
+      )) {
+        accumulated += chunk;
+        emit({ type: "delta", text: chunk });
+      }
 
-    const places = Array.isArray(match.places) ? match.places : [];
-    const cleanMeta = sanitizeAiStrings({
-      rationale: match.rationale,
-      tips: (match.tips ?? []).slice(0, 3),
-    });
+      let match: MatchResult;
+      try {
+        match = JSON.parse(accumulated) as MatchResult;
+      } catch {
+        throw new Error("Could not parse match results. Please try again.");
+      }
 
-    if (isHotels) {
-      const hotels: Hotel[] = [];
+      const places = Array.isArray(match.places) ? match.places : [];
+      const cleanMeta = sanitizeAiStrings({
+        rationale: match.rationale,
+        tips: (match.tips ?? []).slice(0, 3),
+      });
+
+      if (isHotels) {
+        const hotels: Hotel[] = [];
+        const seen = new Set<string>();
+
+        for (const place of places) {
+          const catalogueId =
+            typeof place.catalogueId === "string" ? place.catalogueId : null;
+          const fromCatalogue = catalogueId
+            ? (catalogueSource as typeof HOTELS).find(
+                (h) => h.id === catalogueId,
+              ) || HOTELS.find((h) => h.id === catalogueId)
+            : null;
+
+          const byName =
+            fromCatalogue ||
+            (catalogueSource as typeof HOTELS).find(
+              (h) =>
+                h.name.toLowerCase() ===
+                (place.name || "").trim().toLowerCase(),
+            );
+
+          const hotel = aiPlaceToHotel(place, byName ?? null);
+          if (seen.has(hotel.id)) continue;
+          if (
+            areaLocked &&
+            !byName &&
+            place.area &&
+            !place.area
+              .toLowerCase()
+              .includes(
+                area.toLowerCase().split(/[\/,]/)[0]!.trim().toLowerCase(),
+              ) &&
+            !area.toLowerCase().includes(place.area.toLowerCase().slice(0, 6))
+          ) {
+            const areaKey = area.toLowerCase();
+            const placeArea = place.area.toLowerCase();
+            const ok =
+              placeArea.includes("mara") && areaKey.includes("mara")
+                ? true
+                : placeArea.includes("nairobi") && areaKey.includes("nairobi")
+                  ? true
+                  : placeArea.includes(areaKey.split(" ")[0]!) ||
+                    areaKey
+                      .split(" ")
+                      .some((w) => w.length > 3 && placeArea.includes(w));
+            if (!ok) continue;
+          }
+          seen.add(hotel.id);
+          hotels.push(hotel);
+          if (hotels.length >= 8) break;
+        }
+
+        for (const h of catalogueSource as typeof HOTELS) {
+          if (hotels.length >= 8) break;
+          if (seen.has(h.id)) continue;
+          if (h.pricePerNight > input.budgetMax * 1.35) continue;
+          seen.add(h.id);
+          hotels.push(h);
+        }
+
+        emit({ type: "delta", text: "" });
+        const hotelsWithPhotos = await attachGooglePhotos(hotels);
+
+        const nextQuota = await consumeAiQuota(userId, "hotels", {
+          requestHash: quota.requestHash,
+          plan: quota.plan,
+        });
+
+        const supabase = createAdminClient();
+        if (supabase) {
+          fireAndForget(
+            Promise.resolve(
+              supabase.from("hotel_matches").insert({
+                user_id: userId,
+                preferences: input,
+                matched_hotel_ids: hotelsWithPhotos.map((h) => h.id),
+                rationale: cleanMeta.rationale,
+              }),
+            ),
+          );
+        }
+
+        emit({
+          type: "done",
+          mode: "hotels",
+          hotels: hotelsWithPhotos,
+          restaurants: [],
+          rationale:
+            cleanMeta.rationale ||
+            `Suggested stays for ${region} based on your preferences.`,
+          tips: cleanMeta.tips,
+          quota: quotaPayload(nextQuota),
+        });
+        return;
+      }
+
+      const restaurants: Restaurant[] = [];
       const seen = new Set<string>();
 
       for (const place of places) {
         const catalogueId =
           typeof place.catalogueId === "string" ? place.catalogueId : null;
         const fromCatalogue = catalogueId
-          ? (catalogueSource as typeof HOTELS).find((h) => h.id === catalogueId) ||
-            HOTELS.find((h) => h.id === catalogueId)
+          ? (catalogueSource as typeof RESTAURANTS).find(
+              (r) => r.id === catalogueId,
+            ) || RESTAURANTS.find((r) => r.id === catalogueId)
           : null;
-
-        // Also match by name against catalogue when AI omits catalogueId
         const byName =
           fromCatalogue ||
-          (catalogueSource as typeof HOTELS).find(
-            (h) =>
-              h.name.toLowerCase() === (place.name || "").trim().toLowerCase(),
+          (catalogueSource as typeof RESTAURANTS).find(
+            (r) =>
+              r.name.toLowerCase() ===
+              (place.name || "").trim().toLowerCase(),
           );
 
-        const hotel = aiPlaceToHotel(place, byName ?? null);
-        if (seen.has(hotel.id)) continue;
-        if (
-          areaLocked &&
-          !byName &&
-          place.area &&
-          !place.area.toLowerCase().includes(
-            area.toLowerCase().split(/[\/,]/)[0]!.trim().toLowerCase(),
-          ) &&
-          !area.toLowerCase().includes(place.area.toLowerCase().slice(0, 6))
-        ) {
-          // Soft check — still allow if area aliases overlap (e.g. "Talek, Maasai Mara")
-          const areaKey = area.toLowerCase();
-          const placeArea = place.area.toLowerCase();
-          const ok =
-            placeArea.includes("mara") && areaKey.includes("mara")
-              ? true
-              : placeArea.includes("nairobi") && areaKey.includes("nairobi")
-                ? true
-                : placeArea.includes(areaKey.split(" ")[0]!) ||
-                  areaKey.split(" ").some((w) => w.length > 3 && placeArea.includes(w));
-          if (!ok) continue;
-        }
-        seen.add(hotel.id);
-        hotels.push(hotel);
-        if (hotels.length >= 8) break;
+        const restaurant = aiPlaceToRestaurant(place, byName ?? null);
+        if (seen.has(restaurant.id)) continue;
+        seen.add(restaurant.id);
+        restaurants.push(restaurant);
+        if (restaurants.length >= 8) break;
       }
 
-      // If AI returned only weak results, append in-area catalogue fillers
-      for (const h of catalogueSource as typeof HOTELS) {
-        if (hotels.length >= 8) break;
-        if (seen.has(h.id)) continue;
-        if (h.pricePerNight > input.budgetMax * 1.35) continue;
-        seen.add(h.id);
-        hotels.push(h);
+      for (const r of catalogueSource as typeof RESTAURANTS) {
+        if (restaurants.length >= 8) break;
+        if (seen.has(r.id)) continue;
+        if (r.avgMealKes > input.budgetMax * 1.35) continue;
+        seen.add(r.id);
+        restaurants.push(r);
       }
 
-      const hotelsWithPhotos = await attachGooglePhotos(hotels);
+      const restaurantsWithPhotos = await attachGooglePhotos(restaurants);
 
       const nextQuota = await consumeAiQuota(userId, "hotels", {
         requestHash: quota.requestHash,
         plan: quota.plan,
       });
 
-      const supabase = createAdminClient();
-      if (supabase) {
-        fireAndForget(
-          Promise.resolve(
-            supabase.from("hotel_matches").insert({
-              user_id: userId,
-              preferences: input,
-              matched_hotel_ids: hotelsWithPhotos.map((h) => h.id),
-              rationale: cleanMeta.rationale,
-            }),
-          ),
-        );
-      }
-
-      return NextResponse.json({
-        mode: "hotels",
-        hotels: hotelsWithPhotos,
-        restaurants: [],
+      emit({
+        type: "done",
+        mode: "restaurants",
+        hotels: [],
+        restaurants: restaurantsWithPhotos,
         rationale:
           cleanMeta.rationale ||
-          `Suggested stays for ${region} based on your preferences.`,
+          `Suggested restaurants for ${region} based on your preferences.`,
         tips: cleanMeta.tips,
         quota: quotaPayload(nextQuota),
       });
-    }
-
-    const restaurants: Restaurant[] = [];
-    const seen = new Set<string>();
-
-    for (const place of places) {
-      const catalogueId =
-        typeof place.catalogueId === "string" ? place.catalogueId : null;
-      const fromCatalogue = catalogueId
-        ? (catalogueSource as typeof RESTAURANTS).find(
-            (r) => r.id === catalogueId,
-          ) || RESTAURANTS.find((r) => r.id === catalogueId)
-        : null;
-      const byName =
-        fromCatalogue ||
-        (catalogueSource as typeof RESTAURANTS).find(
-          (r) =>
-            r.name.toLowerCase() === (place.name || "").trim().toLowerCase(),
-        );
-
-      const restaurant = aiPlaceToRestaurant(place, byName ?? null);
-      if (seen.has(restaurant.id)) continue;
-      seen.add(restaurant.id);
-      restaurants.push(restaurant);
-      if (restaurants.length >= 8) break;
-    }
-
-    for (const r of catalogueSource as typeof RESTAURANTS) {
-      if (restaurants.length >= 8) break;
-      if (seen.has(r.id)) continue;
-      if (r.avgMealKes > input.budgetMax * 1.35) continue;
-      seen.add(r.id);
-      restaurants.push(r);
-    }
-
-    const restaurantsWithPhotos = await attachGooglePhotos(restaurants);
-
-    const nextQuota = await consumeAiQuota(userId, "hotels", {
-      requestHash: quota.requestHash,
-      plan: quota.plan,
-    });
-
-    return NextResponse.json({
-      mode: "restaurants",
-      hotels: [],
-      restaurants: restaurantsWithPhotos,
-      rationale:
-        cleanMeta.rationale ||
-        `Suggested restaurants for ${region} based on your preferences.`,
-      tips: cleanMeta.tips,
-      quota: quotaPayload(nextQuota),
     });
   } catch (error) {
     const message =
