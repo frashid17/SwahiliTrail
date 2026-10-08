@@ -8,7 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  // Public destination analytics — no auth required
+  // Public destination analytics - no auth required
   let recentEvents: { event_type: string; created_at: string }[] = [];
   const supabase = await createClient();
   if (supabase) {
