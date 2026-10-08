@@ -1,30 +1,31 @@
 /**
- * Destination + summit framing for Swahili Trail.
- * Retargeted for Innovation and Business Summit 2026 (Hola, Tana River).
+ * Destination + platform framing for Swahili Trail (Kenya-wide).
  */
 
 export const DESTINATION = {
   brand: "Swahili Trail",
-  regionShort: "Tana River",
-  regionLong: "Tana River County and the Kenyan coast",
-  hubTown: "Hola",
-  /** Kipini / Tana Delta — Blue Economy coastal window for live conditions */
+  regionShort: "Kenya",
+  regionLong: "Kenya",
+  hubTown: "Nairobi",
+  country: "Kenya",
+  /** Default when geolocation is unavailable — Nairobi CBD */
   coords: {
-    lat: -2.525,
-    lon: 40.527,
+    lat: -1.2921,
+    lon: 36.8219,
     tz: "Africa/Nairobi" as const,
-    label: "Tana Delta",
+    label: "Nairobi",
   },
-  /** Places API bias around Hola / mid-county */
+  /** Places API bias — country centroid-ish (Nairobi), wide radius used in callers */
   placesBias: {
-    latitude: -1.5,
-    longitude: 40.03,
+    latitude: -1.2921,
+    longitude: 36.8219,
   },
-  tagline: "Trip tools for Tana River - built for IBS 2026.",
+  tagline: "Your travel platform for all of Kenya.",
   supportingLine:
-    "Plan days, match stays, ask a guide in six languages, and pull a short visitor brief for Hola and nearby coast towns.",
+    "Plan safaris, city days, and coast escapes. Match stays, ask a guide in six languages, and follow what's on — from Nairobi to the Mara, Amboseli, and the Swahili coast.",
 } as const;
 
+/** Optional calendar event — not product framing */
 export const SUMMIT = {
   name: "Innovation and Business Summit 2026",
   shortName: "IBS 2026",
@@ -47,7 +48,7 @@ export const SUMMIT = {
     "https://maps.google.com/?q=Tana+River+Training+Innovation+Youth+Empowerment+Centre+Hola",
 } as const;
 
-export const AI_REGION_CONTEXT = `Primary geography: Tana River County (Hola, Garsen, Kipini, Ngao, Tana Delta). Wider Jumuiya coast towns only when a day trip helps.
-Focus on river-delta culture (Pokomo, Orma), farming and fishing livelihoods, and practical visitor logistics (roads, lodging, cash/M-Pesa).
-When Mombasa or south-coast sites appear in catalogues, treat them as optional side trips - not the default base.
-Event framing: Innovation and Business Summit 2026 (IBS 2026) in Hola, 7–10 October 2026.`;
+export const AI_REGION_CONTEXT = `Primary geography: Kenya as a whole.
+Cover major corridors freely: Nairobi & central highlands, Rift Valley (Nakuru, Naivasha, Hell's Gate), Maasai Mara, Amboseli, Tsavo East/West, Mount Kenya / Nanyuki, western Kenya (Kisumu, Kakamega), northern circuits when asked, and the Swahili coast (Mombasa, Diani, Kilifi, Watamu, Malindi, Lamu, Tana Delta).
+Match advice to the traveler's stated base and interests. Use practical logistics (roads, matatus, domestic flights, cash/M-Pesa, park fees, seasons).
+Product: Swahili Trail is Kenya's travel platform - help travelers plan real trips year-round across the country.`;
