@@ -51,7 +51,7 @@ export default function ExplorePage() {
               className={cn(
                 "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition",
                 category === filter.id
-                  ? "bg-brand-deep text-white"
+                  ? "bg-brand-deep text-on-brand"
                   : "bg-surface text-muted hover:bg-sand",
               )}
             >
