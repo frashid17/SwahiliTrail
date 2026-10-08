@@ -79,6 +79,28 @@ export async function generateText(
   return toPlainText(result.response.text());
 }
 
+/** Yield model tokens as they arrive (text or JSON mime). */
+export async function* streamGenerateContent(
+  prompt: string,
+  systemInstruction?: string,
+  options?: GenerateOptions & { json?: boolean },
+): AsyncGenerator<string> {
+  const model = getGeminiModel(options?.model);
+  const result = await model.generateContentStream({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    systemInstruction: `${systemInstruction ?? ""}\n\n${PLAIN_STYLE}`.trim(),
+    generationConfig: buildGenerationConfig(
+      options,
+      options?.json ?? false,
+    ) as never,
+  });
+
+  for await (const chunk of result.stream) {
+    const text = chunk.text();
+    if (text) yield text;
+  }
+}
+
 /** Recursively plain-text sanitize string fields in AI JSON payloads. */
 export function sanitizeAiStrings<T>(value: T): T {
   if (typeof value === "string") {
