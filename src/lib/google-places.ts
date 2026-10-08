@@ -1,6 +1,7 @@
 import type { ExplorePlace } from "@/lib/data/explore-places";
+import { DESTINATION } from "@/lib/destination";
 
-const MOMBASA = { latitude: -4.0435, longitude: 39.6682 };
+const PLACES_BIAS = DESTINATION.placesBias;
 /** Places API (New) max radius for location bias circle (meters). */
 const MAX_BIAS_RADIUS_M = 50_000;
 
@@ -49,7 +50,7 @@ async function searchText(
       regionCode: "KE",
       locationBias: {
         circle: {
-          center: MOMBASA,
+          center: PLACES_BIAS,
           radius: MAX_BIAS_RADIUS_M,
         },
       },
