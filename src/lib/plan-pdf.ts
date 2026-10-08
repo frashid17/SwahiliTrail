@@ -63,7 +63,7 @@ export function downloadTripPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(160, 210, 215);
-  doc.text("AI Coastal Tourism Companion · Mombasa", markX + markS + 4, 21);
+  doc.text("Tana River · IBS 2026", markX + markS + 4, 21);
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
