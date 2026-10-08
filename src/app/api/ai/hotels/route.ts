@@ -61,13 +61,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const quota = await assertAiQuota(userId);
-  if (!quota.ok) {
-    return NextResponse.json(quota.responseBody, { status: 402 });
-  }
-
   try {
     const input = bodySchema.parse(await req.json());
+    const fingerprint = [
+      input.mode,
+      input.budgetMax,
+      input.vibe,
+      input.travelers,
+      input.areaPreference ?? "",
+      input.mustHaves.join(","),
+    ].join("|");
+    const quota = await assertAiQuota(userId, "hotels", fingerprint);
+    if (!quota.ok) {
+      return NextResponse.json(quota.responseBody, {
+        status: quota.httpStatus,
+      });
+    }
+
     const area = input.areaPreference || "whole-coast";
     const isHotels = input.mode === "hotels";
     const areaLocked = area !== "whole-coast";
@@ -206,7 +216,10 @@ Rules:
 
       const hotelsWithPhotos = await attachGooglePhotos(hotels);
 
-      const nextQuota = await consumeAiQuota(userId, "hotels");
+      const nextQuota = await consumeAiQuota(userId, "hotels", {
+        requestHash: quota.requestHash,
+        plan: quota.plan,
+      });
 
       const supabase = createAdminClient();
       if (supabase) {
@@ -269,7 +282,10 @@ Rules:
 
     const restaurantsWithPhotos = await attachGooglePhotos(restaurants);
 
-    const nextQuota = await consumeAiQuota(userId, "hotels");
+    const nextQuota = await consumeAiQuota(userId, "hotels", {
+      requestHash: quota.requestHash,
+      plan: quota.plan,
+    });
 
     return NextResponse.json({
       mode: "restaurants",
