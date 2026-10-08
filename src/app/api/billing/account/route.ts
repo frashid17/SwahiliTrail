@@ -38,7 +38,7 @@ export async function GET() {
     unlimited && periodEnd && !cancelAtPeriodEnd
       ? {
           id: "upcoming-trail-plus",
-          description: `Trail Plus — next billing`,
+          description: `Trail Plus - next billing`,
           amount,
           currency,
           amountFormatted: formatMoney(amount, currency),
