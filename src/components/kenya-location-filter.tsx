@@ -42,7 +42,7 @@ export function KenyaLocationFilter({
         <select
           value={regionId}
           onChange={(e) => setRegionId(e.target.value)}
-          className="w-full max-w-xs rounded-full border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-ocean-deep outline-none transition focus:border-aqua focus:ring-2 focus:ring-aqua/20 sm:w-auto"
+          className="w-full max-w-xs rounded-md border border-border bg-surface px-3.5 py-2.5 text-sm font-semibold text-ocean-deep outline-none transition focus:border-ocean focus:ring-2 focus:ring-ocean/15 sm:w-auto"
         >
           <option value={ALL_KENYA_ID}>All Kenya</option>
           {KENYA_REGIONS.map((r) => (
@@ -71,14 +71,14 @@ export function KenyaLocationFilter({
           type="button"
           onClick={() => setRegionId(ALL_KENYA_ID)}
           className={cn(
-            "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition",
+            "shrink-0 rounded-md px-3.5 py-2 text-sm font-medium transition",
             regionId === ALL_KENYA_ID
               ? onDark
                 ? "bg-coral text-white"
-                : "bg-brand-deep text-white"
+                : "bg-brand-deep text-on-brand"
               : onDark
                 ? "bg-white/10 text-on-brand/80 hover:bg-white/15"
-                : "bg-surface text-muted hover:bg-sand",
+                : "bg-surface text-muted ring-1 ring-border hover:bg-foam",
           )}
         >
           All Kenya
@@ -90,14 +90,14 @@ export function KenyaLocationFilter({
             title={r.hint}
             onClick={() => setRegionId(r.id)}
             className={cn(
-              "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition",
+              "shrink-0 rounded-md px-3.5 py-2 text-sm font-medium transition",
               regionId === r.id
                 ? onDark
                   ? "bg-coral text-white"
-                  : "bg-brand-deep text-white"
+                  : "bg-brand-deep text-on-brand"
                 : onDark
                   ? "bg-white/10 text-on-brand/80 hover:bg-white/15"
-                  : "bg-surface text-muted hover:bg-sand",
+                  : "bg-surface text-muted ring-1 ring-border hover:bg-foam",
             )}
           >
             {r.label}
