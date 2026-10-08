@@ -92,7 +92,7 @@ export function CoastEventsSection() {
                 : "What’s on across Kenya"}
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-              Focus the list by region — Nairobi, Nanyuki, the Mara, the coast,
+              Focus the list by region - Nairobi, Nanyuki, the Mara, the coast,
               and more.
             </p>
             <p className="mt-2 text-xs text-muted/80">{sourceNote}</p>
