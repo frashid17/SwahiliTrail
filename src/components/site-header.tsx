@@ -23,7 +23,7 @@ const navLinks: NavLink[] = [
   { href: "/attractions", label: "Attractions" },
   { href: "/events", label: "Events" },
   { href: "/wildlife", label: "Wildlife" },
-  { href: "/planner", label: "AI Planner", signedInOnly: true },
+  { href: "/planner", label: "Planner", signedInOnly: true },
   { href: "/hotels", label: "Stay & Eat", signedInOnly: true },
   { href: "/guide", label: "Guide", signedInOnly: true },
   { href: "/trips", label: "My Trips", signedInOnly: true },
