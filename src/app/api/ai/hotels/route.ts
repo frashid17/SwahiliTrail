@@ -103,7 +103,7 @@ export async function POST(req: Request) {
                   `${r.id}|${r.name}|${r.area}|${r.cuisine}|KES ${r.avgMealKes}|${r.rating}`,
               )
               .join("\n")
-        : "(empty — recommend real well-known places in this area from your knowledge)";
+        : "(empty - recommend real well-known places in this area from your knowledge)";
 
     const areaRule = areaLocked
       ? `HARD RULE: Every place MUST be in ${area} / ${region}. Never recommend the coast when the traveler chose inland (or vice versa). If vibe mentions beach but area is inland, adapt (pool, spa, views) inside ${area}.`
@@ -121,7 +121,7 @@ Must-haves: ${input.mustHaves.join(", ") || "none"}
 Area preference: ${region}
 ${areaRule}
 
-Optional Swahili Trail catalogue (prefer these when they fit — set catalogueId to the id):
+Optional Swahili Trail catalogue (prefer these when they fit - set catalogueId to the id):
 ${catalogueText}
 
 You MAY and SHOULD recommend real places not in the catalogue when needed (e.g. Maasai Mara lodges, Amboseli camps, Nanyuki ranches). Use real property names travelers can book.
