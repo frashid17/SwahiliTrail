@@ -28,7 +28,7 @@ function formatEventWhen(iso: string) {
 export function CoastEventsSection() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [events, setEvents] = useState<CoastEvent[]>([]);
-  const [sourceNote, setSourceNote] = useState("Loading coast events…");
+  const [sourceNote, setSourceNote] = useState("Loading events…");
 
   useEffect(() => {
     let cancelled = false;
@@ -45,11 +45,11 @@ export function CoastEventsSection() {
         const live = json.sources.filter((s) => s.live).map((s) => s.label);
         setSourceNote(
           live.length
-            ? `Live feed · ${live.join(" · ")}`
-            : "Coast calendar · add Ticketmaster key for more live listings",
+            ? live.join(" · ")
+            : "Local calendar only",
         );
       } catch {
-        if (!cancelled) setSourceNote("Events temporarily unavailable");
+        if (!cancelled) setSourceNote("Events unavailable right now");
       }
     }
     void load();
@@ -76,14 +76,14 @@ export function CoastEventsSection() {
           <div className="max-w-2xl">
             <p className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-coral">
               <span aria-hidden className="h-px w-8 bg-coral" />
-              This week on the coast
+              Happening now · Tana River first
             </p>
             <h2 className="mt-3 font-display text-3xl text-on-brand sm:text-4xl md:text-5xl">
-              The plans worth leaving the house for.
+              IBS week and nearby dates
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-on-brand/65 sm:text-base">
-              Concerts, festivals, markets, and community events. Open any card
-              for full details and how to book tickets.
+              Summit sessions in Hola, delta trips, and a few coast corridor
+              dates. Open a card for venue and booking notes.
             </p>
             <p className="mt-2 text-xs text-on-brand/45">{sourceNote}</p>
           </div>
@@ -143,7 +143,13 @@ export function CoastEventsSection() {
                 <p className="mt-1 text-sm text-on-brand/55">{event.venue}</p>
                 <div className="mt-auto flex items-center justify-between gap-2 pt-4">
                   <span className="text-xs text-on-brand/45">
-                    {event.source === "ticketmaster" ? "Live listing" : "Upcoming"}
+                    {/tana|hola|garsen|kipini|ngao|delta|ibs/i.test(
+                      `${event.area} ${event.title}`,
+                    )
+                      ? "Tana River"
+                      : event.source === "ticketmaster"
+                        ? "Ticketmaster"
+                        : "Coast"}
                   </span>
                   <span className="text-sm font-semibold text-coral">
                     View event →
