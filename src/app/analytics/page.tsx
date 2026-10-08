@@ -79,14 +79,14 @@ export default function AnalyticsPage() {
           Destination Analytics
         </p>
         <h1 className="mt-2 font-display text-4xl text-ocean-deep">
-          Tana River pulse
+          Kenya travel pulse
         </h1>
         <p className="mt-3 max-w-2xl text-muted">{data.note}</p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
-              label: "Annual visitors (demo)",
+              label: "Annual visitors (sample)",
               value: data.kpis.totalVisitors.toLocaleString(),
             },
             {
