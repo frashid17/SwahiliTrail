@@ -1,12 +1,30 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateJson, sanitizeAiStrings } from "@/lib/ai/gemini";
-import { hotelsForArea, HOTELS } from "@/lib/data/hotels";
+import {
+  fireAndForget,
+  generateJson,
+  sanitizeAiStrings,
+} from "@/lib/ai/gemini";
+import {
+  aiPlaceToHotel,
+  aiPlaceToRestaurant,
+  type AiMatchedPlace,
+} from "@/lib/ai/place-matches";
+import {
+  FREE_AI_QUOTA,
+  TRAIL_PLUS_PRICE_USD,
+  assertAiQuota,
+  consumeAiQuota,
+  type AiQuotaStatus,
+} from "@/lib/ai/quota";
+import { hotelsForArea, HOTELS, type Hotel } from "@/lib/data/hotels";
 import {
   RESTAURANTS,
   restaurantsForArea,
+  type Restaurant,
 } from "@/lib/data/restaurants";
+import { attachGooglePhotos } from "@/lib/google-places";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const bodySchema = z.object({
@@ -19,10 +37,23 @@ const bodySchema = z.object({
 });
 
 type MatchResult = {
-  rankedIds: string[];
   rationale: string;
   tips: string[];
+  places: AiMatchedPlace[];
 };
+
+function quotaPayload(quota: AiQuotaStatus) {
+  return {
+    ...quota,
+    freeLimit: FREE_AI_QUOTA,
+    priceUsdPerMonth: TRAIL_PLUS_PRICE_USD,
+    upgradeUrl: "/pricing",
+  };
+}
+
+function areaLabel(area: string) {
+  return area === "whole-coast" ? "Kenya (any region)" : area;
+}
 
 export async function POST(req: Request) {
   const { isAuthenticated, userId } = await auth();
@@ -30,119 +61,225 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const quota = await assertAiQuota(userId);
+  if (!quota.ok) {
+    return NextResponse.json(quota.responseBody, { status: 402 });
+  }
+
   try {
     const input = bodySchema.parse(await req.json());
     const area = input.areaPreference || "whole-coast";
     const isHotels = input.mode === "hotels";
+    const areaLocked = area !== "whole-coast";
+    const region = areaLabel(area);
 
     const catalogueSource = isHotels
       ? hotelsForArea(area)
       : restaurantsForArea(area);
 
-    const catalogue = isHotels
-      ? (catalogueSource as typeof HOTELS)
-          .map(
-            (h) =>
-              `${h.id} | ${h.name} | ${h.area} | ${h.pricePerNight} KES/night | rating ${h.rating} | tags: ${h.tags.join(", ")} | vibe: ${h.vibe} | ${h.description}`,
-          )
-          .join("\n")
-      : (catalogueSource as typeof RESTAURANTS)
-          .map(
-            (r) =>
-              `${r.id} | ${r.name} | ${r.area} | ${r.cuisine} | avg meal ${r.avgMealKes} KES | rating ${r.rating} | tags: ${r.tags.join(", ")} | vibe: ${r.vibe} | ${r.description}`,
-          )
-          .join("\n");
+    const catalogueText =
+      catalogueSource.length > 0
+        ? isHotels
+          ? (catalogueSource as typeof HOTELS)
+              .map(
+                (h) =>
+                  `${h.id}|${h.name}|${h.area}|KES ${h.pricePerNight}|${h.rating}|${h.tags.slice(0, 4).join(",")}`,
+              )
+              .join("\n")
+          : (catalogueSource as typeof RESTAURANTS)
+              .map(
+                (r) =>
+                  `${r.id}|${r.name}|${r.area}|${r.cuisine}|KES ${r.avgMealKes}|${r.rating}`,
+              )
+              .join("\n")
+        : "(empty — recommend real well-known places in this area from your knowledge)";
 
-    const areaInstruction =
-      area === "whole-coast"
-        ? "Traveler wants options across Tana River County and the Jumuiya coast corridor."
-        : `Traveler prefers the ${area} area.`;
+    const areaRule = areaLocked
+      ? `HARD RULE: Every place MUST be in ${area} / ${region}. Never recommend the coast when the traveler chose inland (or vice versa). If vibe mentions beach but area is inland, adapt (pool, spa, views) inside ${area}.`
+      : "Pick the best Kenya fits and state which region each place is in.";
 
     const match = await generateJson<MatchResult>(
-      `Match ${isHotels ? "hotels" : "restaurants"} for a traveler exploring Tana River County and the Kenyan coast corridor.
+      `Recommend ${isHotels ? "hotels / lodges / camps" : "restaurants"} for a Kenya traveler.
+
 Budget max ${isHotels ? "per night" : "per meal"}: ${input.budgetMax} KES
-Desired vibe: ${input.vibe}
+Vibe: ${input.vibe}
 Travelers: ${input.travelers}
 Must-haves: ${input.mustHaves.join(", ") || "none"}
-Area preference: ${area}
-${areaInstruction}
-Prefer Hola / Tana Delta / Garsen when catalogue allows; otherwise use the closest coast-corridor fits and say so.
+Area preference: ${region}
+${areaRule}
 
-Catalogue (only use these ids):
-${catalogue}
+Optional Swahili Trail catalogue (prefer these when they fit — set catalogueId to the id):
+${catalogueText}
+
+You MAY and SHOULD recommend real places not in the catalogue when needed (e.g. Maasai Mara lodges, Amboseli camps, Nanyuki ranches). Use real property names travelers can book.
 
 Return JSON:
 {
-  "rankedIds": string[],
   "rationale": string,
-  "tips": string[]
+  "tips": string[],
+  "places": [{
+    "catalogueId": string|null,
+    "name": string,
+    "area": string,
+    "rating": number,
+    "priceKes": number,
+    "vibe": string,
+    "description": string,
+    "tags": string[],
+    "amenities": string[],
+    "cuisine": string|null,
+    "websiteUrl": string|null
+  }]
 }
-Rank as many good fits as possible from the catalogue (aim for 5 to 8 ids when available).
-Use exact names from the catalogue in rationale/tips.`,
-      `You match ${isHotels ? "hotels" : "restaurants"} for Swahili Trail travelers in Tana River and nearby coast towns. Only recommend items from the provided catalogue. Write rationale and tips in plain language - no marketing buzzwords.`,
+
+Rules:
+- Return 5 to 8 places, ranked best-first.
+- priceKes = estimated ${isHotels ? "nightly" : "per-person meal"} cost in KES near the budget when possible.
+- Keep names accurate. Short descriptions (1-2 sentences). Tips max 3.
+- Stay inside the selected area.`,
+      `You recommend ${isHotels ? "stays" : "restaurants"} for Swahili Trail across Kenya. Prefer catalogue ids when they fit; otherwise suggest real places from knowledge. Plain language.`,
+      { maxOutputTokens: 1600, temperature: 0.4 },
     );
 
-    const validIds = new Set(catalogueSource.map((item) => item.id));
-    let rankedIds = match.rankedIds.filter((id) => validIds.has(id));
+    const places = Array.isArray(match.places) ? match.places : [];
+    const cleanMeta = sanitizeAiStrings({
+      rationale: match.rationale,
+      tips: (match.tips ?? []).slice(0, 3),
+    });
 
     if (isHotels) {
-      const inBudget = (catalogueSource as typeof HOTELS).filter(
-        (h) => h.pricePerNight <= input.budgetMax,
-      );
-      const rankedInBudget = rankedIds
-        .map((id) => inBudget.find((h) => h.id === id)!)
-        .filter(Boolean);
-      const extras = inBudget.filter(
-        (h) => !rankedInBudget.some((r) => r.id === h.id),
-      );
-      const hotels = [...rankedInBudget, ...extras].slice(0, 8);
+      const hotels: Hotel[] = [];
+      const seen = new Set<string>();
 
-      const clean = sanitizeAiStrings({
-        rationale: match.rationale,
-        tips: match.tips,
-      });
+      for (const place of places) {
+        const catalogueId =
+          typeof place.catalogueId === "string" ? place.catalogueId : null;
+        const fromCatalogue = catalogueId
+          ? (catalogueSource as typeof HOTELS).find((h) => h.id === catalogueId) ||
+            HOTELS.find((h) => h.id === catalogueId)
+          : null;
+
+        // Also match by name against catalogue when AI omits catalogueId
+        const byName =
+          fromCatalogue ||
+          (catalogueSource as typeof HOTELS).find(
+            (h) =>
+              h.name.toLowerCase() === (place.name || "").trim().toLowerCase(),
+          );
+
+        const hotel = aiPlaceToHotel(place, byName ?? null);
+        if (seen.has(hotel.id)) continue;
+        if (
+          areaLocked &&
+          !byName &&
+          place.area &&
+          !place.area.toLowerCase().includes(
+            area.toLowerCase().split(/[\/,]/)[0]!.trim().toLowerCase(),
+          ) &&
+          !area.toLowerCase().includes(place.area.toLowerCase().slice(0, 6))
+        ) {
+          // Soft check — still allow if area aliases overlap (e.g. "Talek, Maasai Mara")
+          const areaKey = area.toLowerCase();
+          const placeArea = place.area.toLowerCase();
+          const ok =
+            placeArea.includes("mara") && areaKey.includes("mara")
+              ? true
+              : placeArea.includes("nairobi") && areaKey.includes("nairobi")
+                ? true
+                : placeArea.includes(areaKey.split(" ")[0]!) ||
+                  areaKey.split(" ").some((w) => w.length > 3 && placeArea.includes(w));
+          if (!ok) continue;
+        }
+        seen.add(hotel.id);
+        hotels.push(hotel);
+        if (hotels.length >= 8) break;
+      }
+
+      // If AI returned only weak results, append in-area catalogue fillers
+      for (const h of catalogueSource as typeof HOTELS) {
+        if (hotels.length >= 8) break;
+        if (seen.has(h.id)) continue;
+        if (h.pricePerNight > input.budgetMax * 1.35) continue;
+        seen.add(h.id);
+        hotels.push(h);
+      }
+
+      const hotelsWithPhotos = await attachGooglePhotos(hotels);
+
+      const nextQuota = await consumeAiQuota(userId, "hotels");
 
       const supabase = createAdminClient();
       if (supabase) {
-        await supabase.from("hotel_matches").insert({
-          user_id: userId,
-          preferences: input,
-          matched_hotel_ids: hotels.map((h) => h.id),
-          rationale: clean.rationale,
-        });
+        fireAndForget(
+          Promise.resolve(
+            supabase.from("hotel_matches").insert({
+              user_id: userId,
+              preferences: input,
+              matched_hotel_ids: hotelsWithPhotos.map((h) => h.id),
+              rationale: cleanMeta.rationale,
+            }),
+          ),
+        );
       }
 
       return NextResponse.json({
         mode: "hotels",
-        hotels,
+        hotels: hotelsWithPhotos,
         restaurants: [],
-        rationale: clean.rationale,
-        tips: clean.tips,
+        rationale:
+          cleanMeta.rationale ||
+          `Suggested stays for ${region} based on your preferences.`,
+        tips: cleanMeta.tips,
+        quota: quotaPayload(nextQuota),
       });
     }
 
-    const inBudget = (catalogueSource as typeof RESTAURANTS).filter(
-      (r) => r.avgMealKes <= input.budgetMax,
-    );
-    const rankedInBudget = rankedIds
-      .map((id) => inBudget.find((r) => r.id === id)!)
-      .filter(Boolean);
-    const extras = inBudget.filter(
-      (r) => !rankedInBudget.some((x) => x.id === r.id),
-    );
-    const restaurants = [...rankedInBudget, ...extras].slice(0, 8);
+    const restaurants: Restaurant[] = [];
+    const seen = new Set<string>();
 
-    const clean = sanitizeAiStrings({
-      rationale: match.rationale,
-      tips: match.tips,
-    });
+    for (const place of places) {
+      const catalogueId =
+        typeof place.catalogueId === "string" ? place.catalogueId : null;
+      const fromCatalogue = catalogueId
+        ? (catalogueSource as typeof RESTAURANTS).find(
+            (r) => r.id === catalogueId,
+          ) || RESTAURANTS.find((r) => r.id === catalogueId)
+        : null;
+      const byName =
+        fromCatalogue ||
+        (catalogueSource as typeof RESTAURANTS).find(
+          (r) =>
+            r.name.toLowerCase() === (place.name || "").trim().toLowerCase(),
+        );
+
+      const restaurant = aiPlaceToRestaurant(place, byName ?? null);
+      if (seen.has(restaurant.id)) continue;
+      seen.add(restaurant.id);
+      restaurants.push(restaurant);
+      if (restaurants.length >= 8) break;
+    }
+
+    for (const r of catalogueSource as typeof RESTAURANTS) {
+      if (restaurants.length >= 8) break;
+      if (seen.has(r.id)) continue;
+      if (r.avgMealKes > input.budgetMax * 1.35) continue;
+      seen.add(r.id);
+      restaurants.push(r);
+    }
+
+    const restaurantsWithPhotos = await attachGooglePhotos(restaurants);
+
+    const nextQuota = await consumeAiQuota(userId, "hotels");
 
     return NextResponse.json({
       mode: "restaurants",
       hotels: [],
-      restaurants,
-      rationale: clean.rationale,
-      tips: clean.tips,
+      restaurants: restaurantsWithPhotos,
+      rationale:
+        cleanMeta.rationale ||
+        `Suggested restaurants for ${region} based on your preferences.`,
+      tips: cleanMeta.tips,
+      quota: quotaPayload(nextQuota),
     });
   } catch (error) {
     const message =
