@@ -29,7 +29,7 @@ export type UsagePayload = AiQuotaStatus & {
 type AiQuotaContextValue = {
   quota: UsagePayload | null;
   setQuota: (quota: UsagePayload | null) => void;
-  /** Apply quota from an AI response — never lowers free usage for the same period. */
+  /** Apply quota from an AI response - never lowers free usage for the same period. */
   applyQuota: (quota: Partial<UsagePayload> | AiQuotaStatus | null | undefined) => void;
   refresh: () => Promise<void>;
 };
@@ -299,7 +299,7 @@ export function AiQuotaBanner({
             {exhausted
               ? plus
                 ? "Daily fair-use limit reached. Try again tomorrow."
-                : `Limit reached — Trail Plus is $${quota.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo`
+                : `Limit reached - Trail Plus is $${quota.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/mo`
               : plus
                 ? `${remaining} left today · fair-use protection on`
                 : `${remaining} free ${remaining === 1 ? "use" : "uses"} left this month`}
