@@ -135,7 +135,7 @@ export default function WildlifeDetailPage() {
             <p className="text-sm text-muted">
               ~KES {site.estEntryKes.toLocaleString()} entry · ~
               {site.durationHours}h ·{" "}
-              {site.dayTripFromMombasa ? "Day-trip possible" : "Best overnight"}
+              {site.dayTripPossible ? "Day-trip possible" : "Best overnight"}
             </p>
             <p className="mt-2 text-sm text-muted">{site.blurb}</p>
             <div className="mt-4 flex flex-wrap gap-2">
