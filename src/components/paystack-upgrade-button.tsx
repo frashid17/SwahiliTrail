@@ -42,7 +42,7 @@ export function PaystackUpgradeButton({
         onClick={() => void startCheckout()}
         disabled={loading}
         className={cn(
-          "inline-flex w-full items-center justify-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-60",
+          "btn-solid w-full disabled:opacity-60",
           className,
         )}
       >
