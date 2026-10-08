@@ -45,7 +45,7 @@ export function downloadTripPdf(
   const contentW = pageW - margin * 2;
   let y = 0;
 
-  // Cover band — brand sheet PDF header
+  // Cover band - brand sheet PDF header
   doc.setFillColor(...BRAND.deep);
   doc.rect(0, 0, pageW, 42, "F");
   doc.setFillColor(...BRAND.aqua);
