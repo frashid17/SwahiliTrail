@@ -28,13 +28,13 @@ export function AuthShell({
         <div className="coastal-shimmer absolute inset-0 opacity-30 mix-blend-soft-light" />
         <div className="absolute inset-x-0 bottom-0 p-10 text-white">
           <p className="font-display text-4xl leading-tight drop-shadow-md xl:text-5xl">
-            Hola first.
+            Kenya first.
             <br />
             Then the trail.
           </p>
           <p className="mt-4 max-w-md text-sm text-white/80">
-            Sign in to save trips, guide chats, and stay matches while you are
-            at IBS 2026.
+            Sign in to save trips, guide chats, and stay matches across Swahili
+            Trail.
           </p>
         </div>
       </div>
