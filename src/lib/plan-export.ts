@@ -191,7 +191,7 @@ export function googleCalendarUrl(
     text: plan.title,
     dates: `${toYmd(startDate)}/${toYmd(end)}`,
     details: details.slice(0, 1800),
-    location: "Mombasa, Kenya",
+    location: "Kenya",
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
@@ -206,7 +206,7 @@ export function outlookCalendarUrl(plan: SavedPlan, startDate: Date): string {
     startdt: startDate.toISOString().slice(0, 10),
     enddt: end.toISOString().slice(0, 10),
     body: plan.summary,
-    location: "Mombasa, Kenya",
+    location: "Kenya",
   });
   return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
 }
