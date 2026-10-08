@@ -80,11 +80,11 @@ export default function AttractionsPage() {
               Tourist attractions
             </p>
             <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-              What to do on the coast
+              What to do in Tana River
             </h1>
             <p className="mt-3 max-w-2xl text-muted">
-              Open any place for full details and traveler reviews, or add it to
-              your trip list for the AI Planner. Looking for clubs and nightlife?{" "}
+              Open a place for details and traveler reviews, or save it to your
+              trip list for the planner. Looking for clubs and nightlife?{" "}
               <Link href="/explore" className="font-semibold text-ocean">
                 Explore Food & Nightlife
               </Link>
