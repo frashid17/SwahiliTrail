@@ -29,7 +29,7 @@ export function ShellMark({ className = "" }: { className?: string }) {
   );
 }
 
-/** Soft animated tide band — visible aqua waves */
+/** Soft animated tide band - visible aqua waves */
 export function TideBand({ className = "" }: { className?: string }) {
   return (
     <div
