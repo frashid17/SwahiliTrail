@@ -73,10 +73,10 @@ function NavDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition",
+          "inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition",
           active || open
-            ? "bg-ocean text-white"
-            : "text-muted hover:bg-surface/80 hover:text-ocean-deep",
+            ? "bg-brand-deep text-on-brand"
+            : "text-muted hover:bg-foam hover:text-ocean-deep",
         )}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -89,7 +89,7 @@ function NavDropdown({
       {open ? (
         <div
           role="menu"
-          className="absolute left-0 top-full z-50 mt-1.5 min-w-[11rem] rounded-2xl border border-border bg-surface p-1.5 shadow-lg"
+          className="absolute left-0 top-full z-50 mt-1.5 min-w-[11rem] rounded-md border border-border bg-surface p-1.5 shadow-sm"
         >
           {links.map((link) => (
             <Link
@@ -98,9 +98,9 @@ function NavDropdown({
               role="menuitem"
               onClick={() => setOpen(false)}
               className={cn(
-                "block rounded-xl px-3 py-2 text-sm font-medium transition",
+                "block rounded-sm px-3 py-2 text-sm font-medium transition",
                 linkActive(pathname, link.href)
-                  ? "bg-ocean/10 text-ocean"
+                  ? "bg-foam text-ocean-deep"
                   : "text-ocean-deep hover:bg-foam",
               )}
             >
@@ -142,10 +142,10 @@ function MobileGroup({
           href={link.href}
           onClick={onNavigate}
           className={cn(
-            "block rounded-xl px-3 py-2.5 text-sm font-medium",
+            "block rounded-md px-3 py-2.5 text-sm font-medium",
             linkActive(pathname, link.href)
-              ? "bg-ocean text-white"
-              : "text-ocean-deep hover:bg-surface",
+              ? "bg-brand-deep text-on-brand"
+              : "text-ocean-deep hover:bg-foam",
           )}
         >
           {link.label}
@@ -164,7 +164,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-foam/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-border/80 bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-[90rem] items-center justify-between gap-3 px-4 sm:px-6 lg:px-10">
         <Link href="/" className="group flex shrink-0 items-center gap-2.5">
           <BrandLogo />
@@ -185,10 +185,10 @@ export function SiteHeader() {
           <Link
             href="/pricing"
             className={cn(
-              "rounded-full px-3 py-2 text-sm font-medium transition",
+              "rounded-md px-3 py-2 text-sm font-medium transition",
               linkActive(pathname, "/pricing")
-                ? "bg-ocean text-white"
-                : "text-muted hover:bg-surface/80 hover:text-ocean-deep",
+                ? "bg-brand-deep text-on-brand"
+                : "text-muted hover:bg-foam hover:text-ocean-deep",
             )}
           >
             Pricing
@@ -203,21 +203,18 @@ export function SiteHeader() {
           <Show when="signed-out">
             <Link
               href="/sign-in"
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-ocean-deep hover:bg-surface/80"
+              className="rounded-md px-3.5 py-2 text-sm font-medium text-ocean-deep hover:bg-foam"
             >
               Sign in
             </Link>
-            <Link
-              href="/sign-up"
-              className="rounded-full bg-coral px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110"
-            >
+            <Link href="/sign-up" className="btn-solid !py-2 !px-4">
               Get started
             </Link>
           </Show>
           <Show when="signed-in">
             <Link
               href="/dashboard"
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-ocean-deep hover:bg-surface/80"
+              className="rounded-md px-3.5 py-2 text-sm font-medium text-ocean-deep hover:bg-foam"
             >
               Dashboard
             </Link>
@@ -233,7 +230,7 @@ export function SiteHeader() {
           <ThemeToggle />
           <button
             type="button"
-            className="rounded-full p-2 text-ocean-deep"
+            className="rounded-md p-2 text-ocean-deep"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
           >
@@ -243,7 +240,7 @@ export function SiteHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-border/70 bg-foam px-4 py-4 lg:hidden">
+        <div className="border-t border-border/70 bg-background px-4 py-4 lg:hidden">
           <div className="flex flex-col gap-3">
             <MobileGroup
               title="Discover"
@@ -262,10 +259,10 @@ export function SiteHeader() {
               href="/pricing"
               onClick={() => setOpen(false)}
               className={cn(
-                "rounded-xl px-3 py-2.5 text-sm font-medium",
+                "rounded-md px-3 py-2.5 text-sm font-medium",
                 linkActive(pathname, "/pricing")
-                  ? "bg-ocean text-white"
-                  : "text-ocean-deep hover:bg-surface",
+                  ? "bg-brand-deep text-on-brand"
+                  : "text-ocean-deep hover:bg-foam",
               )}
             >
               Pricing
@@ -276,14 +273,14 @@ export function SiteHeader() {
                   <Link
                     href="/sign-in"
                     onClick={() => setOpen(false)}
-                    className="flex-1 rounded-full border border-border bg-surface px-3 py-2 text-center text-sm font-medium"
+                    className="btn-outline flex-1 !py-2 text-center"
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/sign-up"
                     onClick={() => setOpen(false)}
-                    className="flex-1 rounded-full bg-coral px-3 py-2 text-center text-sm font-semibold text-white"
+                    className="btn-solid flex-1 !py-2 text-center"
                   >
                     Get started
                   </Link>
@@ -293,14 +290,14 @@ export function SiteHeader() {
                 <Link
                   href="/account"
                   onClick={() => setOpen(false)}
-                  className="rounded-xl px-3 py-2.5 text-sm font-medium text-ocean-deep hover:bg-surface"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-ocean-deep hover:bg-foam"
                 >
                   Manage account
                 </Link>
                 <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="rounded-full bg-ocean px-3 py-2 text-center text-sm font-semibold text-white"
+                  className="btn-solid w-full !py-2 text-center"
                 >
                   Dashboard
                 </Link>
