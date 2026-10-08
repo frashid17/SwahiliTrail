@@ -16,42 +16,43 @@ import { TideBand } from "@/components/coastal-accents";
 import { CoastEventsSection } from "@/components/home/coast-events-section";
 import { CoastNowBar } from "@/components/home/coast-now-bar";
 import { ThingsToDoSection } from "@/components/home/things-to-do-section";
+import { SUMMIT } from "@/lib/destination";
 
 const features = [
   {
     href: "/planner",
-    title: "AI Trip Planner",
-    copy: "Multi-day coast itineraries with stay prefs, activities, and a damage cost estimate.",
+    title: "Trip Planner",
+    copy: "Build a multi-day plan for Hola, the delta, or a coast side trip - with a rough KES budget.",
     icon: Sparkles,
   },
   {
     href: "/hotels",
     title: "Stay & Eat",
-    copy: "Match hotels and restaurants across Nyali, Old Town, Diani, and the waterfront.",
+    copy: "Filter lodging and meals by budget and vibe. Start in Hola, then widen if you need to.",
     icon: BedDouble,
   },
   {
     href: "/attractions",
     title: "Attractions",
-    copy: "Browse what to do - Fort Jesus, beaches, culture - and save favorites to your trip.",
+    copy: "Delta stops, wildlife, and culture. Save what you want into a trip list.",
     icon: MapPin,
   },
   {
     href: "/wildlife",
-    title: "Kenya Wildlife",
-    copy: "Shimba Hills, Tsavo, marine parks, and other KWS experiences from Mombasa.",
+    title: "Wildlife & nature",
+    copy: "Primate reserve notes, delta habitats, and day-trip options further down the coast.",
     icon: Trees,
   },
   {
     href: "/guide",
     title: "Multilingual Guide",
-    copy: "Ask anything about Fort Jesus, ferries, food, or Swahili phrases - in six languages.",
+    copy: "Ask about roads, food, lodging, or phrases. Replies in six languages.",
     icon: Languages,
   },
   {
     href: "/analytics",
-    title: "Tourism Analytics",
-    copy: "Live-feel dashboards for visitor trends, attractions, and sentiment themes.",
+    title: "Destination Analytics",
+    copy: "Simple charts for visitor trends and attraction interest - useful in a stakeholder brief.",
     icon: BarChart3,
   },
 ];
@@ -68,7 +69,7 @@ export default function HomePage() {
         >
           <Image
             src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&q=80"
-            alt="Sunlit tropical coastline and turquoise ocean"
+            alt="River delta meeting the ocean"
             fill
             priority
             sizes="100vw"
@@ -76,7 +77,6 @@ export default function HomePage() {
           />
         </motion.div>
 
-        {/* brand-deep stays dark in both themes — ocean-deep flips light in dark mode */}
         <div className="absolute inset-0 bg-gradient-to-r from-brand-deep/95 via-brand-deep/78 to-brand-deep/40 dark:from-brand-deep/97 dark:via-brand-deep/88 dark:to-brand-deep/55" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-transparent to-brand-deep/50 dark:from-brand-deep/95 dark:to-brand-deep/60" />
         <div className="absolute inset-0 bg-black/20 dark:bg-black/45" />
@@ -86,10 +86,19 @@ export default function HomePage() {
         <div className="relative mx-auto flex min-h-[min(88vh,860px)] max-w-6xl flex-col justify-center px-4 pb-44 pt-28 sm:px-6 sm:pb-40 md:pt-24">
           <div className="max-w-3xl">
             <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45 }}
+              className="text-xs font-semibold uppercase tracking-[0.18em] text-aqua sm:text-sm"
+            >
+              {SUMMIT.shortName} · Hola · {SUMMIT.datesLabel}
+            </motion.p>
+
+            <motion.p
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="font-display text-5xl leading-[0.95] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-6xl md:text-7xl lg:text-8xl"
+              transition={{ duration: 0.5, delay: 0.04 }}
+              className="mt-3 font-display text-5xl leading-[0.95] text-white drop-shadow-[0_2px_24px_rgba(0,0,0,0.45)] sm:text-6xl md:text-7xl lg:text-8xl"
             >
               Swahili Trail
             </motion.p>
@@ -97,45 +106,44 @@ export default function HomePage() {
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.08 }}
+              transition={{ duration: 0.55, delay: 0.1 }}
               className="mt-4 max-w-2xl text-xl font-medium leading-snug text-white/95 drop-shadow-md sm:mt-5 sm:text-2xl md:text-3xl"
             >
-              Redesign the coast with intelligent tourism.
+              Trip tools for Tana River - built for IBS 2026.
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.16 }}
+              transition={{ duration: 0.55, delay: 0.18 }}
               className="mt-4 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg"
             >
-              Plan itineraries, match hotels, chat with a multilingual guide,
-              and read tourism analytics - built for AI & Digital Tourism Day at
-              Swahilipot Hub.
+              Plan days around Hola and the delta, find a place to sleep, ask the
+              guide in six languages, and pull a quick visitor brief. Summit
+              theme: {SUMMIT.theme}.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.24 }}
+              transition={{ duration: 0.55, delay: 0.26 }}
               className="mt-8 flex flex-wrap gap-3"
             >
               <Link
                 href="/planner"
                 className="inline-flex items-center gap-2 rounded-full bg-coral px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-coral/30 transition hover:brightness-110"
               >
-                Plan my trip
+                Plan a trip
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/trips"
+                href="/events"
                 className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/15 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
               >
-                My trips
+                What&apos;s on this week
               </Link>
             </motion.div>
 
-            {/* Soft pulse — presence without clutter */}
             <motion.div
               aria-hidden
               className="mt-10 h-px w-24 origin-left bg-gradient-to-r from-aqua to-transparent"
@@ -172,10 +180,10 @@ export default function HomePage() {
           transition={{ duration: 0.5 }}
         >
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-aqua">
-            Ways AI reshapes the visit
+            What you can do here
           </p>
           <h2 className="mt-3 max-w-2xl font-display text-3xl text-ocean-deep sm:text-4xl">
-            One coastal companion for travelers and destination teams.
+            Tools for the trip and the brief
           </h2>
         </motion.div>
 
@@ -201,7 +209,7 @@ export default function HomePage() {
                       {feature.copy}
                     </p>
                     <span className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-aqua">
-                      Explore
+                      Open
                       <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                     </span>
                   </div>
@@ -222,12 +230,12 @@ export default function HomePage() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="font-display text-3xl text-on-brand sm:text-4xl">
-              Built for Mombasa&apos;s digital tourism agenda.
+              Showing at {SUMMIT.shortName} in Hola.
             </h2>
             <p className="mt-4 max-w-xl text-on-brand/75 leading-relaxed">
-              A student prototype for the County Government of Mombasa and the
-              Mombasa Tourism Council - showing how AI can unlock better
-              journeys, smarter stays, and clearer insight for stakeholders.
+              A working demo for county teams and visitors. Plan a stay, answer
+              guest questions, or walk a short brief on farming, tech, health,
+              and coast livelihoods.
             </p>
           </motion.div>
           <motion.div
@@ -237,12 +245,14 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-3 text-sm text-on-brand/80"
           >
+            <p>Theme: {SUMMIT.theme}</p>
             <p>
-              Theme: Digital Agenda and Artificial Intelligence to Redesign
-              Tourism
+              {SUMMIT.datesLabel} · {SUMMIT.venue}
             </p>
-            <p>Event: AI and Digital Tourism Day · 23 September 2026</p>
-            <p>Venue: Swahilipot Hub Foundation, Mombasa</p>
+            <p>
+              Host: {SUMMIT.host}
+            </p>
+            <p className="text-on-brand/60">{SUMMIT.hostRole}</p>
           </motion.div>
         </div>
       </section>
