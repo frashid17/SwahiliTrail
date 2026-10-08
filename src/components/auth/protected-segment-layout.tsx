@@ -3,7 +3,7 @@ import { SignedOutRedirect } from "@/components/auth/signed-out-redirect";
 
 /**
  * Shared layout guard for protected app routes.
- * Server: auth.protect() — Client: RedirectToSignIn when signed out mid-session.
+ * Server: auth.protect() - Client: RedirectToSignIn when signed out mid-session.
  */
 export default async function ProtectedSegmentLayout({
   children,
