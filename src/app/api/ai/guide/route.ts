@@ -1,10 +1,21 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateJson, sanitizeAiStrings } from "@/lib/ai/gemini";
+import {
+  fireAndForget,
+  generateJson,
+  sanitizeAiStrings,
+} from "@/lib/ai/gemini";
+import {
+  FREE_AI_QUOTA,
+  TRAIL_PLUS_PRICE_USD,
+  assertAiQuota,
+  consumeAiQuota,
+  type AiQuotaStatus,
+} from "@/lib/ai/quota";
 import { ATTRACTIONS, GUIDE_LANGUAGES } from "@/lib/data/attractions";
 import { titleFromMessages } from "@/lib/guide-history";
-import { AI_REGION_CONTEXT, DESTINATION, SUMMIT } from "@/lib/destination";
+import { AI_REGION_CONTEXT, DESTINATION } from "@/lib/destination";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPlainText } from "@/lib/text";
 
@@ -30,10 +41,24 @@ type GuideResult = {
   detectedLanguage: (typeof langCodes)[number];
 };
 
+function quotaPayload(quota: AiQuotaStatus) {
+  return {
+    ...quota,
+    freeLimit: FREE_AI_QUOTA,
+    priceUsdPerMonth: TRAIL_PLUS_PRICE_USD,
+    upgradeUrl: "/pricing",
+  };
+}
+
 export async function POST(req: Request) {
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const quota = await assertAiQuota(userId);
+  if (!quota.ok) {
+    return NextResponse.json(quota.responseBody, { status: 402 });
   }
 
   try {
@@ -42,50 +67,30 @@ export async function POST(req: Request) {
       GUIDE_LANGUAGES.find((l) => l.code === input.language)?.native ??
       "English";
 
-    const context = ATTRACTIONS.map(
-      (a) => `${a.name} (${a.area}): ${a.blurb}`,
-    ).join("\n");
+    // Compact place list (names only) — blurbs slow the model for little gain.
+    const context = ATTRACTIONS.map((a) => `${a.name} (${a.area})`).join("; ");
 
-    const historyText = (input.history ?? [])
+    const recentHistory = (input.history ?? []).slice(-6);
+    const historyText = recentHistory
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
 
     const result = await generateJson<GuideResult>(
-      `Conversation so far:
-${historyText || "(new conversation)"}
+      `Conversation:
+${historyText || "(new)"}
 
-User message:
-${input.message}
+User: ${input.message}
+UI language fallback: ${preferredLabel} (${input.language})
 
-Preferred UI language (fallback only): ${preferredLabel} (${input.language})
+Detect user language → reply in that language (de/fr/sw/zh/ar/en). Use UI language only if unclear.
 
-LANGUAGE RULE (critical):
-- Detect the language of the user's latest message.
-- If they wrote in German, French, Swahili (Kiswahili), Chinese, Arabic, or English, set detectedLanguage to that code (de/fr/sw/zh/ar/en) and write the entire reply in that language.
-- Only use the preferred UI language when the message language is unclear or mixed with no dominant language.
-
-Return JSON:
-{
-  "reply": string,
-  "detectedLanguage": "en" | "sw" | "fr" | "de" | "zh" | "ar"
-}`,
-      `You are a practical local guide for ${DESTINATION.regionLong}, writing for Swahili Trail.
-
-Region context:
+Return JSON: {"reply": string, "detectedLanguage": "en"|"sw"|"fr"|"de"|"zh"|"ar"}
+Keep reply to 2-4 short paragraphs plus one follow-up question.`,
+      `Local guide for ${DESTINATION.regionLong} (Swahili Trail).
 ${AI_REGION_CONTEXT}
-
-Voice:
-- Plain spoken, like a helpful person from the area - not a brochure or a chatbot.
-- Skip emojis unless the traveler used them first.
-- Short paragraphs. Numbered tips when it helps (1. 2. 3.).
-- End with one simple follow-up question (budget, days, kids, or which town).
-- Be concrete: places, timing, transport, rough KES costs.
-- Mention ${SUMMIT.shortName} in Hola only when it is relevant.
-- Never use markdown (*, **, ###, ---). Never use em dashes.
-- Avoid buzzwords like "unlock", "journey", "curate", "seamless", or "elevate".
-
-Known places:
-${context}`,
+Be concrete (places, timing, transport, rough KES). No brochure tone.
+Places: ${context}`,
+      { maxOutputTokens: 900, temperature: 0.45 },
     );
 
     const clean = sanitizeAiStrings(result);
@@ -99,36 +104,43 @@ ${context}`,
       { role: "assistant" as const, content: plainReply },
     ];
 
+    const nextQuota = await consumeAiQuota(userId, "guide");
+
     const supabase = createAdminClient();
     if (supabase) {
-      if (input.sessionId) {
-        const now = new Date().toISOString();
-        await supabase.from("guide_sessions").upsert(
-          {
-            id: input.sessionId,
+      fireAndForget(
+        (async () => {
+          if (input.sessionId) {
+            const now = new Date().toISOString();
+            await supabase.from("guide_sessions").upsert(
+              {
+                id: input.sessionId,
+                user_id: userId,
+                title: titleFromMessages(messages),
+                language: detected,
+                messages,
+                updated_at: now,
+              },
+              { onConflict: "id" },
+            );
+          }
+          await supabase.from("analytics_events").insert({
             user_id: userId,
-            title: titleFromMessages(messages),
-            language: detected,
-            messages,
-            updated_at: now,
-          },
-          { onConflict: "id" },
-        );
-      }
-      await supabase.from("analytics_events").insert({
-        user_id: userId,
-        event_type: "guide_message",
-        payload: {
-          language: detected,
-          preferredLanguage: input.language,
-          sessionId: input.sessionId,
-        },
-      });
+            event_type: "guide_message",
+            payload: {
+              language: detected,
+              preferredLanguage: input.language,
+              sessionId: input.sessionId,
+            },
+          });
+        })(),
+      );
     }
 
     return NextResponse.json({
       reply: plainReply,
       detectedLanguage: detected,
+      quota: quotaPayload(nextQuota),
     });
   } catch (error) {
     const message =
