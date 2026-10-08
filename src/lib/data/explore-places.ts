@@ -49,7 +49,7 @@ export const EXPLORE_FILTERS: { id: ExploreCategory; label: string }[] = [
 ];
 
 const EXPLORE_PLACES_BASE: ExplorePlace[] = [
-  // Food & Nightlife — clubs, bars, restaurants
+  // Food & Nightlife - clubs, bars, restaurants
   {
     id: "florida-club",
     name: "Florida Club Mombasa",
