@@ -10,15 +10,33 @@ export type CoastNowPayload = {
     time: string; // HH:mm
     heightM: number;
   } | null;
+  /** True when marine/tide data applies (near a coast) */
+  coastal: boolean;
   updatedAt: string;
+  source: "geolocation" | "fallback";
 };
 
-/** Tana River Delta / Kipini — Blue Economy coastal window */
-export const MOMBASA_COORDS = {
+/** Nairobi fallback when the browser cannot share a location */
+export const FALLBACK_COORDS = {
   lat: DESTINATION.coords.lat,
   lon: DESTINATION.coords.lon,
   tz: DESTINATION.coords.tz,
+  label: DESTINATION.coords.label,
 } as const;
 
-/** Prefer DESTINATION.coords going forward */
-export const COAST_COORDS = MOMBASA_COORDS;
+/** @deprecated use FALLBACK_COORDS */
+export const MOMBASA_COORDS = FALLBACK_COORDS;
+/** @deprecated use FALLBACK_COORDS */
+export const COAST_COORDS = FALLBACK_COORDS;
+
+/** Rough East Africa Indian Ocean fringe where tide data is meaningful */
+export function isCoastalLocation(lat: number, lon: number) {
+  return lon >= 38.2 && lon <= 43.5 && lat >= -5.8 && lat <= 2.8;
+}
+
+export function clampCoord(lat: number, lon: number) {
+  return {
+    lat: Math.max(-90, Math.min(90, lat)),
+    lon: Math.max(-180, Math.min(180, lon)),
+  };
+}
