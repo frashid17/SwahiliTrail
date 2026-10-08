@@ -4,10 +4,13 @@ import { useAuth } from "@clerk/nextjs";
 import { Check, ExternalLink, Plus, Trees } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CoastalOrbs } from "@/components/coastal-accents";
 import { FadeIn, StaggerItem } from "@/components/fade-in";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
+import { filterByKenyaRegion } from "@/lib/kenya-regions";
 import {
   addTripItem,
   loadTripCart,
@@ -17,7 +20,18 @@ import {
 
 export default function WildlifePage() {
   const { userId, isLoaded } = useAuth();
+  const { regionId, region } = useKenyaLocation();
   const [cart, setCart] = useState<TripCartItem[]>([]);
+
+  const sites = useMemo(
+    () =>
+      filterByKenyaRegion(
+        WILDLIFE_SITES,
+        regionId,
+        (w) => `${w.region} ${w.name} ${w.blurb} ${w.bestFor.join(" ")}`,
+      ),
+    [regionId],
+  );
 
   useEffect(() => {
     if (isLoaded && userId) setCart(loadTripCart(userId));
@@ -58,15 +72,15 @@ export default function WildlifePage() {
           <div className="max-w-3xl">
             <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
               <Trees className="h-4 w-4" />
-              Tana River first · coast after
+              Parks & nature · Kenya-wide
             </p>
             <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-              Wildlife around Hola & the delta
+              Wildlife across Kenya
             </h1>
             <p className="mt-3 text-muted">
-              Start with the primate reserve and delta wetlands. Coast parks sit
-              further down for day trips or overnight safari. Open a card for
-              details, or save it to your trip list.
+              From river reserves and delta wetlands to coast parks and classic
+              safari country. Open a card for details, or save it to your trip
+              list.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -85,8 +99,23 @@ export default function WildlifePage() {
           </div>
         </FadeIn>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          {WILDLIFE_SITES.map((site, index) => {
+        <div className="mt-8">
+          <KenyaLocationFilter />
+        </div>
+
+        <p className="mt-4 text-sm text-muted">
+          Showing {sites.length} of {WILDLIFE_SITES.length} sites
+          {region ? ` in ${region.label}` : " across Kenya"}
+        </p>
+
+        {sites.length === 0 ? (
+          <p className="mt-8 rounded-2xl border border-border bg-surface px-5 py-8 text-center text-muted">
+            No wildlife sites in this region yet. Try All Kenya or another area.
+          </p>
+        ) : null}
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-2">
+          {sites.map((site, index) => {
             const saved = isSaved(site.id);
             return (
               <StaggerItem key={site.id} index={index}>
