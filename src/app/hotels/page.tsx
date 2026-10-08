@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import {
+  AiQuotaBanner,
+  aiQuotaErrorMessage,
+  useAiQuota,
+} from "@/components/ai-quota-banner";
 import { CoastalOrbs } from "@/components/coastal-accents";
+import type { AiQuotaStatus } from "@/lib/ai/quota";
 import { COAST_AREAS, hydrateHotels, hotelPrimaryLink } from "@/lib/data/hotels";
 import type { Hotel } from "@/lib/data/hotels";
 import {
@@ -46,6 +52,7 @@ type Mode = "hotels" | "restaurants";
 
 export default function HotelsPage() {
   const { userId, isLoaded } = useAuth();
+  const { quota, applyQuota } = useAiQuota();
   const [mode, setMode] = useState<Mode>("hotels");
   const [budgetMax, setBudgetMax] = useState(20000);
   const [vibe, setVibe] = useState("Relaxed beach luxury near the water");
@@ -122,7 +129,8 @@ export default function HotelsPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
+      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
 
       const nextHotels = hydrateHotels((data.hotels ?? []) as Hotel[]);
       const nextRestaurants = hydrateRestaurants(
@@ -216,6 +224,8 @@ export default function HotelsPage() {
               </p>
             </div>
 
+            <AiQuotaBanner quota={quota} />
+
             <div className="grid grid-cols-2 gap-2 rounded-2xl bg-foam p-1">
               {(
                 [
@@ -271,7 +281,26 @@ export default function HotelsPage() {
               <span className="font-medium text-ocean-deep">Area preference</span>
               <select
                 value={areaPreference}
-                onChange={(e) => setAreaPreference(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setAreaPreference(next);
+                  // Default vibe is coastal — swap when the traveler picks inland Kenya.
+                  const inland = [
+                    "Nairobi",
+                    "Maasai Mara",
+                    "Amboseli",
+                    "Nakuru / Naivasha",
+                    "Nanyuki / Mount Kenya",
+                    "Kisumu",
+                  ];
+                  if (
+                    mode === "hotels" &&
+                    inland.includes(next) &&
+                    /beach|coast|ocean|diani|mombasa/i.test(vibe)
+                  ) {
+                    setVibe("Relaxed city comfort with a pool or garden");
+                  }
+                }}
                 className="mt-1 w-full rounded-xl border border-border bg-foam px-3 py-2"
               >
                 {COAST_AREAS.map((area) => (
