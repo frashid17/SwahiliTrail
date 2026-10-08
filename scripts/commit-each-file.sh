@@ -89,7 +89,7 @@ msg_for() {
 TMP=$(mktemp)
 git status -u --porcelain > "$TMP"
 
-# Append .env.example (gitignored by .env*) — template only, not secrets
+# Append .env.example (gitignored by .env*) - template only, not secrets
 if [ -f .env.example ]; then
   printf '?? .env.example\n' >> "$TMP"
 fi
