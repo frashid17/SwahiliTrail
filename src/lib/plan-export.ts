@@ -72,7 +72,7 @@ export function planToPlainText(
     lines.push("", "Car hire & airport pickup contacts");
     for (const c of meta.carHires) {
       lines.push(
-        `${c.name} — ${c.phoneDisplay} — ${c.websiteUrl} (${c.areas})`,
+        `${c.name} - ${c.phoneDisplay} - ${c.websiteUrl} (${c.areas})`,
       );
     }
   }
@@ -180,7 +180,7 @@ export function googleCalendarUrl(
     "",
     ...plan.days.map(
       (d) =>
-        `Day ${d.day} — ${d.theme}\n${d.morning} / ${d.afternoon} / ${d.evening}`,
+        `Day ${d.day} - ${d.theme}\n${d.morning} / ${d.afternoon} / ${d.evening}`,
     ),
   ]
     .filter(Boolean)
