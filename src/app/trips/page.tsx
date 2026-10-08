@@ -101,7 +101,7 @@ export default function MyTripsPage() {
             <div className="rounded-3xl border border-dashed border-ocean/30 bg-surface/60 px-6 py-16 text-center text-muted">
               No saved trips yet. Generate a plan in the{" "}
               <Link href="/planner" className="font-semibold text-ocean">
-                AI Planner
+                Planner
               </Link>{" "}
               and tap Add to My Trips.
             </div>
