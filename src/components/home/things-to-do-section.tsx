@@ -36,18 +36,18 @@ export function ThingsToDoSection() {
     <section className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-3xl text-ocean-deep sm:text-4xl md:text-5xl">
+          <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
             Places to start
           </h2>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
-            Pick a region like Nanyuki or Nairobi, then open a place for maps,
-            booking tips, and reviews.
+            Pick a region, then open a place for maps, booking tips, and
+            reviews.
             {region ? ` Showing ${region.label}.` : ""}
           </p>
         </div>
         <Link
           href="/explore"
-          className="hidden text-sm font-semibold text-ocean-deep transition hover:text-ocean md:inline-flex md:items-center md:gap-1"
+          className="hidden text-sm font-semibold text-coral transition hover:text-ocean md:inline-flex md:items-center md:gap-1"
         >
           View all places
           <span aria-hidden>→</span>
@@ -58,32 +58,30 @@ export function ThingsToDoSection() {
         <KenyaLocationFilter />
       </div>
 
-      <div className="mt-4 flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {EXPLORE_FILTERS.map((filter) => {
-            const active = filter.id === category;
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setCategory(filter.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition",
-                  active
-                    ? "bg-brand-deep text-white"
-                    : "bg-surface text-muted hover:bg-sand hover:text-ocean-deep",
-                )}
-              >
-                {filter.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="mt-5 flex gap-1 overflow-x-auto border-b border-border pb-px [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {EXPLORE_FILTERS.map((filter) => {
+          const active = filter.id === category;
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => setCategory(filter.id)}
+              className={cn(
+                "shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition",
+                active
+                  ? "border-coral text-ocean-deep"
+                  : "border-transparent text-muted hover:text-ocean-deep",
+              )}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="relative mt-8">
         {items.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-surface px-5 py-8 text-center text-sm text-muted">
+          <p className="border border-border bg-surface px-5 py-8 text-center text-sm text-muted">
             No places in this region for that filter. Try All Kenya.
           </p>
         ) : (
@@ -95,24 +93,25 @@ export function ThingsToDoSection() {
               <Link
                 key={item.id}
                 href={`/explore/${item.id}`}
-                className="group relative h-[22rem] w-[min(78vw,17.5rem)] shrink-0 snap-start overflow-hidden rounded-2xl sm:h-[26rem] sm:w-72"
+                className="group w-[min(78vw,17.5rem)] shrink-0 snap-start sm:w-72"
               >
-                <Image
-                  src={item.imageUrl}
-                  alt={item.name}
-                  fill
-                  sizes="(max-width: 640px) 78vw, 288px"
-                  className="object-cover transition duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-brand-deep/25 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 px-5 pb-5">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-aqua">
-                    {item.area} · {item.vibe}
+                <div className="relative aspect-[4/5] overflow-hidden rounded-md">
+                  <Image
+                    src={item.imageUrl}
+                    alt={item.name}
+                    fill
+                    sizes="(max-width: 640px) 78vw, 288px"
+                    className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+                <div className="mt-3">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted">
+                    {item.area}
                   </p>
-                  <p className="mt-1 font-display text-xl text-white sm:text-2xl">
+                  <p className="mt-1 font-display text-xl text-ocean-deep group-hover:text-ocean">
                     {item.name}
                   </p>
-                  <p className="mt-1 line-clamp-2 text-xs text-white/75">
+                  <p className="mt-1 line-clamp-2 text-sm text-muted">
                     {item.blurb}
                   </p>
                 </div>
@@ -121,12 +120,12 @@ export function ThingsToDoSection() {
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 hidden items-center justify-between md:flex">
+        <div className="mt-5 hidden items-center gap-2 md:flex">
           <button
             type="button"
             aria-label="Previous"
             onClick={() => scrollBy(-1)}
-            className="pointer-events-auto -ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface/95 text-ocean-deep shadow-md backdrop-blur transition hover:border-aqua/40"
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-ocean-deep transition hover:border-ocean/30"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -134,7 +133,7 @@ export function ThingsToDoSection() {
             type="button"
             aria-label="Next"
             onClick={() => scrollBy(1)}
-            className="pointer-events-auto -mr-2 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface/95 text-ocean-deep shadow-md backdrop-blur transition hover:border-aqua/40"
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-ocean-deep transition hover:border-ocean/30"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
