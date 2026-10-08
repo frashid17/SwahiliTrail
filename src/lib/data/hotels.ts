@@ -20,24 +20,44 @@ export type Hotel = {
 export const COAST_AREAS = [
   {
     value: "whole-coast",
-    label: "Whole coast",
-    hint: "Mombasa island, north coast, Diani & Kilifi",
+    label: "Tana River & coast corridor",
+    hint: "Hola, delta, Garsen, Kipini, plus coast day trips",
   },
-  { value: "Nyali", label: "Nyali", hint: "Beach resorts north of the island" },
+  {
+    value: "Hola",
+    label: "Hola",
+    hint: "County HQ · IBS 2026 summit base",
+  },
+  {
+    value: "Tana Delta",
+    label: "Tana Delta / Kipini",
+    hint: "Mangroves, fishing landings, river mouth",
+  },
+  {
+    value: "Garsen",
+    label: "Garsen",
+    hint: "Gateway town on the Lamu–Malindi corridor",
+  },
+  {
+    value: "Ngao",
+    label: "Ngao & river villages",
+    hint: "Pokomo heritage along the lower Tana",
+  },
+  { value: "Nyali", label: "Nyali", hint: "North-coast day-trip option" },
   {
     value: "Bamburi",
     label: "Bamburi",
-    hint: "Near Haller Park and Bamburi Beach",
+    hint: "Near Haller Park",
   },
   {
     value: "Mombasa Old Town",
     label: "Mombasa Old Town",
-    hint: "Heritage lanes near Fort Jesus",
+    hint: "Heritage day trip further down the coast",
   },
   {
     value: "Mama Ngina Waterfront",
     label: "Mama Ngina Waterfront",
-    hint: "City promenade & harbor views",
+    hint: "Harbor city day trip",
   },
   {
     value: "Shanzu",
@@ -47,12 +67,12 @@ export const COAST_AREAS = [
   {
     value: "Diani Beach",
     label: "Diani Beach",
-    hint: "South coast white sand",
+    hint: "South-coast white sand day trip",
   },
   {
     value: "Kilifi",
     label: "Kilifi",
-    hint: "Creek-side day-trip base",
+    hint: "Creek-side stop on the north coast",
   },
 ] as const;
 
