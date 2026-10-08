@@ -8,24 +8,24 @@ export const DESTINATION = {
   regionLong: "Kenya",
   hubTown: "Nairobi",
   country: "Kenya",
-  /** Default when geolocation is unavailable — Nairobi CBD */
+  /** Default when geolocation is unavailable - Nairobi CBD */
   coords: {
     lat: -1.2921,
     lon: 36.8219,
     tz: "Africa/Nairobi" as const,
     label: "Nairobi",
   },
-  /** Places API bias — country centroid-ish (Nairobi), wide radius used in callers */
+  /** Places API bias - country centroid-ish (Nairobi), wide radius used in callers */
   placesBias: {
     latitude: -1.2921,
     longitude: 36.8219,
   },
   tagline: "Plan Kenya the way locals talk about it.",
   supportingLine:
-    "Safaris, city days, and coast weekends — with stays, a guide in six languages, and what's on nearby.",
+    "Safaris, city days, and coast weekends - with stays, a guide in six languages, and what's on nearby.",
 } as const;
 
-/** Optional calendar event — not product framing */
+/** Optional calendar event - not product framing */
 export const SUMMIT = {
   name: "Innovation and Business Summit 2026",
   shortName: "IBS 2026",
