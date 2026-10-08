@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FadeIn, StaggerItem } from "@/components/fade-in";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import type { CoastEvent } from "@/lib/data/coast-events";
+import { filterByKenyaRegion } from "@/lib/kenya-regions";
 
 function formatWhen(iso: string) {
   return new Date(iso).toLocaleString("en-GB", {
@@ -18,11 +21,22 @@ function formatWhen(iso: string) {
 }
 
 export default function EventsPage() {
+  const { regionId, region } = useKenyaLocation();
   const [events, setEvents] = useState<CoastEvent[]>([]);
   const [sources, setSources] = useState<
     { label: string; live: boolean; note: string }[]
   >([]);
   const [refreshedAt, setRefreshedAt] = useState<string | null>(null);
+
+  const filtered = useMemo(
+    () =>
+      filterByKenyaRegion(
+        events,
+        regionId,
+        (e) => `${e.area} ${e.venue} ${e.title} ${e.category}`,
+      ),
+    [events, regionId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -54,11 +68,11 @@ export default function EventsPage() {
             Events
           </p>
           <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-            What&apos;s on in Tana River (and nearby)
+            What&apos;s on in Kenya
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
-            IBS 2026 and county dates show first. Coast corridor listings sit
-            after that. Open a card for venue and how to book.
+            Filter by region to focus on Nairobi, Nanyuki, the coast, and more.
+            Open a card for venue and how to book.
           </p>
           {refreshedAt ? (
             <p className="mt-2 text-xs text-muted">
@@ -70,6 +84,10 @@ export default function EventsPage() {
             </p>
           ) : null}
         </FadeIn>
+
+        <div className="mt-6">
+          <KenyaLocationFilter />
+        </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
           {sources.map((s) => (
@@ -88,42 +106,55 @@ export default function EventsPage() {
           ))}
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {events.map((event, index) => (
-            <StaggerItem key={event.id} index={index}>
-              <Link
-                href={`/events/${event.id}`}
-                className="block overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition hover:border-aqua/35"
-              >
-                <div className="relative h-44">
-                  <Image
-                    src={event.imageUrl}
-                    alt={event.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1280px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/70 to-transparent" />
-                  <p className="absolute bottom-3 left-4 text-xs font-semibold uppercase tracking-wider text-aqua">
-                    {event.category}
-                  </p>
-                </div>
-                <div className="p-5">
-                  <p className="text-xs font-medium text-muted">
-                    {formatWhen(event.startsAt)}
-                  </p>
-                  <h2 className="mt-1 font-display text-2xl text-ocean-deep">
-                    {event.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted">{event.venue}</p>
-                  <p className="mt-3 text-sm font-semibold text-coral">
-                    View & book →
-                  </p>
-                </div>
-              </Link>
-            </StaggerItem>
-          ))}
-        </div>
+        <p className="mt-6 text-sm text-muted">
+          Showing {filtered.length} of {events.length || "…"} events
+          {region ? ` in ${region.label}` : " across Kenya"}
+        </p>
+
+        {filtered.length === 0 ? (
+          <p className="mt-10 rounded-2xl border border-border bg-surface px-5 py-8 text-center text-muted">
+            No events in this region right now. Try All Kenya or another area.
+          </p>
+        ) : (
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {filtered.map((event, index) => (
+              <StaggerItem key={event.id} index={index}>
+                <Link
+                  href={`/events/${event.id}`}
+                  className="block overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition hover:border-aqua/35"
+                >
+                  <div className="relative h-44">
+                    <Image
+                      src={event.imageUrl}
+                      alt={event.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1280px) 50vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/70 to-transparent" />
+                    <p className="absolute bottom-3 left-4 text-xs font-semibold uppercase tracking-wider text-aqua">
+                      {event.category}
+                    </p>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-xs font-medium text-muted">
+                      {formatWhen(event.startsAt)}
+                    </p>
+                    <h2 className="mt-1 font-display text-2xl text-ocean-deep">
+                      {event.title}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted">
+                      {event.venue} · {event.area}
+                    </p>
+                    <p className="mt-3 text-sm font-semibold text-coral">
+                      View & book →
+                    </p>
+                  </div>
+                </Link>
+              </StaggerItem>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
