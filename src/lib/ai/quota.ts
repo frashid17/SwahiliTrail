@@ -1,196 +1,96 @@
-import { userHasActiveTrailPlus } from "@/lib/ai/subscription";
+import {
+  AI_CAPS,
+  assertAiGuardrails,
+  currentAiPeriod,
+  getGuardrailQuotaStatus,
+  recordAiGuardrailUse,
+  type AiQuotaStatus,
+  type AiSource,
+} from "@/lib/ai/guardrails";
 import { TRAIL_PLUS_PRICE_USD } from "@/lib/paystack";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 /** Free AI calls per calendar month (guide + planner + stay matcher). */
-export const FREE_AI_QUOTA = 3;
+export const FREE_AI_QUOTA = AI_CAPS.free.perMonth;
 
-export { TRAIL_PLUS_PRICE_USD };
+/** Trail Plus fair-use monthly ceiling (abuse protection). */
+export const TRAIL_PLUS_MONTHLY_CAP = AI_CAPS.trail_plus.perMonth;
 
-export type AiQuotaStatus = {
-  unlimited: boolean;
-  used: number;
-  limit: number | null;
-  remaining: number | null;
-  period: string;
-  plan: "free" | "trail_plus";
-};
+/** Trail Plus fair-use daily ceiling. */
+export const TRAIL_PLUS_DAILY_CAP = AI_CAPS.trail_plus.perDay;
 
-const memoryUsage = new Map<string, number>();
-
-export function currentAiPeriod(date = new Date()) {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
-
-function memoryKey(userId: string, period: string) {
-  return `${userId}:${period}`;
-}
-
-function freeStatus(used: number, period: string): AiQuotaStatus {
-  const safeUsed = Math.max(0, used);
-  return {
-    unlimited: false,
-    used: safeUsed,
-    limit: FREE_AI_QUOTA,
-    remaining: Math.max(0, FREE_AI_QUOTA - safeUsed),
-    period,
-    plan: "free",
-  };
-}
+export { TRAIL_PLUS_PRICE_USD, AI_CAPS, currentAiPeriod };
+export type { AiQuotaStatus, AiSource };
 
 export async function getAiQuotaStatus(userId: string): Promise<AiQuotaStatus> {
-  const period = currentAiPeriod();
-  if (await userHasActiveTrailPlus(userId)) {
-    return {
-      unlimited: true,
-      used: 0,
-      limit: null,
-      remaining: null,
-      period,
-      plan: "trail_plus",
-    };
-  }
-
-  const used = await readUsage(userId, period);
-  return freeStatus(used, period);
+  return getGuardrailQuotaStatus(userId);
 }
 
 /**
- * Enforce free-tier limit before an AI call.
+ * Enforce monthly/daily/burst fair-use caps + basic abuse checks.
  */
-export async function assertAiQuota(userId: string): Promise<
-  | { ok: true; status: AiQuotaStatus }
+export async function assertAiQuota(
+  userId: string,
+  source: AiSource,
+  rawInput?: string,
+): Promise<
+  | {
+      ok: true;
+      status: AiQuotaStatus;
+      requestHash: string | null;
+      plan: "free" | "trail_plus";
+    }
   | {
       ok: false;
       status: AiQuotaStatus;
+      httpStatus: number;
       responseBody: {
         error: string;
-        code: "AI_QUOTA_EXCEEDED";
-        used: number;
-        limit: number;
-        remaining: number;
-        upgradeUrl: string;
-        priceUsdPerMonth: number;
+        code: "AI_QUOTA_EXCEEDED" | "AI_RATE_LIMITED" | "AI_ABUSE_BLOCKED";
+        used?: number;
+        limit?: number;
+        remaining?: number;
+        retryAfterSeconds?: number;
+        upgradeUrl?: string;
+        priceUsdPerMonth?: number;
       };
     }
 > {
-  const status = await getAiQuotaStatus(userId);
-  if (status.unlimited) return { ok: true, status };
+  const gate = await assertAiGuardrails({ userId, source, rawInput });
+  const status = await getGuardrailQuotaStatus(userId);
 
-  if (status.used >= FREE_AI_QUOTA) {
+  if (!gate.ok) {
     return {
       ok: false,
       status,
-      responseBody: {
-        error: `Free plan includes ${FREE_AI_QUOTA} AI uses per month. Upgrade to Trail Plus ($${TRAIL_PLUS_PRICE_USD}/mo) for unlimited AI.`,
-        code: "AI_QUOTA_EXCEEDED",
-        used: status.used,
-        limit: FREE_AI_QUOTA,
-        remaining: 0,
-        upgradeUrl: "/pricing",
-        priceUsdPerMonth: TRAIL_PLUS_PRICE_USD,
-      },
+      httpStatus: gate.status,
+      responseBody: gate.responseBody,
     };
   }
 
-  return { ok: true, status };
+  return {
+    ok: true,
+    status,
+    requestHash: gate.requestHash,
+    plan: gate.plan,
+  };
 }
 
 /** Call after a successful AI response so failed calls do not consume quota. */
 export async function consumeAiQuota(
   userId: string,
-  source: "guide" | "plan" | "hotels",
+  source: AiSource,
+  opts?: { requestHash?: string | null; plan?: "free" | "trail_plus" },
 ): Promise<AiQuotaStatus> {
-  if (await userHasActiveTrailPlus(userId)) {
-    return getAiQuotaStatus(userId);
-  }
-  const period = currentAiPeriod();
-  const used = await incrementUsage(userId, period, source);
-  return freeStatus(used, period);
-}
+  const plan =
+    opts?.plan ??
+    ((await getGuardrailQuotaStatus(userId)).plan === "trail_plus"
+      ? "trail_plus"
+      : "free");
 
-async function readUsage(userId: string, period: string): Promise<number> {
-  const key = memoryKey(userId, period);
-  const mem = memoryUsage.get(key) ?? 0;
-  const supabase = createAdminClient();
-  if (!supabase) return mem;
-
-  const { data, error } = await supabase
-    .from("ai_usage")
-    .select("count")
-    .eq("user_id", userId)
-    .eq("period", period)
-    .maybeSingle();
-
-  if (error) {
-    console.error("[ai-quota] read", error.message);
-    return mem;
-  }
-
-  const dbCount = typeof data?.count === "number" ? data.count : 0;
-  // Prefer the higher value so a failed write + in-memory count is not wiped.
-  const count = Math.max(dbCount, mem);
-  memoryUsage.set(key, count);
-  return count;
-}
-
-async function incrementUsage(
-  userId: string,
-  period: string,
-  source: string,
-): Promise<number> {
-  const key = memoryKey(userId, period);
-  const supabase = createAdminClient();
-
-  if (!supabase) {
-    const next = (memoryUsage.get(key) ?? 0) + 1;
-    memoryUsage.set(key, next);
-    return next;
-  }
-
-  // Atomic increment when the SQL function is installed.
-  const { data: rpcCount, error: rpcError } = await supabase.rpc(
-    "increment_ai_usage",
-    {
-      p_user_id: userId,
-      p_period: period,
-      p_source: source,
-    },
-  );
-
-  if (!rpcError && typeof rpcCount === "number") {
-    memoryUsage.set(key, rpcCount);
-    return rpcCount;
-  }
-
-  if (rpcError) {
-    console.warn(
-      "[ai-quota] rpc increment unavailable, using upsert fallback:",
-      rpcError.message,
-    );
-  }
-
-  const current = await readUsage(userId, period);
-  const next = current + 1;
-  memoryUsage.set(key, next);
-
-  const { error } = await supabase.from("ai_usage").upsert(
-    {
-      user_id: userId,
-      period,
-      count: next,
-      last_source: source,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,period" },
-  );
-
-  if (error) {
-    console.error("[ai-quota] increment upsert", error.message);
-    // Keep memory count so this process still enforces the limit.
-  }
-
-  return next;
+  return recordAiGuardrailUse({
+    userId,
+    source,
+    requestHash: opts?.requestHash,
+    plan,
+  });
 }
