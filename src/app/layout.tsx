@@ -16,9 +16,9 @@ const body = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Swahili Trail · Tana River · IBS 2026",
+  title: "Swahili Trail · Kenya travel platform",
   description:
-    "Plan trips around Hola and the Tana Delta, match stays, ask a multilingual guide, and open visitor analytics. Built for Innovation and Business Summit 2026.",
+    "Plan trips across Kenya — Nairobi, safari circuits, the Rift Valley, and the Swahili coast. Match stays, ask a multilingual guide, follow events, and open visitor analytics.",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
