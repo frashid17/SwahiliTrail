@@ -1,4 +1,4 @@
-/** Verified image URLs (HTTP 200) — Kenya-specific via Wikimedia where possible. */
+/** Verified image URLs (HTTP 200) - Kenya-specific via Wikimedia where possible. */
 export const COAST_IMAGES = {
   fortJesus:
     "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Fort_Jesus%2C_Mombasa1.jpg/1280px-Fort_Jesus%2C_Mombasa1.jpg",
@@ -31,7 +31,7 @@ export const COAST_IMAGES = {
   kisiteMpunguti:
     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Kisite_Mpunguti_National_Park_%26_Reserve_%2824852129677%29.jpg/1280px-Kisite_Mpunguti_National_Park_%26_Reserve_%2824852129677%29.jpg",
 
-  /** Stock — nightlife / dining (distinct Unsplash IDs, verified) */
+  /** Stock - nightlife / dining (distinct Unsplash IDs, verified) */
   clubCrowd:
     "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80",
   clubConcert:
