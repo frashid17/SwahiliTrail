@@ -219,7 +219,7 @@ export async function POST(req: Request) {
 
     const stayBase =
       input.stayArea === "whole-coast" || !input.stayArea
-        ? "Anywhere in Kenya — pick best base for interests."
+        ? "Anywhere in Kenya - pick best base for interests."
         : `${input.stayArea} base.`;
 
     // Cap output tokens by trip length so long plans don't wait on a 4k budget.
