@@ -1,3 +1,5 @@
+import { DESTINATION } from "@/lib/destination";
+
 export type CoastNowPayload = {
   location: string;
   temperatureC: number;
@@ -11,9 +13,12 @@ export type CoastNowPayload = {
   updatedAt: string;
 };
 
-/** Mombasa Island / Likoni channel */
+/** Tana River Delta / Kipini — Blue Economy coastal window */
 export const MOMBASA_COORDS = {
-  lat: -4.0435,
-  lon: 39.6682,
-  tz: "Africa/Nairobi",
+  lat: DESTINATION.coords.lat,
+  lon: DESTINATION.coords.lon,
+  tz: DESTINATION.coords.tz,
 } as const;
+
+/** Prefer DESTINATION.coords going forward */
+export const COAST_COORDS = MOMBASA_COORDS;
