@@ -112,7 +112,7 @@ async function pushSessionsToCloud(sessions: GuideSession[]) {
       body: JSON.stringify({ sessions }),
     });
   } catch {
-    // Offline / not configured — local copy remains.
+    // Offline / not configured - local copy remains.
   }
 }
 
