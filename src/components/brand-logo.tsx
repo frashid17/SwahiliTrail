@@ -55,7 +55,7 @@ export function BrandMark({
       role="img"
       aria-label={title}
     >
-      <rect width="128" height="128" rx="28" fill={palette.tile} />
+      <rect width="128" height="128" rx="16" fill={palette.tile} />
       <path
         d="M18 104C36 96 48 78 56 58c8-20 18-36 40-42 6-1.5 14-1 22 1-10 14-16 30-20 48-5 22-14 40-36 52-12 7-28 8-44-13z"
         fill={palette.foam}
