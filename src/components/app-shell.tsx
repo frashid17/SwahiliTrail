@@ -12,9 +12,8 @@ export function SiteFooter() {
         <div>
           <BrandLogo onDark />
           <p className="mt-3 max-w-md text-sm text-on-brand/75">
-            Built for AI & Digital Tourism Day - redesigning the coast experience
-            with intelligent itineraries, hotel matching, multilingual guidance,
-            and tourism analytics.
+            Trip planner, stay matcher, multilingual guide, and analytics -
+            demoed for IBS 2026 in Hola, Tana River.
           </p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm text-on-brand/80">
@@ -45,19 +44,10 @@ export function SiteFooter() {
           <Link href="/analytics" className="hover:text-white">
             Analytics
           </Link>
-          <a
-            href="https://www.exploremombasa.co.ke"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-white"
-          >
-            Explore Mombasa
-          </a>
         </div>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-on-brand/55 sm:px-6">
-        Mama Ngina Waterfront · Mombasa Tourism Council · UN World Tourism Day
-        2026
+        IBS 2026 · Hola, Tana River · 7–10 October 2026
       </div>
     </footer>
   );
