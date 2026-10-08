@@ -15,18 +15,40 @@ function MetricTile({
   icon: Icon,
   label,
   value,
+  light,
 }: {
   icon: typeof Sun;
   label: string;
   value: string;
+  light?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-xl bg-white/[0.06] px-2.5 py-2.5 ring-1 ring-white/10 sm:px-3.5 sm:py-3">
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/50 sm:gap-1.5 sm:tracking-[0.12em] sm:text-[11px]">
-        <Icon className="h-3 w-3 shrink-0 text-aqua" aria-hidden />
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-1 rounded-md px-2.5 py-2.5 sm:px-3.5 sm:py-3",
+        light
+          ? "bg-foam ring-1 ring-border"
+          : "bg-white/[0.06] ring-1 ring-white/10",
+      )}
+    >
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] sm:gap-1.5 sm:tracking-[0.12em] sm:text-[11px]",
+          light ? "text-muted" : "text-white/50",
+        )}
+      >
+        <Icon
+          className={cn("h-3 w-3 shrink-0", light ? "text-ocean" : "text-aqua")}
+          aria-hidden
+        />
         <span className="truncate">{label}</span>
       </span>
-      <span className="font-display text-base leading-none text-white sm:text-xl">
+      <span
+        className={cn(
+          "font-display text-base leading-none sm:text-xl",
+          light ? "text-ocean-deep" : "text-white",
+        )}
+      >
         {value}
       </span>
     </div>
@@ -50,7 +72,14 @@ function readCoords(): Promise<{ lat: number; lon: number } | null> {
   });
 }
 
-export function CoastNowBar({ className = "" }: { className?: string }) {
+export function CoastNowBar({
+  className = "",
+  variant = "dark",
+}: {
+  className?: string;
+  variant?: "dark" | "light";
+}) {
+  const light = variant === "light";
   const { regionId, region } = useKenyaLocation();
   const [state, setState] = useState<State>({ status: "loading" });
 
@@ -103,27 +132,45 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-auto w-full overflow-hidden rounded-2xl border border-white/15 bg-brand-deep/85 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-md sm:max-w-xl",
+        "pointer-events-auto w-full overflow-hidden rounded-md border sm:max-w-xl",
+        light
+          ? "border-border bg-surface"
+          : "border-white/15 bg-brand-deep/85 backdrop-blur-md",
         className,
       )}
       role="status"
       aria-live="polite"
       aria-label="Live conditions"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3.5 py-2.5 sm:px-4 sm:py-3">
+      <div
+        className={cn(
+          "flex items-center justify-between gap-3 border-b px-3.5 py-2.5 sm:px-4 sm:py-3",
+          light ? "border-border" : "border-white/10",
+        )}
+      >
         <span className="inline-flex items-center gap-2">
           <span
             aria-hidden
-            className="relative flex h-2 w-2 items-center justify-center"
+            className={cn(
+              "h-1.5 w-1.5 rounded-sm",
+              light ? "bg-coral" : "bg-coral",
+            )}
+          />
+          <span
+            className={cn(
+              "text-[11px] font-bold uppercase tracking-[0.14em] sm:text-xs",
+              light ? "text-coral" : "text-coral",
+            )}
           >
-            <span className="absolute inset-0 animate-ping rounded-full bg-coral/70 opacity-60" />
-            <span className="relative h-2 w-2 rounded-full bg-coral" />
-          </span>
-          <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-coral sm:text-xs">
             Live now
           </span>
         </span>
-        <span className="inline-flex min-w-0 items-center gap-1 truncate text-[11px] font-medium text-white/45 sm:text-xs">
+        <span
+          className={cn(
+            "inline-flex min-w-0 items-center gap-1 truncate text-[11px] font-medium sm:text-xs",
+            light ? "text-muted" : "text-white/45",
+          )}
+        >
           <MapPin className="h-3 w-3 shrink-0" aria-hidden />
           <span className="truncate">
             {state.status === "ready"
@@ -136,25 +183,57 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
       </div>
 
       {state.status === "loading" ? (
-        <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
+        <div
+          className={cn(
+            "px-3.5 py-5 text-sm sm:px-4",
+            light ? "text-muted" : "text-white/55",
+          )}
+        >
           {region
             ? `Updating conditions for ${region.label}…`
             : "Updating conditions for your location…"}
         </div>
       ) : state.status === "error" ? (
-        <div className="px-3.5 py-5 text-sm text-white/55 sm:px-4">
+        <div
+          className={cn(
+            "px-3.5 py-5 text-sm sm:px-4",
+            light ? "text-muted" : "text-white/55",
+          )}
+        >
           Conditions unavailable right now
         </div>
       ) : (
         <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-stretch sm:gap-4 sm:p-4">
-          <div className="flex items-end justify-between gap-3 rounded-xl bg-gradient-to-br from-aqua/20 to-white/[0.04] px-3.5 py-3 ring-1 ring-aqua/25 sm:min-w-[7.5rem] sm:flex-col sm:items-start sm:justify-center sm:px-4">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-aqua sm:text-[11px]">
+          <div
+            className={cn(
+              "flex items-end justify-between gap-3 rounded-md px-3.5 py-3 sm:min-w-[7.5rem] sm:flex-col sm:items-start sm:justify-center sm:px-4",
+              light
+                ? "bg-foam ring-1 ring-border"
+                : "bg-gradient-to-br from-aqua/20 to-white/[0.04] ring-1 ring-aqua/25",
+            )}
+          >
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] sm:text-[11px]",
+                light ? "text-ocean" : "text-aqua",
+              )}
+            >
               <Thermometer className="h-3.5 w-3.5" aria-hidden />
               Temp
             </span>
-            <span className="font-display text-4xl leading-none tracking-tight text-white sm:text-5xl">
+            <span
+              className={cn(
+                "font-display text-4xl leading-none tracking-tight sm:text-5xl",
+                light ? "text-ocean-deep" : "text-white",
+              )}
+            >
               {state.data.temperatureC}
-              <span className="align-top text-xl text-white/70 sm:text-2xl">
+              <span
+                className={cn(
+                  "align-top text-xl sm:text-2xl",
+                  light ? "text-muted" : "text-white/70",
+                )}
+              >
                 °
               </span>
             </span>
@@ -167,20 +246,49 @@ export function CoastNowBar({ className = "" }: { className?: string }) {
             )}
           >
             {showTide ? (
-              <MetricTile icon={Waves} label={tideLabel} value={tideValue} />
+              <MetricTile
+                icon={Waves}
+                label={tideLabel}
+                value={tideValue}
+                light={light}
+              />
             ) : null}
-            <MetricTile icon={Sun} label="Sunrise" value={state.data.sunrise} />
-            <MetricTile icon={Moon} label="Sunset" value={state.data.sunset} />
+            <MetricTile
+              icon={Sun}
+              label="Sunrise"
+              value={state.data.sunrise}
+              light={light}
+            />
+            <MetricTile
+              icon={Moon}
+              label="Sunset"
+              value={state.data.sunset}
+              light={light}
+            />
           </div>
         </div>
       )}
 
       {state.status === "ready" && region ? (
-        <p className="border-t border-white/10 px-3.5 py-2 text-[10px] text-white/40 sm:px-4">
+        <p
+          className={cn(
+            "border-t px-3.5 py-2 text-[10px] sm:px-4",
+            light
+              ? "border-border text-muted"
+              : "border-white/10 text-white/40",
+          )}
+        >
           Showing {region.label} — choose All Kenya for your device location
         </p>
       ) : state.status === "ready" && state.data.source === "fallback" ? (
-        <p className="border-t border-white/10 px-3.5 py-2 text-[10px] text-white/40 sm:px-4">
+        <p
+          className={cn(
+            "border-t px-3.5 py-2 text-[10px] sm:px-4",
+            light
+              ? "border-border text-muted"
+              : "border-white/10 text-white/40",
+          )}
+        >
           Showing Nairobi — allow location or pick a region (e.g. Nanyuki)
         </p>
       ) : null}
