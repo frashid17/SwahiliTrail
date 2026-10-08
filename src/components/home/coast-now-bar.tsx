@@ -127,7 +127,7 @@ export function CoastNowBar({
         : "Low tide"
       : "Tide";
   const tideValue =
-    state.status === "ready" ? (state.data.nextTide?.time ?? "—") : "—";
+    state.status === "ready" ? (state.data.nextTide?.time ?? "-") : "-";
 
   return (
     <div
@@ -278,7 +278,7 @@ export function CoastNowBar({
               : "border-white/10 text-white/40",
           )}
         >
-          Showing {region.label} — choose All Kenya for your device location
+          Showing {region.label} - choose All Kenya for your device location
         </p>
       ) : state.status === "ready" && state.data.source === "fallback" ? (
         <p
@@ -289,7 +289,7 @@ export function CoastNowBar({
               : "border-white/10 text-white/40",
           )}
         >
-          Showing Nairobi — allow location or pick a region (e.g. Nanyuki)
+          Showing Nairobi - allow location or pick a region (e.g. Nanyuki)
         </p>
       ) : null}
     </div>
