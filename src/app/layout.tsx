@@ -1,16 +1,16 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Fraunces, Outfit } from "next/font/google";
+import { Bricolage_Grotesque, Figtree } from "next/font/google";
 import { ConditionalShell } from "@/components/conditional-shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const display = Fraunces({
+const display = Bricolage_Grotesque({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const body = Outfit({
+const body = Figtree({
   variable: "--font-body",
   subsets: ["latin"],
 });
