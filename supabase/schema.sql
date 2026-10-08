@@ -80,6 +80,51 @@ create table if not exists public.analytics_events (
   created_at timestamptz default now()
 );
 
+-- Monthly AI usage for free tier (3/month); Trail Plus bypasses via Paystack subscription
+create table if not exists public.ai_usage (
+  user_id text not null,
+  period text not null,
+  count integer not null default 0 check (count >= 0),
+  last_source text,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, period)
+);
+
+create table if not exists public.subscriptions (
+  user_id text primary key,
+  status text not null default 'inactive'
+    check (status in ('active', 'inactive', 'past_due', 'cancelled')),
+  plan text not null default 'trail_plus',
+  provider text not null default 'paystack',
+  paystack_reference text,
+  paystack_customer_code text,
+  paystack_subscription_code text,
+  email text,
+  current_period_end timestamptz,
+  cancel_at_period_end boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  provider text not null default 'paystack',
+  reference text not null,
+  amount integer not null check (amount >= 0),
+  currency text not null default 'KES',
+  status text not null default 'success'
+    check (status in ('success', 'failed', 'pending', 'refunded')),
+  paid_at timestamptz,
+  description text,
+  receipt_number text,
+  created_at timestamptz not null default now(),
+  unique (provider, reference)
+);
+
+create index if not exists payments_user_id_paid_at_idx
+  on public.payments (user_id, paid_at desc);
+
 alter table public.profiles enable row level security;
 alter table public.hotels enable row level security;
 alter table public.itineraries enable row level security;
@@ -87,33 +132,42 @@ alter table public.hotel_matches enable row level security;
 alter table public.guide_sessions enable row level security;
 alter table public.saved_trips enable row level security;
 alter table public.analytics_events enable row level security;
+alter table public.ai_usage enable row level security;
+alter table public.subscriptions enable row level security;
+alter table public.payments enable row level security;
 
 -- Public read for hotels (demo catalogue)
+drop policy if exists "Hotels are publicly readable" on public.hotels;
 create policy "Hotels are publicly readable"
   on public.hotels for select
   using (true);
 
 -- User-owned rows (Clerk user id stored as text)
+drop policy if exists "Users manage own itineraries" on public.itineraries;
 create policy "Users manage own itineraries"
   on public.itineraries for all
   using (user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true)))
   with check (user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true)));
 
+drop policy if exists "Users manage own hotel matches" on public.hotel_matches;
 create policy "Users manage own hotel matches"
   on public.hotel_matches for all
   using (user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true)))
   with check (user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true)));
 
+drop policy if exists "Users manage own guide sessions" on public.guide_sessions;
 create policy "Users manage own guide sessions"
   on public.guide_sessions for all
   using (true)
   with check (true);
 
+drop policy if exists "Users manage own saved trips" on public.saved_trips;
 create policy "Users manage own saved trips"
   on public.saved_trips for all
   using (true)
   with check (true);
 
+drop policy if exists "Users insert own analytics events" on public.analytics_events;
 create policy "Users insert own analytics events"
   on public.analytics_events for insert
   with check (
@@ -121,11 +175,62 @@ create policy "Users insert own analytics events"
     or user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
   );
 
+drop policy if exists "Users read own analytics events" on public.analytics_events;
 create policy "Users read own analytics events"
   on public.analytics_events for select
   using (
     user_id is null
     or user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
+  );
+
+drop policy if exists "Users read own ai usage" on public.ai_usage;
+create policy "Users read own ai usage"
+  on public.ai_usage for select
+  using (
+    user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
+  );
+
+create or replace function public.increment_ai_usage(
+  p_user_id text,
+  p_period text,
+  p_source text
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_count integer;
+begin
+  insert into public.ai_usage as u (user_id, period, count, last_source, updated_at)
+  values (p_user_id, p_period, 1, p_source, now())
+  on conflict (user_id, period)
+  do update set
+    count = u.count + 1,
+    last_source = excluded.last_source,
+    updated_at = now()
+  returning u.count into new_count;
+
+  return new_count;
+end;
+$$;
+
+revoke all on function public.increment_ai_usage(text, text, text) from public;
+grant execute on function public.increment_ai_usage(text, text, text) to service_role;
+
+drop policy if exists "Users read own subscription" on public.subscriptions;
+create policy "Users read own subscription"
+  on public.subscriptions for select
+  using (
+    user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
+  );
+
+drop policy if exists "Users read own payments" on public.payments;
+create policy "Users read own payments"
+  on public.payments for select
+  using (
+    user_id = coalesce(auth.jwt() ->> 'sub', current_setting('request.jwt.claim.sub', true))
   );
 
 -- Seed hotels
