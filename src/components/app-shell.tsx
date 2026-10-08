@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AiQuotaProvider } from "@/components/ai-quota-banner";
 import { BrandLogo } from "@/components/brand-logo";
 import { SiteHeader } from "@/components/site-header";
 
@@ -12,42 +13,30 @@ export function SiteFooter() {
         <div>
           <BrandLogo onDark />
           <p className="mt-3 max-w-md text-sm text-on-brand/75">
-            Trip planner, stay matcher, multilingual guide, and analytics -
-            demoed for IBS 2026 in Hola, Tana River.
+            Kenya travel platform — plan trips, match stays, ask a guide, and
+            follow what&apos;s on from Nairobi to the coast.
           </p>
         </div>
         <div className="flex flex-wrap gap-4 text-sm text-on-brand/80">
           <Link href="/explore" className="hover:text-white">
-            Explore
+            Discover
           </Link>
-          <Link href="/attractions" className="hover:text-white">
-            Attractions
+          <Link href="/planner" className="hover:text-white">
+            Plan
+          </Link>
+          <Link href="/pricing" className="hover:text-white">
+            Pricing
           </Link>
           <Link href="/events" className="hover:text-white">
             Events
           </Link>
-          <Link href="/wildlife" className="hover:text-white">
-            Wildlife
-          </Link>
-          <Link href="/planner" className="hover:text-white">
-            Planner
-          </Link>
-          <Link href="/hotels" className="hover:text-white">
-            Stay & Eat
-          </Link>
           <Link href="/guide" className="hover:text-white">
             Guide
-          </Link>
-          <Link href="/trips" className="hover:text-white">
-            My Trips
-          </Link>
-          <Link href="/analytics" className="hover:text-white">
-            Analytics
           </Link>
         </div>
       </div>
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-on-brand/55 sm:px-6">
-        IBS 2026 · Hola, Tana River · 7–10 October 2026
+        Swahili Trail · Travel Kenya
       </div>
     </footer>
   );
@@ -61,19 +50,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/planner");
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-      <main
-        className={
-          isImmersive
-            ? // Mobile: page scrolls. Desktop: panels own their scroll.
-              "flex-1 overflow-y-auto lg:min-h-0 lg:overflow-hidden"
-            : "flex-1"
-        }
-      >
-        {children}
-      </main>
-      {isImmersive ? null : <SiteFooter />}
-    </div>
+    <AiQuotaProvider>
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main
+          className={
+            isImmersive
+              ? // Mobile: page scrolls. Desktop: panels own their scroll.
+                "flex-1 overflow-y-auto lg:min-h-0 lg:overflow-hidden"
+              : "flex-1"
+          }
+        >
+          {children}
+        </main>
+        {isImmersive ? null : <SiteFooter />}
+      </div>
+    </AiQuotaProvider>
   );
 }
