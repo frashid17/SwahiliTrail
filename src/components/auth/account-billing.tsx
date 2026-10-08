@@ -90,7 +90,7 @@ export function AccountBilling({
     if (!data?.unlimited) return;
     if (
       !window.confirm(
-        "Cancel Trail Plus? You keep unlimited AI until the end of the current period.",
+        "Cancel Trail Plus? You keep Plus fair-use limits until the end of the current period.",
       )
     ) {
       return;
@@ -145,27 +145,27 @@ export function AccountBilling({
               {data.planLabel}
             </p>
             <p className="mt-1 text-sm text-muted">
-              {data.unlimited
-                ? `$${data.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/month · unlimited AI`
-                : `${limit} AI uses per month · $${TRAIL_PLUS_PRICE_USD}/mo for unlimited`}
+              {data.plan === "trail_plus"
+                ? `$${data.priceUsdPerMonth ?? TRAIL_PLUS_PRICE_USD}/month · fair-use AI caps`
+                : `${limit} AI uses per month · $${TRAIL_PLUS_PRICE_USD}/mo for Trail Plus`}
             </p>
           </div>
           <span
             className={
-              data.unlimited
+              data.plan === "trail_plus"
                 ? "rounded-full bg-aqua/15 px-3 py-1 text-xs font-semibold text-ocean"
                 : "rounded-full bg-border/60 px-3 py-1 text-xs font-semibold text-muted"
             }
           >
             {data.cancelAtPeriodEnd
               ? "Cancels at period end"
-              : data.unlimited
+              : data.plan === "trail_plus"
                 ? "Active"
                 : "Free"}
           </span>
         </div>
 
-        {!data.unlimited ? (
+        {data.plan !== "trail_plus" ? (
           <div className="mt-4">
             <p className="mb-2 text-sm text-muted">
               AI used this month: {used} / {limit}
@@ -174,6 +174,10 @@ export function AccountBilling({
           </div>
         ) : (
           <div className="mt-4 space-y-3">
+            <p className="text-sm text-muted">
+              AI today: {data.quota?.used ?? used} /{" "}
+              {data.quota?.limit ?? limit} (fair use)
+            </p>
             {data.currentPeriodEnd ? (
               <p className="text-sm text-muted">
                 Current period ends {formatDate(data.currentPeriodEnd)}
