@@ -4,11 +4,14 @@ import { useAuth } from "@clerk/nextjs";
 import { Check, Clock, Plus, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CoastalOrbs } from "@/components/coastal-accents";
 import { FadeIn, StaggerItem } from "@/components/fade-in";
+import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import { ATTRACTIONS } from "@/lib/data/attractions";
 import type { CoastEvent } from "@/lib/data/coast-events";
+import { filterByKenyaRegion } from "@/lib/kenya-regions";
 import {
   addTripItem,
   loadTripCart,
@@ -18,8 +21,29 @@ import {
 
 export default function AttractionsPage() {
   const { userId, isLoaded } = useAuth();
+  const { regionId, region } = useKenyaLocation();
   const [cart, setCart] = useState<TripCartItem[]>([]);
   const [events, setEvents] = useState<CoastEvent[]>([]);
+
+  const attractions = useMemo(
+    () =>
+      filterByKenyaRegion(
+        ATTRACTIONS,
+        regionId,
+        (a) => `${a.area} ${a.name} ${a.category} ${a.blurb}`,
+      ),
+    [regionId],
+  );
+
+  const filteredEvents = useMemo(
+    () =>
+      filterByKenyaRegion(
+        events,
+        regionId,
+        (e) => `${e.area} ${e.venue} ${e.title} ${e.category}`,
+      ).slice(0, 6),
+    [events, regionId],
+  );
 
   useEffect(() => {
     if (isLoaded && userId) setCart(loadTripCart(userId));
@@ -32,7 +56,7 @@ export default function AttractionsPage() {
         const res = await fetch("/api/events", { cache: "no-store" });
         if (!res.ok) return;
         const json = (await res.json()) as { events: CoastEvent[] };
-        if (!cancelled) setEvents(json.events.slice(0, 6));
+        if (!cancelled) setEvents(json.events);
       } catch {
         /* ignore */
       }
@@ -80,7 +104,7 @@ export default function AttractionsPage() {
               Tourist attractions
             </p>
             <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
-              What to do in Tana River
+              What to do in Kenya
             </h1>
             <p className="mt-3 max-w-2xl text-muted">
               Open a place for details and traveler reviews, or save it to your
@@ -114,7 +138,11 @@ export default function AttractionsPage() {
           </div>
         </FadeIn>
 
-        {events.length > 0 ? (
+        <div className="mt-8">
+          <KenyaLocationFilter />
+        </div>
+
+        {filteredEvents.length > 0 ? (
           <section className="mt-12">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -122,7 +150,7 @@ export default function AttractionsPage() {
                   Happening now
                 </p>
                 <h2 className="mt-1 font-display text-2xl text-ocean-deep sm:text-3xl">
-                  Coast events
+                  {region ? `Events in ${region.label}` : "Kenya events"}
                 </h2>
               </div>
               <Link
@@ -133,7 +161,7 @@ export default function AttractionsPage() {
               </Link>
             </div>
             <div className="mt-5 flex gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <Link
                   key={event.id}
                   href={`/events/${event.id}`}
@@ -163,8 +191,19 @@ export default function AttractionsPage() {
           </section>
         ) : null}
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {ATTRACTIONS.map((attraction, index) => {
+        <p className="mt-8 text-sm text-muted">
+          Showing {attractions.length} of {ATTRACTIONS.length} attractions
+          {region ? ` in ${region.label}` : " across Kenya"}
+        </p>
+
+        {attractions.length === 0 ? (
+          <p className="mt-8 rounded-2xl border border-border bg-surface px-5 py-8 text-center text-muted">
+            No attractions in this region yet. Try All Kenya or another area.
+          </p>
+        ) : null}
+
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {attractions.map((attraction, index) => {
             const saved = isSaved(attraction.id);
             return (
               <StaggerItem key={attraction.id} index={index}>
