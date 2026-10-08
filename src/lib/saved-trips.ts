@@ -219,7 +219,7 @@ async function pushTripsToCloud(trips: SavedTrip[]) {
       body: JSON.stringify({ trips }),
     });
   } catch {
-    // Offline / not configured — local copy remains.
+    // Offline / not configured - local copy remains.
   }
 }
 
