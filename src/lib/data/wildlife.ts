@@ -20,7 +20,7 @@ export type WildlifeSite = {
   bookingTip: string;
 };
 
-/** Tana River first, then optional coast-corridor extensions */
+/** Kenya wildlife catalogue — reserves, parks, and coast nature days */
 const WILDLIFE_SITES_BASE: WildlifeSite[] = [
   {
     id: "tana-primate-reserve",
@@ -80,7 +80,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     imageUrl: img.beachTropical,
     kwsUrl: "https://www.kws.go.ke/",
     bookingTip:
-      "Ask your hotel or the summit info desk for a vetted Kipini boat contact.",
+      "Ask your hotel or the county tourism desk for a vetted Kipini boat contact.",
   },
   {
     id: "arawale-reserve",
@@ -138,7 +138,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     blurb:
       "Vast savannah with red elephants - the nearest big-park safari from the Tana corridor.",
     about:
-      "Tsavo East is the classic big-park option if you have time for an overnight after IBS week. Red elephants, open skies, and Mudanda Rock. Reach it via the Malindi–Mombasa corridor with a licensed operator.",
+      "Tsavo East is the classic big-park option if you have time for an overnight from the Tana corridor. Red elephants, open skies, and Mudanda Rock. Reach it via the Malindi–Mombasa corridor with a licensed operator.",
     tips: [
       "Book a licensed operator; overnight is better than a rushed day",
       "Carry dust protection for cameras",
@@ -162,7 +162,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     blurb:
       "Coast rainforest day trip - elephants, sable antelope, and Sheldrick Falls.",
     about:
-      "Shimba Hills is a full day from Mombasa or Diani: coastal rainforest, elephants, and Sheldrick Falls. Treat it as a coast-corridor extension after your Tana River days, not the default base.",
+      "Shimba Hills is a full day from Mombasa or Diani: coastal rainforest, elephants, and Sheldrick Falls. A strong south-coast nature day when you are based near the beach.",
     tips: [
       "Start early for cooler game drives",
       "Wear closed shoes for short waterfall walks",
@@ -231,7 +231,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     blurb:
       "Snorkeling and reef life - boats from Watamu beaches.",
     about:
-      "A snorkel and reef day out of Watamu. Glass-bottom and snorkel boats work well for families when seas are calm. Optional after Tana River if you continue down the coast.",
+      "A snorkel and reef day out of Watamu. Glass-bottom and snorkel boats work well for families when seas are calm.",
     tips: [
       "Check tide and weather with your boat captain",
       "Use reef-safe sunscreen",
@@ -254,7 +254,7 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     blurb:
       "South-coast marine park - dolphins, snorkeling, and Wasini Island lunches.",
     about:
-      "Kisite Mpunguti is a full water day via Shimoni boats. Dolphins, snorkeling, and Wasini seafood. Treat it as a south-coast extension, not a Tana River default.",
+      "Kisite Mpunguti is a full water day via Shimoni boats. Dolphins, snorkeling, and Wasini seafood — a classic south-coast outing.",
     tips: [
       "Join a reputable Shimoni operator",
       "Confirm whether park fees are included",
@@ -291,6 +291,160 @@ const WILDLIFE_SITES_BASE: WildlifeSite[] = [
     imageUrl: img.hallerParkGiraffe,
     kwsUrl: "https://www.kws.go.ke/",
     bookingTip: "Buy tickets on arrival; combine with Bamburi Beach.",
+  },
+  {
+    id: "nairobi-np",
+    name: "Nairobi National Park",
+    type: "national-park",
+    region: "Nairobi",
+    blurb: "Big-game park on the edge of the capital.",
+    about:
+      "Rhinos, lions, and open plains with the Nairobi skyline behind them. Perfect first safari when you land at JKIA or Wilson.",
+    tips: [
+      "Morning drives are best",
+      "Book a guide if you are new to self-drive parks",
+      "Allow 3–5 hours",
+    ],
+    highlights: ["Black rhino", "Lions", "City skyline views"],
+    bestFor: ["safari", "half day", "families"],
+    dayTripPossible: true,
+    estEntryKes: 4300,
+    durationHours: 4,
+    imageUrl: img.tsavoEastElephants,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Enter at opening; shared game drives book from Nairobi hotels.",
+  },
+  {
+    id: "maasai-mara-nr",
+    name: "Maasai Mara National Reserve",
+    type: "reserve",
+    region: "Maasai Mara",
+    blurb: "Kenya's flagship savannah for Big Five and migration season.",
+    about:
+      "Plan multiple game-drive days. The Great Migration (roughly July–October) is peak season; shoulder months can be quieter and greener.",
+    tips: [
+      "Budget park fees per person per 24 hours",
+      "Flying safari saves a long Narok road day",
+      "Book lodges early for migration months",
+    ],
+    highlights: ["Big Five", "Migration (seasonal)", "Hot-air balloons"],
+    bestFor: ["safari", "photography", "overnight"],
+    dayTripPossible: false,
+    estEntryKes: 8000,
+    durationHours: 48,
+    imageUrl: img.tsavoEastElephants,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Book lodge + park fees with a licensed operator; 2+ nights ideal.",
+  },
+  {
+    id: "amboseli-np",
+    name: "Amboseli National Park",
+    type: "national-park",
+    region: "Amboseli",
+    blurb: "Elephant country with Kilimanjaro as a backdrop.",
+    about:
+      "Famous for large elephant herds and dawn mountain views. Dusty in the dry season; magical when the peak is clear.",
+    tips: [
+      "Dawn for the best Kilimanjaro chance",
+      "Protect cameras from dust",
+      "2 nights is better than a rushed day",
+    ],
+    highlights: ["Elephants", "Kilimanjaro views", "Wetlands"],
+    bestFor: ["safari", "photography", "overnight"],
+    dayTripPossible: false,
+    estEntryKes: 6000,
+    durationHours: 24,
+    imageUrl: img.tsavoWestMzima,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Combine with a Nairobi overnight transfer or fly-in lodge.",
+  },
+  {
+    id: "lake-nakuru-np",
+    name: "Lake Nakuru National Park",
+    type: "national-park",
+    region: "Nakuru",
+    blurb: "Rift lake park - rhinos and waterbirds.",
+    about:
+      "A strong day or overnight from Nairobi. Flamingo numbers vary with water levels; rhinos and baboon cliffs remain reliable draws.",
+    tips: [
+      "Start early from Nairobi for a day trip",
+      "Ask guides about current bird concentrations",
+      "Pair with Naivasha if you have two days",
+    ],
+    highlights: ["Rhinos", "Waterbirds", "Baboon cliffs"],
+    bestFor: ["safari", "day trip", "birding"],
+    dayTripPossible: true,
+    estEntryKes: 4300,
+    durationHours: 8,
+    imageUrl: img.beachTropical,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Day safari from Nairobi or overnight lodge inside/near the park.",
+  },
+  {
+    id: "hells-gate-np",
+    name: "Hell's Gate National Park",
+    type: "national-park",
+    region: "Naivasha",
+    blurb: "Bikeable park with gorges and geothermal vents.",
+    about:
+      "One of the few Kenyan parks where cycling is a highlight. Cliffs, a gorge walk, and zebras on open roads near Naivasha.",
+    tips: [
+      "Hire bikes at the main gate",
+      "Carry sun cover and water for the gorge",
+      "Combine with a Lake Naivasha boat",
+    ],
+    highlights: ["Cycling", "Gorge walk", "Geothermal vents"],
+    bestFor: ["adventure", "day trip", "families"],
+    dayTripPossible: true,
+    estEntryKes: 3000,
+    durationHours: 6,
+    imageUrl: img.shimbaHills,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Self-drive or day tour from Nairobi / Naivasha.",
+  },
+  {
+    id: "mount-kenya-np",
+    name: "Mount Kenya National Park",
+    type: "national-park",
+    region: "Nanyuki / Mount Kenya",
+    blurb: "Alpine trails and forest approaches from Nanyuki and Naro Moru.",
+    about:
+      "Africa's second-highest peak. Day hikers use lower trails; summit bids need multi-day permits and licensed guides via Sirimon, Naro Moru, or Chogoria.",
+    tips: [
+      "Acclimatize in Nanyuki before long climbs",
+      "Nights are cold even on short overnight treks",
+      "Use KWS-registered mountain guides",
+    ],
+    highlights: ["Alpine scenery", "Forest wildlife", "Peak attempts"],
+    bestFor: ["hiking", "adventure", "overnight"],
+    dayTripPossible: false,
+    estEntryKes: 3500,
+    durationHours: 24,
+    imageUrl: img.forestTrail,
+    kwsUrl: "https://www.kws.go.ke/",
+    bookingTip: "Base in Nanyuki; book a licensed Mount Kenya operator.",
+  },
+  {
+    id: "ol-pejeta-wildlife",
+    name: "Ol Pejeta Conservancy",
+    type: "sanctuary",
+    region: "Nanyuki / Laikipia",
+    blurb: "Rhinos, chimps, and Laikipia plains near Nanyuki.",
+    about:
+      "A working conservancy with strong rhino programs and a chimpanzee sanctuary. Easy full day or overnight from Nanyuki.",
+    tips: [
+      "Book chimp sanctuary slots ahead",
+      "Self-drive or guided options both work",
+      "Support conservancy fees - they fund protection",
+    ],
+    highlights: ["Rhinos", "Chimpanzees", "Plains game"],
+    bestFor: ["safari", "conservation", "families"],
+    dayTripPossible: true,
+    estEntryKes: 4500,
+    durationHours: 6,
+    imageUrl: img.tsavoWestMzima,
+    kwsUrl: "https://www.olpejetaconservancy.org/",
+    bookingTip: "Day visit or lodge stay from Nanyuki.",
   },
 ];
 
