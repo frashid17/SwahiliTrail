@@ -9,23 +9,20 @@ import {
   Menu,
   MessageSquarePlus,
   Send,
-  Sparkles,
   Trash2,
-  Waves,
   X,
 } from "lucide-react";
-import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AiQuotaBanner,
   aiQuotaErrorMessage,
   useAiQuota,
 } from "@/components/ai-quota-banner";
+import { AiTypingPanel } from "@/components/ai-typing-panel";
 import {
-  CoastalOrbs,
-  ShellMark,
-  WaveDivider,
-} from "@/components/coastal-accents";
+  consumeAiNdjsonStream,
+  parseGuideStreamText,
+} from "@/lib/ai/ndjson-stream";
 import { GUIDE_LANGUAGES, type GuideLanguage } from "@/lib/data/attractions";
 import type { AiQuotaStatus } from "@/lib/ai/quota";
 import {
@@ -83,6 +80,7 @@ export default function GuidePage() {
   const [messages, setMessages] = useState<GuideMessage[]>([WELCOME]);
   const [sessions, setSessions] = useState<GuideSession[]>([]);
   const [loading, setLoading] = useState(false);
+  const [streamingReply, setStreamingReply] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -111,7 +109,7 @@ export default function GuidePage() {
     const el = listRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, loading, streamingReply]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -176,6 +174,7 @@ export default function GuidePage() {
     setMessages(nextMessages);
     setInput("");
     setLoading(true);
+    setStreamingReply("");
     setError(null);
     setMenuOpen(false);
 
@@ -190,9 +189,17 @@ export default function GuidePage() {
           sessionId,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(aiQuotaErrorMessage(data));
-      if (data.quota) applyQuota(data.quota as AiQuotaStatus);
+      const data = await consumeAiNdjsonStream<{
+        type: "done";
+        reply: string;
+        detectedLanguage?: GuideLanguage;
+        quota?: AiQuotaStatus;
+      }>(res, {
+        onDelta: (_chunk, full) => {
+          setStreamingReply(parseGuideStreamText(full).reply);
+        },
+      });
+      if (data.quota) applyQuota(data.quota);
       const detected = (data.detectedLanguage as GuideLanguage) || language;
       if (detected !== language) setLanguage(detected);
       const withReply: GuideMessage[] = [
@@ -200,9 +207,24 @@ export default function GuidePage() {
         { role: "assistant", content: data.reply },
       ];
       setMessages(withReply);
+      setStreamingReply("");
       persist(withReply, detected, sessionId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const payload =
+        err && typeof err === "object"
+          ? (err as {
+              error?: string;
+              message?: string;
+              code?: string;
+              priceUsdPerMonth?: number;
+            })
+          : {};
+      setError(
+        payload.code
+          ? aiQuotaErrorMessage(payload)
+          : payload.message || payload.error || "Something went wrong",
+      );
+      setStreamingReply("");
     } finally {
       setLoading(false);
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -214,32 +236,17 @@ export default function GuidePage() {
 
   const sidebar = (
     <>
-      <div className="relative mb-4 overflow-hidden rounded-2xl bg-brand-deep p-4 text-on-brand sm:rounded-3xl sm:p-5">
-        <Image
-          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=70"
-          alt=""
-          fill
-          className="object-cover opacity-35"
-          sizes="320px"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-brand-deep/80 to-ocean/40" />
-        <div className="absolute inset-x-0 bottom-0 h-8 tide-line opacity-70 sm:h-10" />
-        <div className="relative">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-aqua/20 text-aqua sm:h-10 sm:w-10">
-            <Languages className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-          </span>
-          <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-aqua sm:mt-4 sm:text-xs">
-            <ShellMark />
-            Multilingual guide
-          </p>
-          <h1 className="mt-1.5 font-display text-2xl leading-tight text-on-brand sm:mt-2 sm:text-3xl">
-            Ask about Kenya
-          </h1>
-          <p className="mt-1.5 text-sm text-on-brand/80 sm:mt-2">
-            Roads, lodging, food, parks, or local tips. Answers in your
-            language.
-          </p>
-        </div>
+      <div className="mb-5">
+        <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          <Languages className="h-3.5 w-3.5 text-ocean" />
+          Guide
+        </p>
+        <h1 className="mt-1.5 font-display text-2xl tracking-tight text-ocean-deep sm:text-3xl">
+          Ask about Kenya
+        </h1>
+        <p className="mt-2 text-sm text-muted">
+          Roads, lodging, food, parks, or local tips — in your language.
+        </p>
       </div>
 
       <AiQuotaBanner className="mb-4" quota={quota} />
@@ -247,177 +254,160 @@ export default function GuidePage() {
       <button
         type="button"
         onClick={startNewChat}
-        className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ocean px-4 py-2.5 text-sm font-semibold text-on-brand transition hover:bg-brand-deep"
+        className="btn-solid mb-5 w-full !bg-brand-deep hover:!bg-ocean-deep"
       >
         <MessageSquarePlus className="h-4 w-4" />
         New chat
       </button>
 
-      <div className="coastal-panel relative mb-4 p-3.5 sm:p-4">
-        <div className="relative z-[1]">
-          <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-aqua sm:text-xs">
-            <History className="h-3.5 w-3.5" />
-            Past chats
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            {sessions.length === 0 ? (
-              <p className="text-xs text-muted">
-                Your conversations will appear here after you send a message.
-              </p>
-            ) : (
-              sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={cn(
-                    "group flex items-start gap-2 rounded-2xl border px-3 py-2.5 transition",
-                    session.id === sessionId
-                      ? "border-aqua/40 bg-foam"
-                      : "border-transparent bg-foam/70 hover:border-aqua/25",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => loadSession(session.id)}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <span className="block truncate text-sm font-semibold text-ocean-deep">
-                      {session.title}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {new Date(session.updatedAt).toLocaleString()}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeSession(session.id)}
-                    className="rounded-lg p-1.5 text-muted opacity-100 transition hover:bg-sand hover:text-coral sm:opacity-0 sm:group-hover:opacity-100"
-                    aria-label="Delete chat"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="coastal-panel relative mb-4 p-3.5 sm:p-4">
-        <div className="relative z-[1]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-aqua sm:text-xs">
-            Preferred language
-          </p>
-          <p className="mt-1 text-[11px] text-muted">
-            Auto-switches when you write in another language.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {GUIDE_LANGUAGES.map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
+      <div className="mb-5 border-t border-border pt-4">
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          <History className="h-3.5 w-3.5" />
+          Past chats
+        </p>
+        <div className="mt-3 flex flex-col gap-1">
+          {sessions.length === 0 ? (
+            <p className="text-xs text-muted">
+              Conversations appear here after you send a message.
+            </p>
+          ) : (
+            sessions.map((session) => (
+              <div
+                key={session.id}
                 className={cn(
-                  "rounded-2xl px-3 py-2.5 text-left text-sm font-semibold transition",
-                  language === lang.code
-                    ? "bg-ocean text-brand-deep"
-                    : "bg-foam text-muted hover:bg-sand hover:text-ocean-deep",
+                  "group flex items-start gap-2 rounded-md px-2.5 py-2 transition",
+                  session.id === sessionId
+                    ? "bg-foam"
+                    : "hover:bg-foam/70",
                 )}
               >
-                <span className="block">{lang.native}</span>
-                <span
-                  className={cn(
-                    "mt-0.5 block text-[11px] font-medium",
-                    language === lang.code
-                      ? "text-brand-deep/70"
-                      : "text-muted/80",
-                  )}
+                <button
+                  type="button"
+                  onClick={() => loadSession(session.id)}
+                  className="min-w-0 flex-1 text-left"
                 >
-                  {lang.label}
-                </span>
-              </button>
-            ))}
-          </div>
+                  <span className="block truncate text-sm font-semibold text-ocean-deep">
+                    {session.title}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted">
+                    {new Date(session.updatedAt).toLocaleString()}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeSession(session.id)}
+                  className="rounded-md p-1.5 text-muted opacity-100 transition hover:bg-sand hover:text-coral sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Delete chat"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      <div className="coastal-panel relative p-3.5 sm:p-4">
-        <div className="relative z-[1]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-aqua sm:text-xs">
-            Try asking
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            {starters.map((starter) => (
-              <button
-                key={starter.prompt}
-                type="button"
-                disabled={loading}
-                onClick={() => void send(starter.prompt)}
-                className="rounded-2xl border border-transparent bg-foam px-3 py-2.5 text-left text-sm text-ocean-deep transition hover:border-aqua/30 hover:bg-sand disabled:opacity-50"
+      <div className="mb-5 border-t border-border pt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          Preferred language
+        </p>
+        <p className="mt-1 text-[11px] text-muted">
+          Auto-switches when you write in another language.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-1.5">
+          {GUIDE_LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              type="button"
+              onClick={() => setLanguage(lang.code)}
+              className={cn(
+                "rounded-md px-3 py-2 text-left text-sm font-semibold transition",
+                language === lang.code
+                  ? "bg-brand-deep text-on-brand"
+                  : "bg-foam text-muted hover:text-ocean-deep",
+              )}
+            >
+              <span className="block">{lang.native}</span>
+              <span
+                className={cn(
+                  "mt-0.5 block text-[11px] font-medium",
+                  language === lang.code
+                    ? "text-on-brand/70"
+                    : "text-muted/80",
+                )}
               >
-                <span className="font-semibold">{starter.label}</span>
-                <span className="mt-0.5 block text-xs text-muted line-clamp-2">
-                  {starter.prompt}
-                </span>
-              </button>
-            ))}
-          </div>
+                {lang.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+          Try asking
+        </p>
+        <div className="mt-3 flex flex-col gap-1.5">
+          {starters.map((starter) => (
+            <button
+              key={starter.prompt}
+              type="button"
+              disabled={loading}
+              onClick={() => void send(starter.prompt)}
+              className="rounded-md px-3 py-2.5 text-left text-sm text-ocean-deep transition hover:bg-foam disabled:opacity-50"
+            >
+              <span className="font-semibold">{starter.label}</span>
+              <span className="mt-0.5 block text-xs text-muted line-clamp-2">
+                {starter.prompt}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </>
   );
 
   return (
-    <div className="coastal-grid h-[calc(100dvh-4rem)] overflow-hidden">
+    <div className="paper-grain coastal-grid h-[calc(100dvh-4rem)] overflow-hidden">
       <div className="mx-auto flex h-full max-w-[90rem] flex-col gap-0 px-0 py-0 lg:grid lg:grid-cols-[19.5rem_minmax(0,1fr)] lg:gap-6 lg:px-10 lg:py-5">
-        {/* Desktop sidebar */}
-        <aside className="relative hidden min-h-0 flex-col overflow-hidden rounded-3xl border border-border bg-surface/80 shadow-sm backdrop-blur lg:flex">
-          <CoastalOrbs />
-          <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+        <aside className="relative hidden min-h-0 flex-col overflow-hidden rounded-md border border-border bg-surface lg:flex">
+          <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
             {sidebar}
           </div>
-          <WaveDivider className="shrink-0 opacity-60" />
         </aside>
 
-        {/* Chat column — full screen on mobile */}
-        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden border-border bg-surface shadow-sm lg:rounded-3xl lg:border">
-          <CoastalOrbs className="opacity-70" />
+        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden border-border bg-surface lg:rounded-md lg:border">
           <div className="relative z-[1] flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2.5 sm:gap-3 sm:px-5 sm:py-3.5">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-foam text-ocean-deep lg:hidden"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-foam text-ocean-deep lg:hidden"
                 onClick={() => setMenuOpen(true)}
                 aria-label="Open guide menu"
               >
                 <Menu className="h-4 w-4" />
               </button>
-              <span className="hidden h-10 w-10 items-center justify-center rounded-full bg-ocean text-on-brand sm:flex">
-                <Waves className="h-4.5 w-4.5" />
+              <span className="hidden h-9 w-9 items-center justify-center rounded-md bg-brand-deep text-on-brand sm:flex">
+                <MapPinned className="h-4 w-4" />
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-ocean-deep">
-                  Coastal guide
+                  Kenya guide
                 </p>
                 <p className="truncate text-xs text-muted">
                   Answering in {activeLang}
-                  {loading ? " · thinking…" : " · online"}
+                  {loading ? " · writing…" : ""}
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <button
-                type="button"
-                onClick={startNewChat}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-foam px-2.5 py-1.5 text-xs font-semibold text-ocean-deep sm:px-3"
-              >
-                <MessageSquarePlus className="h-3.5 w-3.5" />
-                <span className="sm:inline">New</span>
-              </button>
-              <span className="hidden items-center gap-1.5 rounded-full bg-foam px-3 py-1 text-xs font-semibold text-ocean sm:inline-flex">
-                <Sparkles className="h-3.5 w-3.5" />
-                Trail Guide
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={startNewChat}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-foam px-2.5 py-1.5 text-xs font-semibold text-ocean-deep sm:px-3"
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5" />
+              New
+            </button>
           </div>
 
           <div
@@ -433,22 +423,25 @@ export default function GuidePage() {
                 )}
               >
                 {message.role === "assistant" ? (
-                  <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-aqua/15 text-ocean sm:h-8 sm:w-8">
+                  <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-foam text-ocean sm:h-8 sm:w-8">
                     <MapPinned className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </span>
                 ) : null}
                 <div
                   className={cn(
-                    "max-w-[min(100%,42rem)] rounded-2xl px-3.5 py-3 text-[15px] leading-6 shadow-sm sm:rounded-3xl sm:px-5 sm:py-4 sm:leading-7",
+                    "max-w-[min(100%,42rem)] rounded-md px-3.5 py-3 text-[15px] leading-6 sm:px-5 sm:py-4 sm:leading-7",
                     message.role === "user"
-                      ? "rounded-br-md bg-ocean text-on-brand"
-                      : "w-full rounded-bl-md border border-border/60 bg-surface text-ocean-deep sm:w-auto",
+                      ? "bg-brand-deep text-on-brand"
+                      : "w-full border border-border/70 bg-surface text-ocean-deep sm:w-auto",
                   )}
                 >
                   {message.content.split(/\n{2,}/).map((block, i) => (
                     <p
                       key={i}
-                      className={cn("whitespace-pre-wrap", i > 0 && "mt-3 sm:mt-4")}
+                      className={cn(
+                        "whitespace-pre-wrap",
+                        i > 0 && "mt-3 sm:mt-4",
+                      )}
                     >
                       {block}
                     </p>
@@ -457,24 +450,24 @@ export default function GuidePage() {
               </div>
             ))}
             {loading ? (
-              <div className="flex items-center gap-2 sm:gap-3">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-aqua/15 text-ocean sm:h-8 sm:w-8">
+              <div className="flex gap-2 sm:gap-3">
+                <span className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-foam text-ocean sm:h-8 sm:w-8">
                   <Loader2 className="h-4 w-4 animate-spin" />
                 </span>
-                <div className="rounded-2xl rounded-bl-md border border-border/60 bg-surface px-3.5 py-3 text-sm leading-6 text-muted sm:rounded-3xl sm:px-5 sm:py-4 sm:leading-7">
-                  Charting an answer…
-                </div>
+                <AiTypingPanel
+                  className="max-w-[min(100%,42rem)] flex-1"
+                  text={streamingReply}
+                />
               </div>
             ) : null}
           </div>
 
-          <div className="relative z-[1] shrink-0 border-t border-border bg-surface/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:p-4">
-            <div className="mb-2 hidden h-3 tide-line opacity-50 sm:block" />
+          <div className="relative z-[1] shrink-0 border-t border-border bg-surface px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 sm:p-4">
             {error ? (
               <p className="mb-2 px-1 text-sm text-coral">{error}</p>
             ) : null}
             <form
-              className="flex items-center gap-2 rounded-full border border-border bg-foam px-1.5 py-1 focus-within:border-aqua focus-within:ring-2 focus-within:ring-aqua/15 sm:px-2 sm:py-1.5"
+              className="flex items-center gap-2 rounded-md border border-border bg-foam px-1.5 py-1 focus-within:border-ocean focus-within:ring-2 focus-within:ring-ocean/15 sm:px-2 sm:py-1.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 void send(input);
@@ -494,7 +487,7 @@ export default function GuidePage() {
                   !input.trim() ||
                   (quota != null && (quota.remaining ?? 0) <= 0)
                 }
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral text-white transition hover:brightness-110 disabled:opacity-45"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-coral text-white transition hover:brightness-110 disabled:opacity-45"
                 aria-label="Send"
               >
                 <Send className="h-4 w-4" />
@@ -504,7 +497,6 @@ export default function GuidePage() {
         </section>
       </div>
 
-      {/* Mobile drawer for history / language / starters */}
       {menuOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -519,7 +511,7 @@ export default function GuidePage() {
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-full p-2 text-muted hover:bg-foam hover:text-ocean-deep"
+                className="rounded-md p-2 text-muted hover:bg-foam hover:text-ocean-deep"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
