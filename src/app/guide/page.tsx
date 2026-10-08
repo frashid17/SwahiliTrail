@@ -492,9 +492,7 @@ export default function GuidePage() {
                 disabled={
                   loading ||
                   !input.trim() ||
-                  (quota != null &&
-                    !quota.unlimited &&
-                    (quota.remaining ?? 0) <= 0)
+                  (quota != null && (quota.remaining ?? 0) <= 0)
                 }
                 className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-coral text-white transition hover:brightness-110 disabled:opacity-45"
                 aria-label="Send"
