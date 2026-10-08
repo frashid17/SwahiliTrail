@@ -157,7 +157,7 @@ export function SignUpForm() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Create an account to save trips and guide chats for Tana River."
+      subtitle="Create an account to save trips and guide chats across Kenya."
     >
       <button
         type="button"
