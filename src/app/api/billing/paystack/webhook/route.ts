@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import {
   activateTrailPlus,
+  claimWebhookEvent,
   deactivateTrailPlus,
+  fulfillPaystackCharge,
+  getPaymentByReference,
 } from "@/lib/ai/subscription";
 import {
   isPaystackConfigured,
@@ -13,6 +16,25 @@ function metaUserId(metadata: unknown): string | null {
   const m = metadata as Record<string, unknown>;
   if (typeof m.user_id === "string" && m.user_id) return m.user_id;
   return null;
+}
+
+function eventIdOf(event: {
+  id?: unknown;
+  data?: Record<string, unknown>;
+  event?: string;
+}) {
+  if (typeof event.id === "string" || typeof event.id === "number") {
+    return String(event.id);
+  }
+  const data = event.data ?? {};
+  const ref = typeof data.reference === "string" ? data.reference : "noref";
+  const paidAt =
+    typeof data.paid_at === "string"
+      ? data.paid_at
+      : typeof data.paidAt === "string"
+        ? data.paidAt
+        : "";
+  return `${event.event ?? "event"}:${ref}:${paidAt}`;
 }
 
 export async function POST(req: Request) {
@@ -27,6 +49,7 @@ export async function POST(req: Request) {
   }
 
   let event: {
+    id?: string | number;
     event?: string;
     data?: Record<string, unknown>;
   };
@@ -38,10 +61,26 @@ export async function POST(req: Request) {
 
   const data = event.data ?? {};
   const eventName = event.event ?? "";
+  const reference =
+    typeof data.reference === "string" ? data.reference : null;
+  const eventId = eventIdOf(event);
+
+  const claimed = await claimWebhookEvent({
+    eventId,
+    eventName,
+    reference,
+  });
+  if (!claimed) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
 
   try {
     if (eventName === "charge.success") {
+      const pending = reference
+        ? await getPaymentByReference(reference)
+        : null;
       const userId =
+        pending?.user_id ||
         metaUserId(data.metadata) ||
         (typeof data.metadata === "object" &&
         data.metadata &&
@@ -49,15 +88,14 @@ export async function POST(req: Request) {
           ? String((data.metadata as { user_id: string }).user_id)
           : null);
 
-      if (userId) {
+      if (userId && reference) {
         const customer = data.customer as
           | { email?: string; customer_code?: string }
           | undefined;
-        await activateTrailPlus({
+        await fulfillPaystackCharge({
           userId,
           email: customer?.email ?? null,
-          reference:
-            typeof data.reference === "string" ? data.reference : null,
+          reference,
           customerCode: customer?.customer_code ?? null,
           amount: typeof data.amount === "number" ? data.amount : null,
           currency:
@@ -70,6 +108,7 @@ export async function POST(req: Request) {
             typeof data.subscription_code === "string"
               ? data.subscription_code
               : null,
+          providerEventId: eventId,
         });
       }
     }
@@ -85,12 +124,11 @@ export async function POST(req: Request) {
       const meta = data.metadata ?? (data as { meta?: unknown }).meta;
       let userId = metaUserId(meta);
 
-      // Subscription payloads sometimes nest metadata on the subscription object
-      if (!userId && typeof data.subscription_code === "string") {
-        /* keep looking */
-      }
       if (!userId && typeof (data as { user_id?: string }).user_id === "string") {
         userId = (data as { user_id: string }).user_id;
+      }
+      if (!userId && reference) {
+        userId = (await getPaymentByReference(reference))?.user_id ?? null;
       }
 
       const nextPayment =
@@ -98,7 +136,21 @@ export async function POST(req: Request) {
           ? data.next_payment_date
           : null;
 
-      if (userId) {
+      if (userId && reference) {
+        await fulfillPaystackCharge({
+          userId,
+          email: customer?.email ?? null,
+          reference,
+          customerCode: customer?.customer_code ?? null,
+          subscriptionCode:
+            typeof data.subscription_code === "string"
+              ? data.subscription_code
+              : null,
+          periodEnd: nextPayment,
+          providerEventId: eventId,
+        });
+      } else if (userId) {
+        // Subscription events without a new charge reference still extend access.
         await activateTrailPlus({
           userId,
           email: customer?.email ?? null,
@@ -117,7 +169,10 @@ export async function POST(req: Request) {
       eventName === "subscription.not_renew"
     ) {
       const meta = data.metadata;
-      const userId = metaUserId(meta);
+      let userId = metaUserId(meta);
+      if (!userId && reference) {
+        userId = (await getPaymentByReference(reference))?.user_id ?? null;
+      }
       if (userId) await deactivateTrailPlus(userId);
     }
   } catch (err) {
