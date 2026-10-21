@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { ensurePendingCheckout } from "@/lib/ai/subscription";
 import {
   appBaseUrl,
   initializePaystackTransaction,
@@ -36,11 +37,21 @@ export async function POST(req: Request) {
   }
 
   try {
+    const amount = trailPlusAmountSubunits();
+    const currency = trailPlusCurrency();
+    // Reuse a pending reference on retry so Paystack won't create a second charge.
+    const pending = await ensurePendingCheckout({
+      userId,
+      amount,
+      currency,
+    });
+
     const base = appBaseUrl(req);
     const data = await initializePaystackTransaction({
       email,
-      amount: trailPlusAmountSubunits(),
-      currency: trailPlusCurrency(),
+      amount,
+      currency,
+      reference: pending.reference,
       callbackUrl: `${base}/api/billing/paystack/verify`,
       planCode: process.env.PAYSTACK_PLAN_CODE || undefined,
       metadata: {
