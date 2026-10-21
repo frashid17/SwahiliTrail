@@ -118,8 +118,23 @@ create table if not exists public.payments (
   paid_at timestamptz,
   description text,
   receipt_number text,
+  provider_event_id text,
   created_at timestamptz not null default now(),
   unique (provider, reference)
+);
+
+create unique index if not exists payments_provider_event_id_uidx
+  on public.payments (provider, provider_event_id)
+  where provider_event_id is not null;
+
+create table if not exists public.billing_webhook_events (
+  id uuid primary key default gen_random_uuid(),
+  provider text not null default 'paystack',
+  event_id text not null,
+  event_name text,
+  reference text,
+  processed_at timestamptz not null default now(),
+  unique (provider, event_id)
 );
 
 create index if not exists payments_user_id_paid_at_idx
