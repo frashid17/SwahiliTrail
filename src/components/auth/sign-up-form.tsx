@@ -149,7 +149,6 @@ export function SignUpForm() {
         >
           Resend code
         </button>
-        <div id="clerk-captcha" className="mt-4" />
       </AuthShell>
     );
   }
@@ -247,9 +246,6 @@ export function SignUpForm() {
           Create account
         </button>
       </form>
-
-      {/* Required for Clerk bot protection on custom sign-up */}
-      <div id="clerk-captcha" className="mt-4" />
 
       <p className="mt-6 text-center text-sm text-muted">
         Already have an account?{" "}
