@@ -41,6 +41,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <ThemeProvider>
           <ClerkProvider>
+            {/* Required for Clerk Smart CAPTCHA on custom auth flows */}
+            <div
+              id="clerk-captcha"
+              data-cl-theme="auto"
+              data-cl-size="flexible"
+              className="fixed bottom-4 left-1/2 z-[100] w-[min(100%-2rem,22rem)] -translate-x-1/2 empty:hidden"
+            />
             <ConditionalShell>{children}</ConditionalShell>
           </ClerkProvider>
         </ThemeProvider>
