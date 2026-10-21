@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { activateTrailPlus } from "@/lib/ai/subscription";
+import {
+  fulfillPaystackCharge,
+  getPaymentByReference,
+} from "@/lib/ai/subscription";
 import {
   appBaseUrl,
   isPaystackConfigured,
@@ -45,15 +48,24 @@ export async function GET(req: Request) {
   try {
     const tx = await verifyPaystackTransaction(reference);
     if (tx.status !== "success") {
-      return NextResponse.redirect(`${base}/pricing?billing=failed`);
+      // Do not mark our pending row failed here - provider may still settle /
+      // customer may retry with the same reference.
+      return NextResponse.redirect(
+        `${base}/pricing?billing=failed&ref=${encodeURIComponent(reference)}`,
+      );
     }
 
-    const userId = metaUserId(tx.metadata ?? undefined);
+    const pending = await getPaymentByReference(reference);
+    const userId =
+      pending?.user_id || metaUserId(tx.metadata ?? undefined) || null;
+
     if (!userId) {
-      return NextResponse.redirect(`${base}/pricing?billing=missing_user`);
+      return NextResponse.redirect(
+        `${base}/pricing?billing=missing_user&ref=${encodeURIComponent(reference)}`,
+      );
     }
 
-    await activateTrailPlus({
+    await fulfillPaystackCharge({
       userId,
       email: tx.customer?.email ?? null,
       reference: tx.reference,
@@ -63,12 +75,18 @@ export async function GET(req: Request) {
       paidAt: tx.paid_at,
     });
 
-    return NextResponse.redirect(`${base}/account?tab=billing&billing=success`);
+    // Always land on pricing (works even if the Paystack hop dropped the session).
+    return NextResponse.redirect(
+      `${base}/pricing?billing=success&ref=${encodeURIComponent(reference)}`,
+    );
   } catch (err) {
     console.error(
       "[paystack] verify",
       err instanceof Error ? err.message : err,
     );
-    return NextResponse.redirect(`${base}/pricing?billing=error`);
+    // Payment may still succeed via webhook - ask user to sign in / refresh.
+    return NextResponse.redirect(
+      `${base}/pricing?billing=pending_confirm&ref=${encodeURIComponent(reference)}`,
+    );
   }
 }
