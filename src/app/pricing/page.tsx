@@ -37,20 +37,24 @@ function BillingNotice() {
   const messages: Record<string, { ok: boolean; text: string }> = {
     success: {
       ok: true,
-      text: "Trail Plus is active. Higher fair-use AI limits are unlocked.",
+      text: "Payment confirmed. Trail Plus is active - sign in if you were logged out during checkout.",
+    },
+    pending_confirm: {
+      ok: true,
+      text: "Payment received. We are confirming with the bank - this page will refresh your plan shortly. Sign in if needed.",
     },
     failed: {
       ok: false,
-      text: "Payment was not completed. You can try again when ready.",
+      text: "Payment was not completed. You can try again when ready - we will reuse the same checkout reference.",
     },
     error: {
       ok: false,
-      text: "We could not confirm the payment. Contact support if you were charged.",
+      text: "We could not confirm the payment yet. If you were charged, sign in and refresh - or contact support with your receipt.",
     },
     missing_ref: { ok: false, text: "Missing payment reference." },
     missing_user: {
       ok: false,
-      text: "Payment succeeded but we could not link it to your account.",
+      text: "Payment succeeded but we could not link it to your account. Contact support with your Paystack receipt.",
     },
     not_configured: {
       ok: false,
@@ -65,8 +69,8 @@ function BillingNotice() {
     <div
       className={
         msg.ok
-          ? "mt-6 rounded-2xl border border-aqua/40 bg-aqua/10 px-4 py-3 text-sm text-ocean-deep"
-          : "mt-6 rounded-2xl border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-ocean-deep"
+          ? "mt-6 rounded-md border border-aqua/40 bg-aqua/10 px-4 py-3 text-sm text-ocean-deep"
+          : "mt-6 rounded-md border border-coral/35 bg-coral/10 px-4 py-3 text-sm text-ocean-deep"
       }
     >
       {msg.text}
@@ -79,7 +83,35 @@ function PricingContent() {
   const params = useSearchParams();
 
   useEffect(() => {
-    if (params.get("billing") === "success") void refresh();
+    const billing = params.get("billing");
+    const reference = params.get("ref");
+    if (
+      !reference ||
+      (billing !== "success" &&
+        billing !== "pending_confirm" &&
+        billing !== "error")
+    ) {
+      if (billing === "success") void refresh();
+      return;
+    }
+
+    let cancelled = false;
+    async function reconcile() {
+      try {
+        const res = await fetch("/api/billing/paystack/reconcile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference }),
+        });
+        if (!cancelled && res.ok) await refresh();
+      } catch {
+        /* webhook may still settle */
+      }
+    }
+    void reconcile();
+    return () => {
+      cancelled = true;
+    };
   }, [params, refresh]);
 
   const isPlus = quota?.plan === "trail_plus";
