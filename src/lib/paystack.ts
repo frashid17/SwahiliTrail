@@ -60,6 +60,8 @@ export async function initializePaystackTransaction(input: {
   currency: string;
   callbackUrl: string;
   metadata: Record<string, unknown>;
+  /** Our idempotent reference - reuse on retry so Paystack won't double-charge. */
+  reference?: string;
   planCode?: string;
 }): Promise<PaystackInitResult> {
   const body: Record<string, unknown> = {
@@ -69,6 +71,7 @@ export async function initializePaystackTransaction(input: {
     callback_url: input.callbackUrl,
     metadata: input.metadata,
   };
+  if (input.reference) body.reference = input.reference;
   if (input.planCode) body.plan = input.planCode;
 
   const json = await paystackFetch<{ data: PaystackInitResult }>(
@@ -131,18 +134,38 @@ export async function disablePaystackSubscription(code: string, token: string) {
   });
 }
 
+function normalizeAppOrigin(raw: string) {
+  const trimmed = raw.trim().replace(/\/$/, "");
+  if (!trimmed) return trimmed;
+  try {
+    const url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    // Never send Paystack callbacks over plain http on deployed hosts —
+    // insecure redirects drop Secure auth cookies and look like a logout.
+    if (
+      url.protocol === "http:" &&
+      url.hostname !== "localhost" &&
+      url.hostname !== "127.0.0.1"
+    ) {
+      url.protocol = "https:";
+    }
+    return url.origin;
+  } catch {
+    return trimmed;
+  }
+}
+
 export function appBaseUrl(req?: Request) {
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+    return normalizeAppOrigin(process.env.NEXT_PUBLIC_APP_URL);
   }
   if (req) {
     const host =
       req.headers.get("x-forwarded-host") || req.headers.get("host");
     const proto = req.headers.get("x-forwarded-proto") || "http";
-    if (host) return `${proto}://${host}`;
+    if (host) return normalizeAppOrigin(`${proto}://${host}`);
   }
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+    return normalizeAppOrigin(`https://${process.env.VERCEL_URL}`);
   }
   return "http://localhost:3000";
 }
