@@ -30,10 +30,19 @@ export type PaymentRow = {
   description: string | null;
   receipt_number: string | null;
   created_at: string;
+  provider_event_id?: string | null;
 };
 
 const memorySubs = new Map<string, SubscriptionRow>();
 const memoryPayments = new Map<string, PaymentRow[]>();
+const memoryWebhookEvents = new Set<string>();
+
+/** Stable checkout refs so retries reuse the same Paystack charge key. */
+export function makeCheckoutReference(userId: string) {
+  const short = userId.replace(/[^a-zA-Z0-9]/g, "").slice(-10) || "user";
+  const rand = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+  return `st_${short}_${rand}`;
+}
 
 function periodEndActive(iso: string | null | undefined) {
   if (!iso) return false;
@@ -210,6 +219,23 @@ export async function deactivateTrailPlus(userId: string) {
   if (error) console.error("[subscription] deactivate", error.message);
 }
 
+function mapPaymentRow(data: Record<string, unknown>): PaymentRow {
+  return {
+    id: data.id as string,
+    user_id: data.user_id as string,
+    provider: data.provider as string,
+    reference: data.reference as string,
+    amount: data.amount as number,
+    currency: data.currency as string,
+    status: data.status as PaymentRow["status"],
+    paid_at: (data.paid_at as string) ?? null,
+    description: (data.description as string) ?? null,
+    receipt_number: (data.receipt_number as string) ?? null,
+    created_at: data.created_at as string,
+    provider_event_id: (data.provider_event_id as string) ?? null,
+  };
+}
+
 export async function recordPayment(input: {
   userId: string;
   reference: string;
@@ -218,6 +244,7 @@ export async function recordPayment(input: {
   status?: PaymentRow["status"];
   paidAt?: string | null;
   description?: string | null;
+  providerEventId?: string | null;
 }) {
   const payment: PaymentRow = {
     id: newId(),
@@ -227,19 +254,49 @@ export async function recordPayment(input: {
     amount: input.amount,
     currency: input.currency,
     status: input.status ?? "success",
-    paid_at: input.paidAt ?? new Date().toISOString(),
+    paid_at:
+      input.status === "pending"
+        ? null
+        : (input.paidAt ?? new Date().toISOString()),
     description: input.description ?? `Trail Plus ($${TRAIL_PLUS_PRICE_USD}/mo)`,
     receipt_number: `ST-${input.reference.slice(-10).toUpperCase()}`,
     created_at: new Date().toISOString(),
+    provider_event_id: input.providerEventId ?? null,
   };
 
   const list = memoryPayments.get(input.userId) ?? [];
-  if (!list.some((p) => p.reference === payment.reference)) {
+  const existingIdx = list.findIndex((p) => p.reference === payment.reference);
+  if (existingIdx >= 0) {
+    const prev = list[existingIdx]!;
+    // Never downgrade a successful payment back to pending/failed.
+    if (prev.status === "success" && payment.status !== "success") {
+      return prev;
+    }
+    list[existingIdx] = { ...prev, ...payment, id: prev.id };
+    memoryPayments.set(input.userId, list);
+  } else {
     memoryPayments.set(input.userId, [payment, ...list]);
   }
 
   const supabase = createAdminClient();
-  if (!supabase) return payment;
+  if (!supabase) {
+    return (
+      memoryPayments
+        .get(input.userId)
+        ?.find((p) => p.reference === payment.reference) ?? payment
+    );
+  }
+
+  const { data: existing } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("provider", "paystack")
+    .eq("reference", payment.reference)
+    .maybeSingle();
+
+  if (existing?.status === "success" && payment.status !== "success") {
+    return mapPaymentRow(existing as Record<string, unknown>);
+  }
 
   const { data, error } = await supabase
     .from("payments")
@@ -254,6 +311,7 @@ export async function recordPayment(input: {
         paid_at: payment.paid_at,
         description: payment.description,
         receipt_number: payment.receipt_number,
+        provider_event_id: payment.provider_event_id,
       },
       { onConflict: "provider,reference" },
     )
@@ -265,23 +323,149 @@ export async function recordPayment(input: {
     return payment;
   }
 
-  if (data) {
-    return {
-      id: data.id as string,
-      user_id: data.user_id as string,
-      provider: data.provider as string,
-      reference: data.reference as string,
-      amount: data.amount as number,
-      currency: data.currency as string,
-      status: data.status as PaymentRow["status"],
-      paid_at: (data.paid_at as string) ?? null,
-      description: (data.description as string) ?? null,
-      receipt_number: (data.receipt_number as string) ?? null,
-      created_at: data.created_at as string,
-    };
+  if (data) return mapPaymentRow(data as Record<string, unknown>);
+  return payment;
+}
+
+/** Create or reuse a pending checkout reference for this user (idempotent retry). */
+export async function ensurePendingCheckout(input: {
+  userId: string;
+  amount: number;
+  currency: string;
+}): Promise<PaymentRow> {
+  const supabase = createAdminClient();
+  const freshWindowMs = 60 * 60 * 1000; // reuse pending for 1 hour
+
+  if (supabase) {
+    const { data } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("user_id", input.userId)
+      .eq("provider", "paystack")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (data) {
+      const created = new Date(data.created_at as string).getTime();
+      if (Date.now() - created < freshWindowMs) {
+        return mapPaymentRow(data as Record<string, unknown>);
+      }
+    }
+  } else {
+    const mem = (memoryPayments.get(input.userId) ?? []).find(
+      (p) =>
+        p.status === "pending" &&
+        Date.now() - new Date(p.created_at).getTime() < freshWindowMs,
+    );
+    if (mem) return mem;
   }
 
-  return payment;
+  return recordPayment({
+    userId: input.userId,
+    reference: makeCheckoutReference(input.userId),
+    amount: input.amount,
+    currency: input.currency,
+    status: "pending",
+    paidAt: null,
+    description: `Trail Plus ($${TRAIL_PLUS_PRICE_USD}/mo)`,
+  });
+}
+
+export async function getPaymentByReference(
+  reference: string,
+): Promise<PaymentRow | null> {
+  const supabase = createAdminClient();
+  if (!supabase) {
+    for (const list of memoryPayments.values()) {
+      const hit = list.find((p) => p.reference === reference);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("*")
+    .eq("provider", "paystack")
+    .eq("reference", reference)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return mapPaymentRow(data as Record<string, unknown>);
+}
+
+/**
+ * Credit Trail Plus from a verified Paystack charge.
+ * Safe to call from callback + webhook concurrently (unique reference).
+ */
+export async function fulfillPaystackCharge(input: {
+  userId: string;
+  email?: string | null;
+  reference: string;
+  customerCode?: string | null;
+  subscriptionCode?: string | null;
+  amount?: number | null;
+  currency?: string | null;
+  paidAt?: string | null;
+  periodEnd?: string | null;
+  providerEventId?: string | null;
+}) {
+  const existing = await getPaymentByReference(input.reference);
+  const userId = existing?.user_id || input.userId;
+
+  await recordPayment({
+    userId,
+    reference: input.reference,
+    amount: input.amount ?? existing?.amount ?? trailPlusAmountSubunits(),
+    currency: input.currency ?? existing?.currency ?? trailPlusCurrency(),
+    status: "success",
+    paidAt: input.paidAt ?? new Date().toISOString(),
+    providerEventId: input.providerEventId ?? null,
+  });
+
+  return activateTrailPlus({
+    userId,
+    email: input.email ?? null,
+    reference: input.reference,
+    customerCode: input.customerCode ?? null,
+    subscriptionCode: input.subscriptionCode ?? null,
+    periodEnd: input.periodEnd,
+    amount: input.amount ?? existing?.amount ?? trailPlusAmountSubunits(),
+    currency: input.currency ?? existing?.currency ?? trailPlusCurrency(),
+    paidAt: input.paidAt ?? new Date().toISOString(),
+  });
+}
+
+/** Returns false if this webhook event was already processed. */
+export async function claimWebhookEvent(input: {
+  eventId: string;
+  eventName?: string | null;
+  reference?: string | null;
+}): Promise<boolean> {
+  const key = `paystack:${input.eventId}`;
+  if (memoryWebhookEvents.has(key)) return false;
+  memoryWebhookEvents.add(key);
+
+  const supabase = createAdminClient();
+  if (!supabase) return true;
+
+  const { error } = await supabase.from("billing_webhook_events").insert({
+    provider: "paystack",
+    event_id: input.eventId,
+    event_name: input.eventName ?? null,
+    reference: input.reference ?? null,
+  });
+
+  if (error) {
+    // Unique violation = already processed
+    if (error.code === "23505") return false;
+    console.error("[billing] webhook claim", error.message);
+    // Fail open for claim table issues so payment can still credit via upsert.
+    return true;
+  }
+  return true;
 }
 
 export async function listPayments(userId: string): Promise<PaymentRow[]> {
