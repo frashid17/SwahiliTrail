@@ -1,4 +1,5 @@
 import type { CarHire } from "@/lib/data/car-hires";
+import { asPlainText } from "@/lib/plan-normalize";
 import type { SavedPlan } from "@/lib/saved-trips";
 
 function pad(n: number) {
@@ -30,7 +31,7 @@ export function planToPlainText(
     "",
     plan.summary,
     "",
-    `Recommended stay: ${plan.recommendedStay}`,
+    `Recommended stay: ${asPlainText(plan.recommendedStay)}`,
     `Party size: ${meta.partySize}`,
     `Start date: ${meta.startDate}`,
   ];
@@ -56,16 +57,32 @@ export function planToPlainText(
   for (const day of plan.days) {
     lines.push(
       "",
-      `Day ${day.day}: ${day.theme}`,
+      `Day ${day.day}: ${day.theme}${day.location ? ` · ${day.location}` : ""}`,
+      day.timingNote ? `Timing: ${day.timingNote}` : "",
       `Morning: ${day.morning}`,
       `Afternoon: ${day.afternoon}`,
       `Evening: ${day.evening}`,
       `Food: ${day.foodTip}`,
       `Transport: ${day.transportTip}`,
+      day.localIntel ? `Local intel: ${day.localIntel}` : "",
+      day.insiderTip ? `Insider tip: ${day.insiderTip}` : "",
       day.estimatedDayCostKes != null
         ? `Est. day cost: ~KES ${day.estimatedDayCostKes.toLocaleString()}`
         : "",
     );
+    if (day.places?.length) {
+      lines.push("Places:");
+      for (const place of day.places) {
+        lines.push(
+          `- ${place.name}${place.why ? ` — ${place.why}` : ""}${
+            place.estCostKes != null
+              ? ` (~KES ${place.estCostKes.toLocaleString()})`
+              : ""
+          }`,
+          `  Maps: https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.mapsQuery)}`,
+        );
+      }
+    }
   }
 
   if (meta.carHires && meta.carHires.length > 0) {
