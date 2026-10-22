@@ -38,7 +38,7 @@ type AnalyticsPayload = {
   note: string;
 };
 
-const pieColors = ["#043844", "#0b6e7a", "#1aa6b5", "#5ec8d1", "#e07a45", "#f2ebe0"];
+const pieColors = ["#062a2e", "#1a7a7e", "#2bb5b0", "#c4a35a", "#d4653a", "#e2ddd4"];
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsPayload | null>(null);
@@ -73,12 +73,12 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
+    <div className="paper-grain coastal-grid min-h-[80vh]">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">
           Destination Analytics
         </p>
-        <h1 className="mt-2 font-display text-4xl text-ocean-deep">
+        <h1 className="mt-2 font-display text-4xl font-semibold text-ocean-deep">
           Kenya travel pulse
         </h1>
         <p className="mt-3 max-w-2xl text-muted">{data.note}</p>
