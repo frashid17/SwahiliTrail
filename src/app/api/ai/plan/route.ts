@@ -21,6 +21,15 @@ import { RESTAURANTS } from "@/lib/data/restaurants";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AI_REGION_CONTEXT, DESTINATION } from "@/lib/destination";
+import { normalizePlan } from "@/lib/plan-normalize";
+import {
+  MAX_STOP_DAYS,
+  MAX_TRIP_DAYS,
+  MAX_TRIP_STOPS,
+  stopsPromptBlock,
+  sumStopDays,
+  type TripStop,
+} from "@/lib/trip-stops";
 
 const cartItemSchema = z.object({
   id: z.string(),
@@ -30,30 +39,81 @@ const cartItemSchema = z.object({
   estCostKes: z.number().optional(),
 });
 
-const bodySchema = z.object({
-  days: z.number().int().min(1).max(10),
-  interests: z.array(z.string()).min(1).max(10),
-  budget: z.enum(["budget", "mid", "luxury"]),
-  pace: z.enum(["relaxed", "balanced", "packed"]),
-  companions: z.enum(["solo", "couple", "family", "friends"]),
-  stayPreference: z.string().max(120).optional(),
-  stayArea: z.string().max(80).optional(),
-  partySize: z.number().int().min(1).max(12).default(2),
-  transportMode: z
-    .enum(["none", "airport-pickup", "car-hire", "chauffeur", "airport-and-car"])
-    .default("none"),
-  cart: z.array(cartItemSchema).max(24).optional(),
+const stopSchema = z.object({
+  location: z.string().min(1).max(80),
+  days: z.number().int().min(1).max(MAX_STOP_DAYS),
 });
+
+const bodySchema = z
+  .object({
+    days: z.number().int().min(1).max(MAX_TRIP_DAYS).optional(),
+    interests: z.array(z.string()).min(1).max(10),
+    budget: z.enum(["budget", "mid", "luxury"]),
+    pace: z.enum(["relaxed", "balanced", "packed"]),
+    companions: z.enum(["solo", "couple", "family", "friends"]),
+    stayPreference: z.string().max(120).optional(),
+    stayArea: z.string().max(80).optional(),
+    stops: z.array(stopSchema).min(1).max(MAX_TRIP_STOPS).optional(),
+    partySize: z.number().int().min(1).max(12).default(2),
+    transportMode: z
+      .enum([
+        "none",
+        "airport-pickup",
+        "car-hire",
+        "chauffeur",
+        "airport-and-car",
+      ])
+      .default("none"),
+    cart: z.array(cartItemSchema).max(24).optional(),
+  })
+  .superRefine((value, ctx) => {
+    const stops = value.stops?.length
+      ? value.stops
+      : value.stayArea
+        ? [{ location: value.stayArea, days: value.days ?? 5 }]
+        : value.days
+          ? [{ location: "Anywhere in Kenya", days: value.days }]
+          : null;
+    if (!stops) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Add at least one stop with days",
+        path: ["stops"],
+      });
+      return;
+    }
+    const total = sumStopDays(stops);
+    if (total < 1 || total > MAX_TRIP_DAYS) {
+      ctx.addIssue({
+        code: "custom",
+        message: `Total days must be between 1 and ${MAX_TRIP_DAYS}`,
+        path: ["stops"],
+      });
+    }
+  });
+
+type PlanPlaceLink = {
+  name: string;
+  kind?: string;
+  mapsQuery: string;
+  why?: string;
+  estCostKes?: number;
+};
 
 type DayPlan = {
   day: number;
   theme: string;
+  location?: string;
   morning: string;
   afternoon: string;
   evening: string;
   foodTip: string;
   transportTip: string;
   estimatedDayCostKes: number;
+  localIntel?: string;
+  timingNote?: string;
+  insiderTip?: string;
+  places?: PlanPlaceLink[];
 };
 
 type PlanResult = {
@@ -72,6 +132,7 @@ type PlanResult = {
     totalKes: number;
     notes: string;
   };
+  stops?: TripStop[];
 };
 
 function quotaPayload(quota: AiQuotaStatus) {
@@ -101,12 +162,21 @@ export async function POST(req: Request) {
 
   try {
     const input = bodySchema.parse(await req.json());
+    const stops: TripStop[] = input.stops?.length
+      ? input.stops
+      : [
+          {
+            location: input.stayArea || "Anywhere in Kenya",
+            days: input.days ?? 5,
+          },
+        ];
+    const totalDays = sumStopDays(stops);
     const fingerprint = [
-      input.days,
+      totalDays,
       input.budget,
       input.pace,
       input.companions,
-      input.stayArea ?? "",
+      stops.map((s) => `${s.location}:${s.days}`).join(">"),
       input.interests.join(","),
       (input.cart ?? []).map((c) => c.id).join(","),
     ].join("|");
@@ -119,7 +189,7 @@ export async function POST(req: Request) {
 
     const cartIds = new Set((input.cart ?? []).map((c) => c.id));
 
-    // Prefer wishlist + interest matches; keep catalogues short for speed.
+    // Prefer wishlist + interest matches; richer catalogues so the model can name real places.
     const attractions = [...ATTRACTIONS]
       .sort((a, b) => {
         const sa =
@@ -130,10 +200,10 @@ export async function POST(req: Request) {
           interestScore(`${b.name} ${b.category} ${b.area} ${b.blurb}`, input.interests);
         return sb - sa;
       })
-      .slice(0, 18)
+      .slice(0, 28)
       .map(
         (a) =>
-          `${a.id}|${a.name}|${a.area}|${a.category}|~${a.durationHours}h|KES ${a.estCostKes}`,
+          `${a.id}|${a.name}|${a.area}|${a.category}|~${a.durationHours}h|KES ${a.estCostKes}|maps:${a.name} ${a.area} Kenya|${a.blurb.slice(0, 120)}`,
       )
       .join("\n");
 
@@ -147,8 +217,11 @@ export async function POST(req: Request) {
           interestScore(`${b.name} ${b.type} ${b.region} ${b.blurb}`, input.interests);
         return sb - sa;
       })
-      .slice(0, 12)
-      .map((w) => `${w.id}|${w.name}|${w.region}|KES ${w.estEntryKes}`)
+      .slice(0, 16)
+      .map(
+        (w) =>
+          `${w.id}|${w.name}|${w.region}|KES ${w.estEntryKes}|maps:${w.name} ${w.region} Kenya`,
+      )
       .join("\n");
 
     const hotels = [...HOTELS]
@@ -161,8 +234,11 @@ export async function POST(req: Request) {
           interestScore(`${b.name} ${b.area} ${b.vibe}`, input.interests);
         return sb - sa;
       })
-      .slice(0, 10)
-      .map((h) => `${h.id}|${h.name}|${h.area}|KES ${h.pricePerNight}/n`)
+      .slice(0, 14)
+      .map(
+        (h) =>
+          `${h.id}|${h.name}|${h.area}|KES ${h.pricePerNight}/n|maps:${h.name} ${h.area} Kenya`,
+      )
       .join("\n");
 
     const restaurants = [...RESTAURANTS]
@@ -175,8 +251,11 @@ export async function POST(req: Request) {
           interestScore(`${b.name} ${b.area} ${b.cuisine}`, input.interests);
         return sb - sa;
       })
-      .slice(0, 8)
-      .map((r) => `${r.id}|${r.name}|${r.area}|KES ${r.avgMealKes}|${r.cuisine}`)
+      .slice(0, 14)
+      .map(
+        (r) =>
+          `${r.id}|${r.name}|${r.area}|KES ${r.avgMealKes}|${r.cuisine}|maps:${r.name} ${r.area} Kenya`,
+      )
       .join("\n");
 
     const cartText =
@@ -217,47 +296,77 @@ export async function POST(req: Request) {
             .join("\n")
         : "(none)";
 
-    const stayBase =
-      input.stayArea === "whole-coast" || !input.stayArea
+    const multiStop = stops.length > 1;
+    const routeBlock = stopsPromptBlock(stops);
+    const stayBase = multiStop
+      ? `Multi-stop route (follow this order exactly):\n${routeBlock}`
+      : stops[0].location === "whole-coast" ||
+          stops[0].location === "Anywhere in Kenya"
         ? "Anywhere in Kenya - pick best base for interests."
-        : `${input.stayArea} base.`;
+        : `${stops[0].location} base for all ${totalDays} days.`;
 
-    // Cap output tokens by trip length so long plans don't wait on a 4k budget.
-    const maxOutputTokens = Math.min(2200, 500 + input.days * 220);
+    // Rich day cards need more tokens; still capped so huge trips stay workable.
+    const maxOutputTokens = Math.min(8192, 1600 + totalDays * 520);
 
     return ndjsonResponse(async (emit) => {
       let accumulated = "";
       for await (const chunk of streamGenerateContent(
-        `${input.days}-day Kenya plan for ${input.partySize} (${input.companions}).
+        `You are Swahili Trail's Kenya trip desk — NOT a generic chatbot. Write a ${totalDays}-day plan for ${input.partySize} traveler(s) (${input.companions}) that feels like a local operator brief: named places, real logistics, maps queries, and why each stop matters.
+
 Region: ${DESTINATION.regionLong}. ${AI_REGION_CONTEXT}
 Interests: ${input.interests.join(", ")}
-Budget: ${input.budget}. Pace: ${input.pace}. Stay: ${stayBase}
+Budget: ${input.budget}. Pace: ${input.pace}.
+Route / stay:
+${stayBase}
 ${input.stayPreference ? `Stay note: ${input.stayPreference}` : ""}
-Transport: ${transportMode}. ${transportGuide}
+Transport mode: ${transportMode}. ${transportGuide}
 ${budgetGuide}
+${
+  multiStop
+    ? `Allocate consecutive day numbers to each stop in order. Put transfer/travel tips on the first day of each new stop (except stop 1). Each day MUST include "location" matching that stop. recommendedStay must name lodging ideas per stop with area + rough nightly KES.`
+    : ""
+}
 
-Wishlist:
+VOICE & VALUE (critical — travelers pay for this vs free ChatGPT):
+- Ban vague filler: never write only "relax on the beach", "enjoy local food", "explore the area", "visit a restaurant".
+- Name real venues from the catalogues below when they fit; invent only if catalogue lacks a fit, and still use a specific Kenya place name + mapsQuery.
+- Include Kenya logistics: M-Pesa vs cash, park/reserve fees when relevant, Likoni ferry / SGR / domestic flight / matatu / Bolt where it matters, heat/tide/season windows, safety street-smart tips without scaremongering.
+- Each day needs 3–5 places[] with mapsQuery like "Ali Barbour's Cave Diani Kenya" (town + Kenya) so Google Maps opens correctly.
+- morning/afternoon/evening: 2–4 sentences each with what to do, roughly when, and what it costs or how to book.
+- foodTip: name a dish + venue (or market) and what to order; transportTip: how to get between that day's places with fare ballparks in KES.
+- localIntel: one dense paragraph of corridor knowledge (roads, crowds, what tourists waste money on).
+- timingNote: best arrival/start window.
+- insiderTip: something a generic AI would miss (e.g. which beach access is free vs club, tip for guides, photo etiquette).
+- estimatedDayCostKes: realistic for the whole party (not per person unless party is 1).
+- summary: 3–5 sentences selling the arc of the trip; recommendedStay: ONE plain string (never an object) naming area + hotel ideas + rough nightly KES.
+- packingTips: 5 specific items for THIS route; localEtiquette: 5 Kenya/coast/safari-aware rules.
+
+Wishlist (prioritize these):
 ${cartText}
 
-Car hires (use real names/phones only):
+Car hires (use ONLY these real names/phones when recommending hire):
 ${carHireText}
 
-Attractions:
+Attractions catalogue (id|name|area|…|maps:…):
 ${attractions}
 
-Wildlife:
+Wildlife catalogue:
 ${wildlife}
 
-Hotels:
+Hotels catalogue:
 ${hotels}
 
-Restaurants:
+Restaurants catalogue:
 ${restaurants}
 
-Return JSON with keys: title, summary, recommendedStay, days[{day,theme,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes}], packingTips (max 3), localEtiquette (max 3), budgetBreakdown{lodgingKes,activitiesKes,foodKes,transportKes,contingencyKes,totalKes,notes}.
-Cover all ${input.days} days. Short concrete strings. Realistic KES for the party.`,
-        "Swahili Trail Kenya trip planner. Specific, local, budget-aware. No marketing fluff.",
-        { maxOutputTokens, temperature: 0.35, json: true },
+Return ONLY JSON with keys:
+title (string), summary (string), recommendedStay (string — never object/array),
+days[{day,theme,location,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes,localIntel,timingNote,insiderTip,places[{name,kind,mapsQuery,why,estCostKes}]}],
+packingTips (5 strings), localEtiquette (5 strings),
+budgetBreakdown{lodgingKes,activitiesKes,foodKes,transportKes,contingencyKes,totalKes,notes}.
+Cover exactly ${totalDays} days. Every day must include places (min 3). kind is one of attraction|restaurant|stay|viewpoint|beach|transfer|market|park.`,
+        "Swahili Trail proprietary Kenya trip planner. Operator-grade, map-ready, anti-generic. Prefer catalogue places. No marketing fluff, no ChatGPT tourist clichés.",
+        { maxOutputTokens, temperature: 0.45, json: true },
       )) {
         accumulated += chunk;
         emit({ type: "delta", text: chunk });
@@ -270,7 +379,10 @@ Cover all ${input.days} days. Short concrete strings. Realistic KES for the part
         throw new Error("Could not parse the trip plan. Please try again.");
       }
 
-      const cleanPlan = sanitizeAiStrings(parsed);
+      const cleanPlan = {
+        ...normalizePlan(sanitizeAiStrings(parsed)),
+        stops,
+      };
 
       const nextQuota = await consumeAiQuota(userId, "plan", {
         requestHash: quota.requestHash,
@@ -280,16 +392,26 @@ Cover all ${input.days} days. Short concrete strings. Realistic KES for the part
       const supabase = createAdminClient();
       if (supabase) {
         fireAndForget(
-          Promise.resolve(
-            supabase.from("itineraries").insert({
+          (async () => {
+            await supabase.from("itineraries").insert({
               user_id: userId,
               title: cleanPlan.title,
-              days: input.days,
+              days: totalDays,
               interests: input.interests,
               budget: input.budget,
               plan: cleanPlan,
-            }),
-          ),
+            });
+            await supabase.from("analytics_events").insert({
+              user_id: userId,
+              event_type: "plan_created",
+              payload: {
+                days: totalDays,
+                interests: input.interests,
+                budget: input.budget,
+                stops: stops.map((s) => s.location),
+              },
+            });
+          })(),
         );
       }
 
