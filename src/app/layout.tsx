@@ -1,13 +1,14 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Figtree } from "next/font/google";
+import { Figtree, Syne } from "next/font/google";
 import { ConditionalShell } from "@/components/conditional-shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
+const display = Syne({
   variable: "--font-display",
   subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
 });
 
 const body = Figtree({
@@ -36,17 +37,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={`${display.variable} ${body.variable} antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
+      <body className="min-h-dvh w-full bg-background font-sans text-foreground">
         <ThemeProvider>
           <ClerkProvider>
-            {/* Required for Clerk Smart CAPTCHA on custom auth flows */}
+            {/* Required for Clerk Smart CAPTCHA on custom auth flows.
+                pointer-events only when filled so an empty mount never blocks clicks. */}
             <div
               id="clerk-captcha"
               data-cl-theme="auto"
               data-cl-size="flexible"
-              className="fixed bottom-4 left-1/2 z-[100] w-[min(100%-2rem,22rem)] -translate-x-1/2 empty:hidden"
+              className="pointer-events-none fixed bottom-4 left-1/2 z-[100] w-[min(100%-2rem,22rem)] -translate-x-1/2 empty:hidden [&:not(:empty)]:pointer-events-auto"
             />
             <ConditionalShell>{children}</ConditionalShell>
           </ClerkProvider>
