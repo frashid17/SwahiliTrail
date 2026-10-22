@@ -1,6 +1,8 @@
 import type { CoastEvent } from "@/lib/data/coast-events";
 import { COAST_EVENTS } from "@/lib/data/coast-events";
 import { DESTINATION } from "@/lib/destination";
+import { fetchGoogleVenueHighlights } from "@/lib/events/google-events";
+import { fetchHustleSasaEvents } from "@/lib/events/hustlesasa";
 
 type TicketmasterEvent = {
   id?: string;
@@ -9,6 +11,7 @@ type TicketmasterEvent = {
   images?: { url?: string; width?: number }[];
   dates?: {
     start?: { dateTime?: string; localDate?: string; localTime?: string };
+    end?: { dateTime?: string; localDate?: string; localTime?: string };
   };
   priceRanges?: { min?: number; currency?: string }[];
   _embedded?: {
@@ -18,7 +21,10 @@ type TicketmasterEvent = {
       location?: { latitude?: string; longitude?: string };
     }[];
   };
-  classifications?: { segment?: { name?: string } }[];
+  classifications?: {
+    segment?: { name?: string };
+    genre?: { name?: string };
+  }[];
   pleaseNote?: string;
   info?: string;
 };
@@ -41,9 +47,18 @@ function mapTicketmaster(ev: TicketmasterEvent): CoastEvent | null {
       : null);
   if (!start) return null;
 
+  const end =
+    ev.dates?.end?.dateTime ??
+    (ev.dates?.end?.localDate
+      ? `${ev.dates.end.localDate}T${ev.dates.end.localTime ?? "23:00:00"}+03:00`
+      : undefined);
+
   const min = ev.priceRanges?.[0]?.min;
   const ticketUrl = ev.url ?? "https://www.ticketmaster.co.ke/";
   const city = venue?.city?.name ?? "Kenya";
+  const segment = ev.classifications?.[0]?.segment?.name;
+  const genre = ev.classifications?.[0]?.genre?.name;
+  const category = [segment, genre].filter(Boolean).join(" · ") || "Live event";
 
   return {
     id: `tm-${ev.id}`,
@@ -51,8 +66,9 @@ function mapTicketmaster(ev: TicketmasterEvent): CoastEvent | null {
     venue: venue?.name ?? "Kenya venue",
     area: city,
     startsAt: start,
+    endsAt: end,
     imageUrl: pickImage(ev.images),
-    category: ev.classifications?.[0]?.segment?.name ?? "Live event",
+    category,
     summary: ev.info?.slice(0, 160) ?? "Listed on Ticketmaster Kenya.",
     about:
       ev.info ||
@@ -80,13 +96,21 @@ export type EventsFeed = {
   events: CoastEvent[];
   sources: { id: string; label: string; live: boolean; note: string }[];
   refreshedAt: string;
+  categories: string[];
 };
 
 /** Curated calendar / Kenya-focused listings vs noisy international imports */
 export function isKenyaFocusEvent(event: CoastEvent) {
-  if (event.source === "coast-calendar") return true;
-  const hay = `${event.area} ${event.venue} ${event.title} ${event.category}`.toLowerCase();
-  return /kenya|nairobi|mombasa|diani|nakuru|naivasha|kisumu|lamu|malindi|watamu|kilifi|tsavo|mara|amboseli|tana|hola|garsen|kipini|jumuiya|nyali|bamburi/.test(
+  if (
+    event.source === "coast-calendar" ||
+    event.source === "hustlesasa" ||
+    event.source === "google"
+  ) {
+    return true;
+  }
+  const hay =
+    `${event.area} ${event.venue} ${event.title} ${event.category}`.toLowerCase();
+  return /kenya|nairobi|mombasa|diani|nakuru|naivasha|kisumu|lamu|malindi|watamu|kilifi|tsavo|mara|amboseli|tana|hola|garsen|kipini|jumuiya|nyali|bamburi|westlands|parklands|kiambu|athi|tigoni|uganda|tanzania/.test(
     hay,
   );
 }
@@ -112,40 +136,50 @@ function isHappeningNow(event: CoastEvent, nowMs: number) {
 export function rankEvents(events: CoastEvent[], nowMs = Date.now()) {
   const active = [...events].filter((e) => isActiveOrUpcoming(e, nowMs));
   active.sort((a, b) => {
-    // 1) Happening right now
     const aLive = isHappeningNow(a, nowMs) ? 0 : 1;
     const bLive = isHappeningNow(b, nowMs) ? 0 : 1;
     if (aLive !== bLive) return aLive - bLive;
-    // 2) Kenya-focused listings before sparse imports
+
+    // Prefer dated ticketed listings over venue highlights.
+    const weight = (e: CoastEvent) => {
+      if (e.source === "hustlesasa") return 0;
+      if (e.source === "ticketmaster") return 1;
+      if (e.source === "coast-calendar") return 2;
+      return 3;
+    };
+    const aw = weight(a);
+    const bw = weight(b);
+    if (aw !== bw) return aw - bw;
+
     const aKe = isKenyaFocusEvent(a) ? 0 : 1;
     const bKe = isKenyaFocusEvent(b) ? 0 : 1;
     if (aKe !== bKe) return aKe - bKe;
-    // 3) Soonest start
     return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
   });
 
-  // Keep curated Kenya dates; trim dense Ticketmaster noise.
-  const kenya = active.filter(isKenyaFocusEvent);
-  const other = active.filter((e) => !isKenyaFocusEvent(e)).slice(0, 8);
-  return [...kenya, ...other];
+  return active;
 }
 
-async function fetchTicketmasterNear(
+async function fetchTicketmaster(
   key: string,
-  lat: number,
-  lon: number,
-  radiusKm: number,
+  params: Record<string, string>,
 ): Promise<CoastEvent[]> {
   const url = new URL("https://app.ticketmaster.com/discovery/v2/events.json");
   url.searchParams.set("apikey", key);
   url.searchParams.set("countryCode", "KE");
-  url.searchParams.set("latlong", `${lat},${lon}`);
-  url.searchParams.set("radius", String(radiusKm));
-  url.searchParams.set("unit", "km");
-  url.searchParams.set("size", "20");
+  url.searchParams.set("size", "50");
   url.searchParams.set("sort", "date,asc");
+  for (const [k, v] of Object.entries(params)) {
+    url.searchParams.set(k, v);
+  }
 
-  const res = await fetch(url, { next: { revalidate: 900 } });
+  if (params.size) {
+    url.searchParams.set("size", params.size);
+  }
+  const res = await fetch(url, {
+    next: { revalidate: 120 },
+    signal: AbortSignal.timeout(3500),
+  });
   if (!res.ok) throw new Error(`Ticketmaster ${res.status}`);
   const json = (await res.json()) as {
     _embedded?: { events?: TicketmasterEvent[] };
@@ -155,59 +189,141 @@ async function fetchTicketmasterNear(
     .filter((e): e is CoastEvent => Boolean(e));
 }
 
+async function fetchAllTicketmaster(key: string): Promise<CoastEvent[]> {
+  const { lat, lon } = DESTINATION.coords;
+
+  // Keep this lean - many parallel Discovery calls stacked timeouts (~8s).
+  const settled = await Promise.allSettled([
+    fetchTicketmaster(key, { size: "50" }),
+    fetchTicketmaster(key, {
+      latlong: `${lat},${lon}`,
+      radius: "400",
+      unit: "km",
+      size: "50",
+    }),
+    fetchTicketmaster(key, {
+      latlong: "-4.0435,39.6682",
+      radius: "200",
+      unit: "km",
+      size: "30",
+    }),
+  ]);
+
+  const merged: CoastEvent[] = [];
+  const seen = new Set<string>();
+  for (const result of settled) {
+    if (result.status !== "fulfilled") continue;
+    for (const ev of result.value) {
+      if (seen.has(ev.id)) continue;
+      seen.add(ev.id);
+      merged.push(ev);
+    }
+  }
+  return merged;
+}
+
+function mergeUnique(base: CoastEvent[], extra: CoastEvent[]) {
+  const seen = new Set(base.map((e) => e.id));
+  for (const ev of extra) {
+    if (seen.has(ev.id)) continue;
+    seen.add(ev.id);
+    base.push(ev);
+  }
+  return base;
+}
+
 export async function fetchEventsFeed(): Promise<EventsFeed> {
   const sources: EventsFeed["sources"] = [
     {
       id: "coast-calendar",
-      label: "Kenya events calendar",
+      label: "Kenya calendar",
       live: true,
-      note: "Curated Kenya dates first, then live Ticketmaster listings.",
+      note: "Curated Kenya dates across regions.",
     },
   ];
 
   const live: CoastEvent[] = [...COAST_EVENTS];
-  const key = process.env.TICKETMASTER_API_KEY;
-  const { lat, lon } = DESTINATION.coords;
 
-  if (key) {
-    try {
-      // Nairobi hub + Mombasa coast coverage across the country.
-      const [nairobiHits, coastHits] = await Promise.all([
-        fetchTicketmasterNear(key, lat, lon, 250),
-        fetchTicketmasterNear(key, -4.0435, 39.6682, 120),
-      ]);
-      const seen = new Set(live.map((e) => e.id));
-      for (const ev of [...nairobiHits, ...coastHits]) {
-        if (seen.has(ev.id)) continue;
-        seen.add(ev.id);
-        live.push(ev);
-      }
-      sources.push({
-        id: "ticketmaster",
-        label: "Ticketmaster",
-        live: true,
-        note: "Live listings near Nairobi and the coast.",
-      });
-    } catch {
-      sources.push({
-        id: "ticketmaster",
-        label: "Ticketmaster",
-        live: false,
-        note: "Ticketmaster unavailable right now. Showing the local calendar.",
-      });
-    }
+  const [hustleResult, ticketResult, googleResult] = await Promise.allSettled([
+    fetchHustleSasaEvents(),
+    process.env.TICKETMASTER_API_KEY
+      ? fetchAllTicketmaster(process.env.TICKETMASTER_API_KEY)
+      : Promise.reject(new Error("missing key")),
+    fetchGoogleVenueHighlights(),
+  ]);
+
+  if (hustleResult.status === "fulfilled") {
+    mergeUnique(live, hustleResult.value);
+    sources.push({
+      id: "hustlesasa",
+      label: "HustleSasa",
+      live: true,
+      note: `Live marketplace · ${hustleResult.value.length} events`,
+    });
+  } else {
+    sources.push({
+      id: "hustlesasa",
+      label: "HustleSasa",
+      live: false,
+      note: "HustleSasa marketplace unavailable right now.",
+    });
+  }
+
+  if (
+    ticketResult.status === "fulfilled" &&
+    ticketResult.value.length > 0
+  ) {
+    mergeUnique(live, ticketResult.value);
+    sources.push({
+      id: "ticketmaster",
+      label: "Ticketmaster",
+      live: true,
+      note: `Music, sports, arts & more · ${ticketResult.value.length} events`,
+    });
+  } else if (process.env.TICKETMASTER_API_KEY) {
+    sources.push({
+      id: "ticketmaster",
+      label: "Ticketmaster",
+      live: false,
+      note: "Ticketmaster unavailable right now.",
+    });
   } else {
     sources.push({
       id: "ticketmaster",
       label: "Ticketmaster",
       live: false,
-      note: "Add TICKETMASTER_API_KEY for more live listings.",
+      note: "Add TICKETMASTER_API_KEY for Ticketmaster Kenya inventory.",
     });
   }
 
+  if (googleResult.status === "fulfilled" && googleResult.value.length) {
+    mergeUnique(live, googleResult.value);
+    sources.push({
+      id: "google",
+      label: "Google Places",
+      live: true,
+      note: `Venue discovery · ${googleResult.value.length} spots`,
+    });
+  } else {
+    sources.push({
+      id: "google",
+      label: "Google Places",
+      live: false,
+      note: process.env.GOOGLE_PLACES_API_KEY
+        ? "Google venue lookup unavailable right now."
+        : "Add GOOGLE_PLACES_API_KEY for venue discovery.",
+    });
+  }
+
+  const events = rankEvents(live);
+  const categories = [
+    ...new Set(events.map((e) => e.category).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b));
+
   return {
-    events: rankEvents(live),
+    events,
     sources,
+    categories,
     refreshedAt: new Date().toISOString(),
   };
 }
