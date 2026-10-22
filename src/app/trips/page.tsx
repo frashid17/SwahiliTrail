@@ -5,12 +5,17 @@ import {
   CheckCircle2,
   Circle,
   Download,
-  Sparkles,
+  Map,
+  Plus,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/fade-in";
+import EmptyState from "@/components/shadcn-space/radix/blocks/empty-state-01/empty-state";
+import { ButtonLink } from "@/components/ui/button";
+import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
   markTripComplete,
@@ -23,6 +28,7 @@ import {
 
 export default function MyTripsPage() {
   const { userId, isLoaded } = useAuth();
+  const router = useRouter();
   const [trips, setTrips] = useState<SavedTrip[]>([]);
 
   useEffect(() => {
@@ -74,37 +80,37 @@ export default function MyTripsPage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
+    <div className="paper-grain coastal-grid min-h-[80vh]">
       <div className="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-10">
         <FadeIn>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-gold">
             My Trips
           </p>
-          <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
+          <h1 className="mt-2 font-display text-4xl font-semibold text-ocean-deep sm:text-5xl">
             Your scheduled coast plans
           </h1>
           <p className="mt-3 max-w-2xl text-muted">
             Open a trip to view the full itinerary. Mark complete anytime -
             trips auto-complete after the last day passes.
           </p>
-          <Link
-            href="/planner"
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white"
-          >
-            <Sparkles className="h-4 w-4" />
+          <ButtonLink href="/planner" variant="solid" className="mt-5">
+            <TrailAiMark className="h-4 w-4" />
             Build a new trip
-          </Link>
+          </ButtonLink>
         </FadeIn>
 
         {trips.length === 0 ? (
-          <FadeIn delay={0.1} className="mt-12">
-            <div className="rounded-3xl border border-dashed border-ocean/30 bg-surface/60 px-6 py-16 text-center text-muted">
-              No saved trips yet. Generate a plan in the{" "}
-              <Link href="/planner" className="font-semibold text-ocean">
-                Planner
-              </Link>{" "}
-              and tap Add to My Trips.
-            </div>
+          <FadeIn delay={0.1} className="mt-8">
+            <EmptyState
+              icon={<Map />}
+              title="No trips yet"
+              description="Generate a plan in the Planner and tap Add to My Trips to see it here."
+              primaryAction={{
+                label: "Build a trip",
+                icon: <Plus className="size-4" />,
+                onClick: () => router.push("/planner"),
+              }}
+            />
           </FadeIn>
         ) : (
           <div className="mt-10 grid gap-5 lg:grid-cols-2">
