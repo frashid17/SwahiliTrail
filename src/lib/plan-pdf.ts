@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { PDF_BRAND_MARK_DATA_URL } from "@/lib/brand-pdf-mark";
 import type { CarHire } from "@/lib/data/car-hires";
+import { asPlainText } from "@/lib/plan-normalize";
 import type { SavedPlan } from "@/lib/saved-trips";
 
 type PdfMeta = {
@@ -103,7 +104,7 @@ export function downloadTripPdf(
   doc.text("Recommended stay", margin + 3, y + 5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...BRAND.ink);
-  const stay = wrap(doc, plan.recommendedStay, contentW - 6);
+  const stay = wrap(doc, asPlainText(plan.recommendedStay), contentW - 6);
   doc.text(stay[0] ?? "", margin + 3, y + 10);
   y += 18;
 
@@ -154,9 +155,13 @@ export function downloadTripPdf(
       ["Food", day.foodTip],
       ["Transport", day.transportTip],
     ];
+    if (day.timingNote) blocks.unshift(["Timing", day.timingNote]);
+    if (day.localIntel) blocks.push(["Local intel", day.localIntel]);
+    if (day.insiderTip) blocks.push(["Insider", day.insiderTip]);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     for (const [label, value] of blocks) {
+      if (!value) continue;
       y = ensureSpace(doc, y, 10);
       doc.setTextColor(...BRAND.ocean);
       doc.setFont("helvetica", "bold");
@@ -166,6 +171,29 @@ export function downloadTripPdf(
       const lines = wrap(doc, value, contentW - 28);
       doc.text(lines, margin + 26, y);
       y += Math.max(lines.length, 1) * 4.4 + 1.5;
+    }
+    if (day.places?.length) {
+      y = ensureSpace(doc, y, 12);
+      doc.setTextColor(...BRAND.ocean);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.text("Places / Maps:", margin, y);
+      y += 5;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...BRAND.ink);
+      for (const place of day.places) {
+        const line = `${place.name}${place.why ? ` — ${place.why}` : ""}`;
+        const wrapped = wrap(doc, line, contentW);
+        doc.text(wrapped, margin, y);
+        y += Math.max(wrapped.length, 1) * 4.2;
+        doc.setTextColor(...BRAND.muted);
+        doc.setFontSize(7);
+        const maps = `maps.google.com/?q=${encodeURIComponent(place.mapsQuery)}`;
+        doc.text(maps, margin, y);
+        y += 4;
+        doc.setFontSize(9);
+        doc.setTextColor(...BRAND.ink);
+      }
     }
     if (day.estimatedDayCostKes != null) {
       doc.setTextColor(...BRAND.muted);
