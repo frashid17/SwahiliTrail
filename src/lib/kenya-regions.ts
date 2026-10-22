@@ -21,12 +21,20 @@ export const KENYA_REGIONS: KenyaRegion[] = [
     aliases: [
       "nairobi",
       "westlands",
+      "parklands",
       "karen",
       "langata",
       "kilimani",
+      "runda",
+      "tigoni",
+      "athi",
+      "athi river",
+      "ngara",
+      "mpaka",
       "nairobi cbd",
       "wilson",
       "karura",
+      "kiambu",
     ],
     coords: { lat: -1.2921, lon: 36.8219, label: "Nairobi" },
   },
@@ -170,5 +178,20 @@ export function filterByKenyaRegion<T>(
   textOf: (item: T) => string,
 ): T[] {
   if (!regionId || regionId === ALL_KENYA_ID) return items;
-  return items.filter((item) => matchesKenyaRegion(textOf(item), regionId));
+  const matched = items.filter((item) =>
+    matchesKenyaRegion(textOf(item), regionId),
+  );
+  if (matched.length > 0) return matched;
+
+  // If nothing pins to this region, still surface country-wide listings
+  // (area/venue often just says "Kenya") so the UI is never blank.
+  return items.filter((item) => {
+    const hay = textOf(item).toLowerCase();
+    const pinnedToOther = KENYA_REGIONS.some(
+      (r) =>
+        r.id !== regionId &&
+        r.aliases.some((alias) => hay.includes(alias.toLowerCase())),
+    );
+    return !pinnedToOther;
+  });
 }
