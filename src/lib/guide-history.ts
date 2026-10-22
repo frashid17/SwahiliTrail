@@ -10,9 +10,27 @@ export type GuideSession = {
 };
 
 const STORAGE_PREFIX = "swahili-trail-guide:";
+const ACTIVE_PREFIX = "swahili-trail-guide-active:";
 
 function storageKey(userId: string) {
   return `${STORAGE_PREFIX}${userId}`;
+}
+
+function activeStorageKey(userId: string) {
+  return `${ACTIVE_PREFIX}${userId}`;
+}
+
+export function loadActiveGuideSessionId(userId: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(activeStorageKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+export function saveActiveGuideSessionId(userId: string, sessionId: string) {
+  localStorage.setItem(activeStorageKey(userId), sessionId);
 }
 
 function readAll(userId: string): GuideSession[] {
@@ -53,6 +71,7 @@ export function saveGuideSession(
   sessions.unshift(session);
   const next = sessions.slice(0, 40);
   writeAll(userId, next);
+  saveActiveGuideSessionId(userId, session.id);
   void pushSessionsToCloud(next);
   return session;
 }
