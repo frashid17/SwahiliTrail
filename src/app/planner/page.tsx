@@ -3,14 +3,19 @@
 import { useAuth } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 import {
+  ArrowDown,
+  ArrowUp,
   BookmarkPlus,
   Calendar,
   Check,
   Download,
   ExternalLink,
   Loader2,
+  MapPin,
+  Navigation,
   Phone,
   Plane,
+  Plus,
   Trash2,
   Wallet,
   X,
@@ -18,6 +23,7 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AiTypingPanel } from "@/components/ai-typing-panel";
+import { TripSharePanel } from "@/components/trip/trip-share-panel";
 import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import {
   consumeAiNdjsonStream,
@@ -27,7 +33,6 @@ import {
   carHiresForMode,
   type TransportMode,
 } from "@/lib/data/car-hires";
-import { COAST_AREAS } from "@/lib/data/hotels";
 import {
   downloadIcs,
   googleCalendarUrl,
@@ -39,6 +44,7 @@ import {
   addSavedTrip,
   removeSavedTrip,
   syncSavedTripsFromCloud,
+  type PlanPlaceLink,
   type SavedTrip,
 } from "@/lib/saved-trips";
 import {
@@ -61,6 +67,26 @@ import {
   WorkspaceStage,
 } from "@/components/workspace/workspace-frame";
 import type { AiQuotaStatus } from "@/lib/ai/quota";
+import {
+  googleMapsDirectionsUrl,
+  googleMapsSearchUrl,
+} from "@/lib/maps-link";
+import { asPlainText } from "@/lib/plan-normalize";
+import {
+  clearPlannerDraft,
+  loadPlannerDraft,
+  savePlannerDraft,
+} from "@/lib/planner-draft";
+import {
+  defaultTripStops,
+  formatStopsSummary,
+  MAX_STOP_DAYS,
+  MAX_TRIP_DAYS,
+  MAX_TRIP_STOPS,
+  STOP_LOCATIONS,
+  sumStopDays,
+  type TripStop,
+} from "@/lib/trip-stops";
 import { cn } from "@/lib/utils";
 
 const interestOptions = [
@@ -110,12 +136,17 @@ const transportOptions: {
 type DayPlan = {
   day: number;
   theme: string;
+  location?: string;
   morning: string;
   afternoon: string;
   evening: string;
   foodTip: string;
   transportTip: string;
   estimatedDayCostKes: number;
+  localIntel?: string;
+  timingNote?: string;
+  insiderTip?: string;
+  places?: PlanPlaceLink[];
 };
 
 type Plan = {
@@ -134,6 +165,7 @@ type Plan = {
     totalKes: number;
     notes: string;
   };
+  stops?: TripStop[];
 };
 
 function typeLabel(type: TripCartItem["type"]) {
@@ -158,7 +190,7 @@ function defaultStartDate() {
 export default function PlannerPage() {
   const { userId, isLoaded } = useAuth();
   const { quota, applyQuota } = useAiQuota();
-  const [days, setDays] = useState(5);
+  const [stops, setStops] = useState<TripStop[]>(defaultTripStops);
   const [interests, setInterests] = useState<string[]>([
     "Wildlife & safari",
     "Culture & heritage",
@@ -171,7 +203,6 @@ export default function PlannerPage() {
   const [companions, setCompanions] = useState<
     "solo" | "couple" | "family" | "friends"
   >("family");
-  const [stayArea, setStayArea] = useState<string>("whole-coast");
   const [partySize, setPartySize] = useState(3);
   const [transportMode, setTransportMode] =
     useState<TransportMode>("airport-pickup");
@@ -188,17 +219,53 @@ export default function PlannerPage() {
   } | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [showCalendarMenu, setShowCalendarMenu] = useState(false);
+  const [draftRestoredAt, setDraftRestoredAt] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoaded || !userId) return;
     setCart(loadTripCart(userId));
     void syncSavedTripsFromCloud(userId).then(setSavedTrips);
+    const draft = loadPlannerDraft(userId);
+    if (!draft) return;
+    setPlan(draft.plan);
+    if (draft.stops?.length) setStops(draft.stops);
+    if (draft.interests?.length) setInterests(draft.interests);
+    if (draft.budget) setBudget(draft.budget);
+    if (draft.pace) setPace(draft.pace);
+    if (draft.companions) setCompanions(draft.companions);
+    if (draft.partySize) setPartySize(draft.partySize);
+    if (draft.transportMode) setTransportMode(draft.transportMode);
+    if (draft.startDate) setStartDate(draft.startDate);
+    setDraftRestoredAt(draft.savedAt);
   }, [isLoaded, userId]);
+
+  function persistDraft(nextPlan: Plan) {
+    if (!userId) return;
+    const savedAt = new Date().toISOString();
+    savePlannerDraft(userId, {
+      plan: nextPlan,
+      stops,
+      interests,
+      budget,
+      pace,
+      companions,
+      partySize,
+      transportMode,
+      startDate,
+      savedAt,
+    });
+    setDraftRestoredAt(savedAt);
+  }
 
   const suggestedHires = useMemo(
     () => carHiresForMode(transportMode).slice(0, 4),
     [transportMode],
   );
+
+  const days = sumStopDays(stops);
+  const routeSummary = formatStopsSummary(stops);
+  const canAddStop =
+    stops.length < MAX_TRIP_STOPS && days < MAX_TRIP_DAYS;
 
   const transportLabel =
     transportOptions.find((t) => t.value === transportMode)?.label ?? "Transport";
@@ -206,6 +273,51 @@ export default function PlannerPage() {
   const alreadySaved =
     !!plan &&
     savedTrips.some((t) => t.plan.title === plan.title && t.days === days);
+
+  function updateStop(index: number, patch: Partial<TripStop>) {
+    setStops((prev) => {
+      const others = sumStopDays(prev.filter((_, i) => i !== index));
+      const maxForThis = Math.min(
+        MAX_STOP_DAYS,
+        Math.max(1, MAX_TRIP_DAYS - others),
+      );
+      return prev.map((stop, i) => {
+        if (i !== index) return stop;
+        const next = { ...stop, ...patch };
+        next.days = Math.min(
+          maxForThis,
+          Math.max(1, Number(next.days) || 1),
+        );
+        return next;
+      });
+    });
+  }
+
+  function addStop() {
+    if (!canAddStop) return;
+    const remaining = Math.max(1, Math.min(MAX_STOP_DAYS, MAX_TRIP_DAYS - days));
+    const used = new Set(stops.map((s) => s.location));
+    const nextLocation =
+      STOP_LOCATIONS.find((a) => !used.has(a.value))?.value ??
+      STOP_LOCATIONS[0]?.value ??
+      "Nairobi";
+    setStops((prev) => [...prev, { location: nextLocation, days: remaining }]);
+  }
+
+  function removeStop(index: number) {
+    setStops((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
+  }
+
+  function moveStop(index: number, direction: -1 | 1) {
+    setStops((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.splice(target, 0, item);
+      return next;
+    });
+  }
 
   function toggleInterest(value: string) {
     setInterests((prev) =>
@@ -229,6 +341,10 @@ export default function PlannerPage() {
   }
 
   async function generate() {
+    if (days < 1 || days > MAX_TRIP_DAYS) {
+      setError(`Total days must be between 1 and ${MAX_TRIP_DAYS}.`);
+      return;
+    }
     setLoading(true);
     setError(null);
     setSaveNote(null);
@@ -241,11 +357,11 @@ export default function PlannerPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           days,
+          stops,
           interests,
           budget,
           pace,
           companions,
-          stayArea,
           partySize,
           transportMode,
           cart,
@@ -265,7 +381,9 @@ export default function PlannerPage() {
         },
       });
       if (data.quota) applyQuota(data.quota);
-      setPlan(data.plan);
+      const nextPlan = { ...data.plan, stops: data.plan.stops ?? stops };
+      setPlan(nextPlan);
+      persistDraft(nextPlan);
       setStreamDraft(null);
     } catch (err) {
       const payload =
@@ -304,7 +422,7 @@ export default function PlannerPage() {
       companions,
       budget,
       transportMode,
-      plan,
+      plan: { ...plan, stops: plan.stops ?? stops },
     });
     setSavedTrips(next);
     setSaveNote("Saved to My Trips.");
@@ -437,19 +555,6 @@ export default function PlannerPage() {
             </div>
 
             <WorkspaceSectionLabel step="2">Trip basics</WorkspaceSectionLabel>
-            <label className="block">
-              <span className="text-sm font-medium text-ocean-deep">
-                Days in Kenya: {days}
-              </span>
-              <input
-                type="range"
-                min={1}
-                max={10}
-                value={days}
-                onChange={(e) => setDays(Number(e.target.value))}
-                className="mt-2 w-full accent-coral"
-              />
-            </label>
 
             <label className="block text-sm">
               <span className="font-medium text-ocean-deep">Trip start date</span>
@@ -461,26 +566,116 @@ export default function PlannerPage() {
               />
             </label>
 
-            <label className="block text-sm">
-              <span className="font-medium text-ocean-deep">
-                Where to base your stay
-              </span>
-              <select
-                value={stayArea}
-                onChange={(e) => setStayArea(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border bg-foam px-3 py-2 text-sm"
-              >
-                {COAST_AREAS.map((area) => (
-                  <option key={area.value} value={area.value}>
-                    {area.label}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-1 block text-xs text-muted">
-                {COAST_AREAS.find((a) => a.value === stayArea)?.hint ??
-                  "Not sure? Pick whole coast and we'll suggest a fit."}
-              </span>
-            </label>
+            <div className="space-y-2">
+              <div className="flex items-end justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-ocean-deep">
+                    Places & nights
+                  </p>
+                  <p className="text-xs text-muted">
+                    Add stops in visit order · {days} day
+                    {days === 1 ? "" : "s"} total
+                    {days > MAX_TRIP_DAYS ? ` (max ${MAX_TRIP_DAYS})` : ""}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addStop}
+                  disabled={!canAddStop}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-foam px-2.5 py-1 text-[11px] font-semibold text-ocean-deep transition hover:border-aqua/40 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus className="h-3 w-3" />
+                  Add stop
+                </button>
+              </div>
+
+              <ul className="space-y-2">
+                {stops.map((stop, index) => {
+                  const area = STOP_LOCATIONS.find(
+                    (a) => a.value === stop.location,
+                  );
+                  return (
+                    <li
+                      key={`${stop.location}-${index}`}
+                      className="rounded-xl border border-border bg-surface p-2.5"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-foam text-[11px] font-bold text-ocean">
+                          {index + 1}
+                        </span>
+                        <select
+                          value={stop.location}
+                          onChange={(e) =>
+                            updateStop(index, { location: e.target.value })
+                          }
+                          className="min-w-0 flex-1 rounded-lg border border-border bg-foam px-2 py-1.5 text-sm text-ocean-deep"
+                          aria-label={`Stop ${index + 1} location`}
+                        >
+                          {STOP_LOCATIONS.map((loc) => (
+                            <option key={loc.value} value={loc.value}>
+                              {loc.label}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="flex shrink-0 items-center gap-1 text-xs text-muted">
+                          <span className="sr-only">Days</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={MAX_STOP_DAYS}
+                            value={stop.days}
+                            onChange={(e) =>
+                              updateStop(index, {
+                                days: Number(e.target.value),
+                              })
+                            }
+                            className="w-12 rounded-lg border border-border bg-foam px-1.5 py-1.5 text-center text-sm font-semibold text-ocean-deep"
+                          />
+                          d
+                        </label>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between gap-2">
+                        <p className="truncate text-[11px] text-muted">
+                          {area?.hint ?? "Kenya stop"}
+                        </p>
+                        <div className="flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => moveStop(index, -1)}
+                            disabled={index === 0}
+                            className="rounded p-1 text-muted hover:bg-foam hover:text-ocean-deep disabled:opacity-30"
+                            aria-label="Move stop up"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveStop(index, 1)}
+                            disabled={index === stops.length - 1}
+                            className="rounded p-1 text-muted hover:bg-foam hover:text-ocean-deep disabled:opacity-30"
+                            aria-label="Move stop down"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeStop(index)}
+                            disabled={stops.length <= 1}
+                            className="rounded p-1 text-muted hover:bg-foam hover:text-coral disabled:opacity-30"
+                            aria-label="Remove stop"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-[11px] text-muted">
+                Route: {routeSummary}
+              </p>
+            </div>
 
             <label className="block text-sm">
               <span className="font-medium text-ocean-deep">
@@ -681,14 +876,39 @@ export default function PlannerPage() {
                         type="button"
                         className="min-w-0 text-left"
                         onClick={() => {
+                          const nextStops = trip.plan.stops?.length
+                            ? trip.plan.stops
+                            : [
+                                {
+                                  location: "Nairobi",
+                                  days: trip.days,
+                                },
+                              ];
                           setPlan(trip.plan);
-                          setDays(trip.days);
+                          setStops(nextStops);
                           setPartySize(trip.partySize);
                           setStartDate(trip.startDate);
                           setTransportMode(
                             trip.transportMode as TransportMode,
                           );
                           setSaveNote(null);
+                          if (userId) {
+                            const savedAt = new Date().toISOString();
+                            savePlannerDraft(userId, {
+                              plan: trip.plan,
+                              stops: nextStops,
+                              interests,
+                              budget,
+                              pace,
+                              companions,
+                              partySize: trip.partySize,
+                              transportMode:
+                                trip.transportMode as TransportMode,
+                              startDate: trip.startDate,
+                              savedAt,
+                            });
+                            setDraftRestoredAt(savedAt);
+                          }
                         }}
                       >
                         <p className="truncate text-xs font-semibold text-ocean-deep">
@@ -696,6 +916,9 @@ export default function PlannerPage() {
                         </p>
                         <p className="text-[11px] text-muted">
                           {trip.days} days · starts {trip.startDate}
+                          {trip.plan.stops && trip.plan.stops.length > 1
+                            ? ` · ${trip.plan.stops.length} stops`
+                            : ""}
                           {trip.status === "completed" ? " · done" : ""}
                         </p>
                       </button>
@@ -742,7 +965,7 @@ export default function PlannerPage() {
             ) : !plan ? (
               <WorkspaceEmpty
                 title="Your itinerary appears here"
-                body="Set days, base, transport, and interests on the left - then generate. Days, stay tips, and a rough KES total write in as the plan builds."
+                body="Set stops, transport, and interests — then generate. Swahili Trail builds operator-style days with named places, Maps links, local intel, and a KES damage estimate."
               />
             ) : (
               <motion.div
@@ -756,11 +979,44 @@ export default function PlannerPage() {
                       <h2 className="font-display text-2xl text-ocean-deep sm:text-3xl">
                         {plan.title}
                       </h2>
+                      {draftRestoredAt ? (
+                        <p className="mt-1 text-[11px] text-muted">
+                          Draft kept on this device · restored{" "}
+                          {new Date(draftRestoredAt).toLocaleString("en-KE", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          {" · "}
+                          <button
+                            type="button"
+                            className="font-semibold text-coral underline-offset-2 hover:underline"
+                            onClick={() => {
+                              if (!userId) return;
+                              clearPlannerDraft(userId);
+                              setPlan(null);
+                              setDraftRestoredAt(null);
+                            }}
+                          >
+                            Clear draft
+                          </button>
+                        </p>
+                      ) : null}
                       <p className="mt-2 text-muted">{plan.summary}</p>
                       <p className="mt-3 rounded-2xl bg-foam px-4 py-3 text-sm text-ocean-deep">
                         <span className="font-semibold">Recommended stay:</span>{" "}
-                        {plan.recommendedStay}
+                        {asPlainText(plan.recommendedStay)}
                       </p>
+                      {(plan.stops ?? stops).length > 0 ? (
+                        <p className="mt-2 inline-flex items-start gap-1.5 text-sm text-muted">
+                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-aqua" />
+                          <span>
+                            Route:{" "}
+                            {formatStopsSummary(plan.stops ?? stops)}
+                          </span>
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex flex-shrink-0 flex-wrap gap-2">
                       <button
@@ -780,13 +1036,22 @@ export default function PlannerPage() {
                         )}
                         {alreadySaved ? "In My Trips" : "Add to My Trips"}
                       </button>
+                      <TripSharePanel
+                        compact
+                        payload={{
+                          plan,
+                          startDate,
+                          partySize,
+                          transportMode: transportLabel,
+                        }}
+                      />
                       <button
                         type="button"
                         onClick={downloadPlan}
                         className="inline-flex items-center gap-2 rounded-md border border-border bg-foam px-4 py-2.5 text-sm font-semibold text-ocean-deep"
                       >
                         <Download className="h-4 w-4" />
-                        Download PDF
+                        PDF only
                       </button>
                       <div className="relative">
                         <button
@@ -929,9 +1194,17 @@ export default function PlannerPage() {
                     className="rounded-2xl border border-border bg-surface p-4 sm:rounded-3xl sm:p-7"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
-                        Day {day.day}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
+                          Day {day.day}
+                        </p>
+                        {day.location ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-foam px-2.5 py-0.5 text-[11px] font-medium text-ocean-deep">
+                            <MapPin className="h-3 w-3 text-aqua" />
+                            {day.location}
+                          </span>
+                        ) : null}
+                      </div>
                       {day.estimatedDayCostKes != null ? (
                         <p className="rounded-md bg-foam px-3 py-1 text-xs font-medium text-ocean-deep">
                           ~KES {day.estimatedDayCostKes.toLocaleString()} / day
@@ -941,6 +1214,11 @@ export default function PlannerPage() {
                     <h3 className="mt-2 font-display text-2xl text-ocean-deep">
                       {day.theme}
                     </h3>
+                    {day.timingNote ? (
+                      <p className="mt-2 text-sm font-medium text-ocean">
+                        Timing: {day.timingNote}
+                      </p>
+                    ) : null}
                     <div className="mt-5 space-y-4 text-[15px] leading-7 text-muted">
                       {(
                         [
@@ -958,10 +1236,89 @@ export default function PlannerPage() {
                           <p className="text-xs font-semibold uppercase tracking-wide text-ocean-deep">
                             {label}
                           </p>
-                          <p className="mt-1.5">{value}</p>
+                          <p className="mt-1.5 whitespace-pre-wrap">{value}</p>
                         </div>
                       ))}
                     </div>
+
+                    {day.places && day.places.length > 0 ? (
+                      <div className="mt-5">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
+                          Places & directions
+                        </p>
+                        <ul className="mt-2 space-y-2">
+                          {day.places.map((place) => (
+                            <li
+                              key={`${place.name}-${place.mapsQuery}`}
+                              className="flex flex-col gap-2 rounded-2xl border border-border bg-foam/40 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-semibold text-ocean-deep">
+                                  {place.name}
+                                  {place.kind ? (
+                                    <span className="ml-2 text-[11px] font-medium uppercase tracking-wide text-muted">
+                                      {place.kind}
+                                    </span>
+                                  ) : null}
+                                </p>
+                                {place.why ? (
+                                  <p className="mt-0.5 text-sm text-muted">
+                                    {place.why}
+                                  </p>
+                                ) : null}
+                                {place.estCostKes != null ? (
+                                  <p className="mt-1 text-xs font-medium text-ocean">
+                                    ~KES {place.estCostKes.toLocaleString()}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex shrink-0 flex-wrap gap-1.5">
+                                <a
+                                  href={googleMapsSearchUrl(place.mapsQuery)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold text-ocean-deep hover:border-aqua/40"
+                                >
+                                  <MapPin className="h-3 w-3 text-aqua" />
+                                  Map
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                                <a
+                                  href={googleMapsDirectionsUrl(place.mapsQuery)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-semibold text-ocean-deep hover:border-aqua/40"
+                                >
+                                  <Navigation className="h-3 w-3 text-coral" />
+                                  Directions
+                                </a>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {day.localIntel ? (
+                      <div className="mt-4 rounded-2xl border border-aqua/25 bg-aqua/5 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-aqua">
+                          Local intel
+                        </p>
+                        <p className="mt-1.5 text-sm leading-relaxed text-ocean-deep">
+                          {day.localIntel}
+                        </p>
+                      </div>
+                    ) : null}
+                    {day.insiderTip ? (
+                      <div className="mt-3 rounded-2xl border border-gold/30 bg-[color-mix(in_oklab,var(--gold)_10%,transparent)] px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-ocean-deep">
+                          Insider tip
+                        </p>
+                        <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                          {day.insiderTip}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ))}
 
