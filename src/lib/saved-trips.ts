@@ -1,12 +1,33 @@
+import type { TripStop } from "@/lib/trip-stops";
+
+/** Named place the traveler can open in Maps / Directions. */
+export type PlanPlaceLink = {
+  name: string;
+  kind?: string;
+  /** Free-text query for Google Maps search (include Kenya + town). */
+  mapsQuery: string;
+  why?: string;
+  estCostKes?: number;
+};
+
 export type SavedDayPlan = {
   day: number;
   theme: string;
+  /** Present on multi-stop plans */
+  location?: string;
   morning: string;
   afternoon: string;
   evening: string;
   foodTip: string;
   transportTip: string;
   estimatedDayCostKes: number;
+  /** Kenya-specific logistics / season / cash / timing intel */
+  localIntel?: string;
+  /** Ideal window (e.g. "Arrive by 08:30 before heat / park gate queue") */
+  timingNote?: string;
+  /** Non-obvious tip ChatGPT would miss */
+  insiderTip?: string;
+  places?: PlanPlaceLink[];
 };
 
 export type SavedPlan = {
@@ -25,6 +46,8 @@ export type SavedPlan = {
     totalKes: number;
     notes: string;
   };
+  /** Ordered route legs when the traveler planned multiple bases */
+  stops?: TripStop[];
 };
 
 export type TripStatus = "upcoming" | "completed";
