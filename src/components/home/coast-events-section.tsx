@@ -8,6 +8,7 @@ import { KenyaLocationFilter } from "@/components/kenya-location-filter";
 import { useKenyaLocation } from "@/hooks/use-kenya-location";
 import type { CoastEvent } from "@/lib/data/coast-events";
 import { filterByKenyaRegion } from "@/lib/kenya-regions";
+import { isRemoteImageSrc } from "@/lib/utils";
 
 function formatEventWhen(iso: string) {
   const d = new Date(iso);
@@ -34,15 +35,16 @@ export function CoastEventsSection() {
   const [events, setEvents] = useState<CoastEvent[]>([]);
   const [sourceNote, setSourceNote] = useState("Loading events…");
 
-  const filtered = useMemo(
-    () =>
-      filterByKenyaRegion(
-        events,
-        regionId,
-        (e) => `${e.area} ${e.venue} ${e.title} ${e.category}`,
-      ).slice(0, 12),
-    [events, regionId],
-  );
+  const filtered = useMemo(() => {
+    const dated = events.filter((e) => e.source !== "google");
+    const regional = filterByKenyaRegion(
+      dated,
+      regionId,
+      (e) => `${e.area} ${e.venue} ${e.title} ${e.category}`,
+    );
+    // Always keep something on the home strip.
+    return (regional.length > 0 ? regional : dated).slice(0, 16);
+  }, [events, regionId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +67,7 @@ export function CoastEventsSection() {
       }
     }
     void load();
-    const id = window.setInterval(load, 10 * 60 * 1000);
+    const id = window.setInterval(load, 90_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -86,14 +88,14 @@ export function CoastEventsSection() {
       <div className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
+            <h2 className="font-display text-3xl font-semibold tracking-tight text-ocean-deep sm:text-4xl">
               {region
                 ? `What’s on in ${region.label}`
                 : "What’s on across Kenya"}
             </h2>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-              Focus the list by region - Nairobi, Nanyuki, the Mara, the coast,
-              and more.
+              Live from HustleSasa, Ticketmaster, and the Kenya calendar - music,
+              sports, nightlife, and more. Filter by region below.
             </p>
             <p className="mt-2 text-xs text-muted/80">{sourceNote}</p>
           </div>
@@ -137,10 +139,11 @@ export function CoastEventsSection() {
               No events in this region right now. Try All Kenya.
             </p>
           ) : (
-            filtered.map((event) => (
+            filtered.map((event, index) => (
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
+                prefetch={false}
                 className="group flex w-[min(85vw,18.5rem)] shrink-0 snap-start flex-col sm:w-72"
               >
                 <div className="relative aspect-[16/10] overflow-hidden rounded-md">
@@ -149,6 +152,9 @@ export function CoastEventsSection() {
                     alt=""
                     fill
                     sizes="300px"
+                    quality={65}
+                    unoptimized={isRemoteImageSrc(event.imageUrl)}
+                    loading={index < 2 ? "eager" : "lazy"}
                     className="object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
