@@ -5,14 +5,12 @@ import { motion } from "framer-motion";
 import {
   BookmarkPlus,
   Calendar,
-  Car,
   Check,
   Download,
   ExternalLink,
   Loader2,
   Phone,
   Plane,
-  Sparkles,
   Trash2,
   Wallet,
   X,
@@ -20,6 +18,7 @@ import {
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AiTypingPanel } from "@/components/ai-typing-panel";
+import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import {
   consumeAiNdjsonStream,
   extractStreamingJsonString,
@@ -53,6 +52,14 @@ import {
   aiQuotaErrorMessage,
   useAiQuota,
 } from "@/components/ai-quota-banner";
+import {
+  WorkspaceEmpty,
+  WorkspaceFrame,
+  WorkspaceHeader,
+  WorkspacePanel,
+  WorkspaceSectionLabel,
+  WorkspaceStage,
+} from "@/components/workspace/workspace-frame";
 import type { AiQuotaStatus } from "@/lib/ai/quota";
 import { cn } from "@/lib/utils";
 
@@ -347,32 +354,28 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="paper-grain coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
-      <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[24rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
-        <aside className="relative flex shrink-0 flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:overflow-hidden">
-          <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-                Trip Planner
-              </p>
-              <h1 className="mt-1.5 font-display text-2xl tracking-tight text-ocean-deep sm:mt-2 sm:text-3xl">
-                Plan days in Kenya
-              </h1>
-              <p className="mt-1.5 text-sm text-muted sm:mt-2">
-                <span className="lg:hidden">
-                  Set days, stay, and transport. The plan writes below as it
-                  builds.
-                </span>
-                <span className="hidden lg:inline">
-                  Set days, stay, and transport on the left. Watch the plan
-                  write on the right.
-                </span>
-              </p>
-            </div>
+    <WorkspaceFrame>
+      <WorkspacePanel>
+          <div className="space-y-4">
+            <WorkspaceHeader
+              eyebrow="Trip Planner"
+              title="Plan days in Kenya"
+              description={
+                <>
+                  <span className="lg:hidden">
+                    Set days, stay, and transport. The plan writes below.
+                  </span>
+                  <span className="hidden lg:inline">
+                    Configure on the left - your itinerary appears on the right.
+                  </span>
+                </>
+              }
+            />
 
             <AiQuotaBanner quota={quota} />
 
-            <div className="rounded-2xl border border-border bg-foam/70 p-3">
+            <WorkspaceSectionLabel step="1">Wishlist</WorkspaceSectionLabel>
+            <div className="rounded-xl border border-border/80 bg-foam/60 p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-ocean-deep">
                   Wishlist ({cart.length})
@@ -433,6 +436,7 @@ export default function PlannerPage() {
               )}
             </div>
 
+            <WorkspaceSectionLabel step="2">Trip basics</WorkspaceSectionLabel>
             <label className="block">
               <span className="text-sm font-medium text-ocean-deep">
                 Days in Kenya: {days}
@@ -443,7 +447,7 @@ export default function PlannerPage() {
                 max={10}
                 value={days}
                 onChange={(e) => setDays(Number(e.target.value))}
-                className="mt-2 w-full accent-ocean"
+                className="mt-2 w-full accent-coral"
               />
             </label>
 
@@ -488,44 +492,33 @@ export default function PlannerPage() {
                 max={12}
                 value={partySize}
                 onChange={(e) => setPartySize(Number(e.target.value))}
-                className="mt-2 w-full accent-ocean"
+                className="mt-2 w-full accent-coral"
               />
             </label>
 
+            <WorkspaceSectionLabel step="3">Transport</WorkspaceSectionLabel>
             <div>
-              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-ocean-deep">
-                <Car className="h-4 w-4 text-aqua" />
-                Car hire & airport pickup
-              </p>
-              <div className="mt-2 grid gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {transportOptions.map((option) => (
                   <button
                     key={option.value}
                     type="button"
+                    title={option.hint}
                     onClick={() => setTransportMode(option.value)}
                     className={cn(
-                      "rounded-xl border-2 px-3 py-2.5 text-left transition",
+                      "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                       transportMode === option.value
-                        ? "border-aqua bg-ocean text-white shadow-sm"
-                        : "border-aqua/35 bg-surface text-ocean-deep hover:border-aqua hover:bg-sand/60",
+                        ? "bg-brand-deep text-on-brand"
+                        : "bg-foam text-muted hover:bg-sand hover:text-ocean-deep",
                     )}
                   >
-                    <span className="block text-sm font-semibold">
-                      {option.label}
-                    </span>
-                    <span
-                      className={cn(
-                        "mt-0.5 block text-[11px] leading-snug",
-                        transportMode === option.value
-                          ? "text-white/85"
-                          : "text-ocean-deep/75",
-                      )}
-                    >
-                      {option.hint}
-                    </span>
+                    {option.label}
                   </button>
                 ))}
               </div>
+              <p className="mt-2 text-[11px] text-muted">
+                {transportOptions.find((o) => o.value === transportMode)?.hint}
+              </p>
               {suggestedHires.length > 0 ? (
                 <div className="mt-2 space-y-1.5 rounded-xl bg-foam p-2.5">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-aqua">
@@ -559,11 +552,9 @@ export default function PlannerPage() {
               ) : null}
             </div>
 
+            <WorkspaceSectionLabel step="4">Interests & budget</WorkspaceSectionLabel>
             <div>
-              <p className="text-sm font-medium text-ocean-deep">
-                Activities you expect
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 {interestOptions.map((option) => {
                   const active = interests.includes(option);
                   return (
@@ -572,10 +563,10 @@ export default function PlannerPage() {
                       type="button"
                       onClick={() => toggleInterest(option)}
                       className={cn(
-                        "rounded-md border px-3 py-1.5 text-xs font-medium transition",
+                        "rounded-full px-3 py-1.5 text-xs font-medium transition",
                         active
-                          ? "border-aqua bg-ocean text-white"
-                          : "border-aqua/30 bg-surface text-ocean-deep hover:border-aqua",
+                          ? "bg-coral text-white"
+                          : "bg-foam text-muted hover:bg-sand hover:text-ocean-deep",
                       )}
                     >
                       {option}
@@ -598,10 +589,10 @@ export default function PlannerPage() {
                   type="button"
                   onClick={() => setBudget(value)}
                   className={cn(
-                    "rounded-xl border-2 px-2 py-2.5 text-xs font-semibold",
+                    "rounded-xl border px-2 py-2.5 text-xs font-semibold transition",
                     budget === value
-                      ? "border-aqua bg-ocean text-white"
-                      : "border-aqua/35 bg-surface text-ocean-deep hover:border-aqua",
+                      ? "border-brand-deep bg-brand-deep text-on-brand"
+                      : "border-border bg-foam text-ocean-deep hover:border-gold/40",
                   )}
                 >
                   {label}
@@ -652,7 +643,7 @@ export default function PlannerPage() {
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4" />
+                <TrailAiMark className="h-4 w-4" />
               )}
               {loading ? "Writing your trip…" : "Generate full trip + budget"}
             </button>
@@ -728,10 +719,10 @@ export default function PlannerPage() {
               )}
             </div>
           </div>
-        </aside>
+      </WorkspacePanel>
 
-        <section className="relative flex min-h-[min(20rem,55dvh)] flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-          <div className="relative z-[1] p-3 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
+      <WorkspaceStage>
+          <div className="relative z-[1] flex flex-col p-3 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
             {loading && streamDraft ? (
               <div className="space-y-4">
                 <AiTypingPanel
@@ -749,10 +740,10 @@ export default function PlannerPage() {
                 </p>
               </div>
             ) : !plan ? (
-              <div className="flex min-h-[10rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[12rem] sm:p-8 sm:text-base lg:min-h-[320px]">
-                Your plan will write here - days, stay tip, transport notes, and
-                a rough cost.
-              </div>
+              <WorkspaceEmpty
+                title="Your itinerary appears here"
+                body="Set days, base, transport, and interests on the left - then generate. Days, stay tips, and a rough KES total write in as the plan builds."
+              />
             ) : (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -1001,8 +992,7 @@ export default function PlannerPage() {
               </motion.div>
             )}
           </div>
-        </section>
-      </div>
-    </div>
+      </WorkspaceStage>
+    </WorkspaceFrame>
   );
 }
