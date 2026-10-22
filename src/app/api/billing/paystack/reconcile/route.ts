@@ -1,12 +1,17 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import {
+  alignPaymentWithProvider,
   fulfillPaystackCharge,
   getPaymentByReference,
   userHasActiveTrailPlus,
 } from "@/lib/ai/subscription";
 import {
+  isPaystackChargeSuccess,
   isPaystackConfigured,
+  mapPaystackToPaymentStatus,
+  maybeCreateCardSubscription,
+  trailPlusPlanCode,
   verifyPaystackTransaction,
 } from "@/lib/paystack";
 
@@ -36,10 +41,18 @@ export async function POST(req: Request) {
 
   try {
     const tx = await verifyPaystackTransaction(reference);
-    if (tx.status !== "success") {
+    if (!isPaystackChargeSuccess(tx)) {
+      const mapped = mapPaystackToPaymentStatus(tx);
+      await alignPaymentWithProvider({
+        reference,
+        providerStatus: mapped,
+        amount: tx.amount,
+        currency: tx.currency,
+      });
       return NextResponse.json({
         ok: false,
-        status: tx.status,
+        status: mapped,
+        providerStatus: tx.status,
         active: sessionUserId
           ? await userHasActiveTrailPlus(sessionUserId)
           : false,
@@ -59,11 +72,25 @@ export async function POST(req: Request) {
       );
     }
 
+    let subscriptionCode: string | null = null;
+    const planCode = trailPlusPlanCode();
+    const authCode = tx.authorization?.authorization_code;
+    const reusable = Boolean(tx.authorization?.reusable);
+    const customerCode = tx.customer?.customer_code;
+    if (planCode && reusable && authCode && customerCode) {
+      subscriptionCode = await maybeCreateCardSubscription({
+        customerCode,
+        authorizationCode: authCode,
+        planCode,
+      });
+    }
+
     await fulfillPaystackCharge({
       userId,
       email: tx.customer?.email ?? null,
       reference: tx.reference,
-      customerCode: tx.customer?.customer_code ?? null,
+      customerCode: customerCode ?? null,
+      subscriptionCode,
       amount: tx.amount,
       currency: tx.currency,
       paidAt: tx.paid_at,
@@ -71,9 +98,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       ok: true,
+      status: "success",
       active: true,
       userId,
       reference: tx.reference,
+      autoRenew: Boolean(subscriptionCode),
     });
   } catch (err) {
     console.error(
