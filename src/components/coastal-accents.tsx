@@ -13,8 +13,8 @@ export function CoastalOrbs({ className = "" }: { className?: string }) {
       aria-hidden
       className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
     >
-      <span className="float-orb absolute -left-10 top-8 h-36 w-36 rounded-full bg-aqua/15 blur-2xl" />
-      <span className="float-orb-alt absolute -right-8 bottom-4 h-40 w-40 rounded-full bg-coral/15 blur-2xl" />
+      <span className="float-orb absolute left-0 top-8 h-36 w-36 rounded-full bg-aqua/15 blur-2xl" />
+      <span className="float-orb-alt absolute right-0 bottom-4 h-40 w-40 rounded-full bg-coral/15 blur-2xl" />
       <span className="float-orb absolute left-1/3 top-1/2 h-24 w-24 rounded-full bg-ocean/10 blur-xl [animation-delay:1.5s]" />
     </div>
   );
