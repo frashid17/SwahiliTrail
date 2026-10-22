@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
-  Download,
   Circle,
   Trash2,
 } from "lucide-react";
@@ -13,12 +12,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/fade-in";
+import { TripSharePanel } from "@/components/trip/trip-share-panel";
 import {
   downloadIcs,
   googleCalendarUrl,
   planToIcs,
 } from "@/lib/plan-export";
-import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
   markTripComplete,
   markTripUpcoming,
@@ -27,6 +26,12 @@ import {
   tripEndDate,
   type SavedTrip,
 } from "@/lib/saved-trips";
+import {
+  googleMapsDirectionsUrl,
+  googleMapsSearchUrl,
+} from "@/lib/maps-link";
+import { asPlainText } from "@/lib/plan-normalize";
+import { formatStopsSummary } from "@/lib/trip-stops";
 
 export default function TripDetailPage() {
   const params = useParams<{ id: string }>();
@@ -76,24 +81,6 @@ export default function TripDetailPage() {
     setTrip(next.find((t) => t.id === trip.id) ?? null);
   }
 
-  function downloadPdf() {
-    if (!trip) return;
-    const slug = trip.plan.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .slice(0, 40);
-    downloadTripPdf(
-      trip.plan,
-      {
-        startDate: trip.startDate,
-        partySize: trip.partySize,
-        transportLabel: trip.transportMode,
-        status: trip.status,
-      },
-      `${slug || "mombasa-trip"}.pdf`,
-    );
-  }
-
   function remove() {
     if (!userId || !trip) return;
     removeSavedTrip(userId, trip.id);
@@ -136,21 +123,25 @@ export default function TripDetailPage() {
                 {completed ? "Completed" : "Upcoming"}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <TripSharePanel
+                compact
+                payload={{
+                  plan: trip.plan,
+                  startDate: trip.startDate,
+                  partySize: trip.partySize,
+                  transportMode: trip.transportMode,
+                  companions: trip.companions,
+                  budget: trip.budget,
+                  tripId: trip.id,
+                }}
+              />
               <button
                 type="button"
                 onClick={toggleComplete}
                 className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-ocean-deep"
               >
                 {completed ? "Mark upcoming" : "Mark complete"}
-              </button>
-              <button
-                type="button"
-                onClick={downloadPdf}
-                className="inline-flex items-center gap-1.5 rounded-full bg-coral px-4 py-2 text-sm font-semibold text-white"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Download PDF
               </button>
               <button
                 type="button"
@@ -177,9 +168,14 @@ export default function TripDetailPage() {
           </div>
 
           <p className="mt-4 text-muted leading-relaxed">{trip.plan.summary}</p>
+          {trip.plan.stops && trip.plan.stops.length > 0 ? (
+            <p className="mt-3 text-sm text-muted">
+              Route: {formatStopsSummary(trip.plan.stops)}
+            </p>
+          ) : null}
           <p className="mt-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ocean-deep">
             <span className="font-semibold">Recommended stay:</span>{" "}
-            {trip.plan.recommendedStay}
+            {asPlainText(trip.plan.recommendedStay)}
           </p>
         </FadeIn>
 
@@ -200,9 +196,16 @@ export default function TripDetailPage() {
             <FadeIn key={day.day} delay={0.04 * i}>
               <article className="rounded-3xl border border-border bg-surface p-5 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
-                    Day {day.day}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
+                      Day {day.day}
+                    </p>
+                    {day.location ? (
+                      <span className="rounded-full border border-border bg-foam px-2.5 py-0.5 text-[11px] font-medium text-ocean-deep">
+                        {day.location}
+                      </span>
+                    ) : null}
+                  </div>
                   {day.estimatedDayCostKes != null ? (
                     <p className="text-xs text-muted">
                       ~KES {day.estimatedDayCostKes.toLocaleString()}
@@ -212,6 +215,11 @@ export default function TripDetailPage() {
                 <h2 className="mt-1 font-display text-xl text-ocean-deep">
                   {day.theme}
                 </h2>
+                {day.timingNote ? (
+                  <p className="mt-1 text-xs font-medium text-ocean">
+                    Timing: {day.timingNote}
+                  </p>
+                ) : null}
                 <ul className="mt-3 space-y-2 text-sm text-muted">
                   <li>
                     <strong className="text-ocean-deep">Morning:</strong>{" "}
@@ -234,6 +242,52 @@ export default function TripDetailPage() {
                     {day.transportTip}
                   </li>
                 </ul>
+                {day.places && day.places.length > 0 ? (
+                  <ul className="mt-4 space-y-2">
+                    {day.places.map((place) => (
+                      <li
+                        key={`${place.name}-${place.mapsQuery}`}
+                        className="rounded-xl border border-border bg-foam/50 px-3 py-2"
+                      >
+                        <p className="text-sm font-semibold text-ocean-deep">
+                          {place.name}
+                        </p>
+                        {place.why ? (
+                          <p className="text-xs text-muted">{place.why}</p>
+                        ) : null}
+                        <div className="mt-1.5 flex flex-wrap gap-3 text-[11px] font-semibold">
+                          <a
+                            href={googleMapsSearchUrl(place.mapsQuery)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-ocean underline-offset-2 hover:underline"
+                          >
+                            Open in Maps
+                          </a>
+                          <a
+                            href={googleMapsDirectionsUrl(place.mapsQuery)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-coral underline-offset-2 hover:underline"
+                          >
+                            Directions
+                          </a>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {day.localIntel ? (
+                  <p className="mt-3 text-sm text-ocean-deep">
+                    <strong>Local intel:</strong> {day.localIntel}
+                  </p>
+                ) : null}
+                {day.insiderTip ? (
+                  <p className="mt-2 text-sm text-muted">
+                    <strong className="text-ocean-deep">Insider:</strong>{" "}
+                    {day.insiderTip}
+                  </p>
+                ) : null}
               </article>
             </FadeIn>
           ))}
