@@ -87,10 +87,80 @@ export type PaystackVerifyData = {
   amount: number;
   currency: string;
   paid_at: string | null;
-  customer: { email?: string; customer_code?: string };
+  channel?: string;
+  customer: { email?: string; customer_code?: string; id?: number };
+  authorization?: {
+    authorization_code?: string;
+    reusable?: boolean;
+    channel?: string;
+  } | null;
   metadata?: Record<string, unknown> | null;
   plan?: { plan_code?: string } | null;
 };
+
+/**
+ * Only Paystack `success` means money cleared.
+ * Do not treat paid_at alone as paid — abandoned/ongoing can still look ambiguous.
+ */
+export function isPaystackChargeSuccess(tx: {
+  status: string;
+}): boolean {
+  return tx.status === "success";
+}
+
+export function mapPaystackToPaymentStatus(tx: {
+  status: string;
+}): "success" | "pending" | "failed" {
+  const s = (tx.status || "").toLowerCase();
+  if (s === "success") return "success";
+  if (
+    s === "failed" ||
+    s === "abandoned" ||
+    s === "reversed" ||
+    s === "cancelled" ||
+    s === "canceled"
+  ) {
+    return "failed";
+  }
+  // ongoing | pending | processing | queued | ...
+  return "pending";
+}
+
+/** Plan code for optional card auto-renew (M-Pesa stays one-time). */
+export function trailPlusPlanCode() {
+  const code = process.env.PAYSTACK_PLAN_CODE?.trim();
+  return code || undefined;
+}
+
+/**
+ * M-Pesa / mobile money cannot reliably auto-debit next month.
+ * Only attach Paystack Plans when the charge left a reusable card auth.
+ */
+export async function maybeCreateCardSubscription(input: {
+  customerCode: string;
+  authorizationCode: string;
+  planCode: string;
+}): Promise<string | null> {
+  try {
+    const json = await paystackFetch<{
+      data?: { subscription_code?: string };
+    }>("/subscription/create", {
+      method: "POST",
+      body: JSON.stringify({
+        customer: input.customerCode,
+        plan: input.planCode,
+        authorization: input.authorizationCode,
+      }),
+    });
+    return json.data?.subscription_code ?? null;
+  } catch (err) {
+    console.warn(
+      "[paystack] card subscription skipped",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
+}
 
 export async function verifyPaystackTransaction(reference: string) {
   const json = await paystackFetch<{ data: PaystackVerifyData }>(
@@ -139,7 +209,7 @@ function normalizeAppOrigin(raw: string) {
   if (!trimmed) return trimmed;
   try {
     const url = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
-    // Never send Paystack callbacks over plain http on deployed hosts —
+    // Never send Paystack callbacks over plain http on deployed hosts -
     // insecure redirects drop Secure auth cookies and look like a logout.
     if (
       url.protocol === "http:" &&
