@@ -165,7 +165,7 @@ export async function GET() {
     },
     revenueSeries,
     planMix,
-    recentPayments: payments.slice(0, 16).map((p) => ({
+    recentPayments: payments.slice(0, 40).map((p) => ({
       id: p.id,
       reference: p.reference,
       userId: p.user_id,
@@ -176,17 +176,31 @@ export async function GET() {
       description: p.description ?? "Trail Plus",
       at: p.paid_at ?? p.created_at,
     })),
-    topAiUsers: aiRows.slice(0, 8).map((r) => ({
+    subscribers: subs
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+      )
+      .slice(0, 80)
+      .map((s) => ({
+        userId: s.user_id,
+        email: s.email,
+        status: s.status,
+        periodEnd: s.current_period_end,
+        updatedAt: s.updated_at,
+      })),
+    topAiUsers: aiRows.slice(0, 24).map((r) => ({
       userId: r.user_id,
       count: r.count,
       lastSource: r.last_source,
       updatedAt: r.updated_at,
     })),
-    recentEvents: events.slice(0, 16),
+    recentEvents: events.slice(0, 40),
     eventBreakdown: [...eventCounts.entries()]
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 6),
+      .slice(0, 12),
     note:
       payments.length === 0 && subs.length === 0
         ? "Live tables are empty so far. KPIs will fill as travelers upgrade and use AI."
