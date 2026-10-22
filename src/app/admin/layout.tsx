@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { AdminConsole } from "@/components/admin/admin-console";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { requireAdmin } from "@/lib/admin/access";
 
 export const metadata = {
   title: "Admin · Swahili Trail",
-  description: "Operations console for Swahili Trail billing, AI usage, and product pulse.",
+  description:
+    "Operations console for Swahili Trail billing, AI usage, and product pulse.",
 };
 
 export default async function AdminLayout({
@@ -20,5 +22,13 @@ export default async function AdminLayout({
     redirect("/");
   }
 
-  return <AdminShell email={gate.email}>{children}</AdminShell>;
+  return (
+    <AdminShell email={gate.email}>
+      <AdminConsole />
+      {/* Route segments exist for URLs / metadata; UI is driven by pathname. */}
+      <div className="hidden" aria-hidden>
+        {children}
+      </div>
+    </AdminShell>
+  );
 }
