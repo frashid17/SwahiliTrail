@@ -13,7 +13,7 @@ const LOGO_SVG = `<svg viewBox="0 0 128 128" width="48" height="48" xmlns="http:
 </svg>`;
 
 export async function GET(
-  _req: Request,
+  req: Request,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { isAuthenticated, userId } = await auth();
@@ -22,6 +22,8 @@ export async function GET(
   }
 
   const { id } = await ctx.params;
+  const forceDownload =
+    new URL(req.url).searchParams.get("download") === "1";
   const payment = await getPaymentForUser(userId, id);
   if (!payment) {
     return NextResponse.json({ error: "Receipt not found" }, { status: 404 });
@@ -124,7 +126,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Content-Disposition": `inline; filename="${filename}"`,
+      "Content-Disposition": `${forceDownload ? "attachment" : "inline"}; filename="${filename}"`,
       "Cache-Control": "private, no-store",
     },
   });
