@@ -28,6 +28,8 @@ import {
   deleteGuideSession,
   getGuideSession,
   listGuideSessions,
+  loadActiveGuideSessionId,
+  saveActiveGuideSessionId,
   saveGuideSession,
   syncGuideSessionsFromCloud,
   titleFromMessages,
@@ -103,7 +105,19 @@ export default function GuidePage() {
     if (!isLoaded || !userId) return;
     let cancelled = false;
     void syncGuideSessionsFromCloud(userId).then((sessions) => {
-      if (!cancelled) setSessions(sessions);
+      if (cancelled) return;
+      setSessions(sessions);
+      const activeId = loadActiveGuideSessionId(userId);
+      const active =
+        (activeId && sessions.find((s) => s.id === activeId)) ||
+        sessions[0] ||
+        null;
+      if (active && active.messages.length > 0) {
+        setSessionId(active.id);
+        setMessages(active.messages);
+        setLanguage((active.language as GuideLanguage) || "en");
+        saveActiveGuideSessionId(userId, active.id);
+      }
     });
     return () => {
       cancelled = true;
@@ -148,6 +162,7 @@ export default function GuidePage() {
     setError(null);
     setInput("");
     setMenuOpen(false);
+    if (userId) saveActiveGuideSessionId(userId, id);
   }
 
   function loadSession(id: string) {
@@ -159,6 +174,7 @@ export default function GuidePage() {
     setLanguage((session.language as GuideLanguage) || "en");
     setError(null);
     setMenuOpen(false);
+    saveActiveGuideSessionId(userId, session.id);
   }
 
   function removeSession(id: string) {
