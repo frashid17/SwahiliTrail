@@ -47,16 +47,18 @@ export async function POST(req: Request) {
     });
 
     const base = appBaseUrl(req);
+    // One-time charge only. M-Pesa cannot reliably auto-renew with a Plan.
+    // Card auto-renew is attempted after a successful reusable authorization.
     const data = await initializePaystackTransaction({
       email,
       amount,
       currency,
       reference: pending.reference,
       callbackUrl: `${base}/api/billing/paystack/verify`,
-      planCode: process.env.PAYSTACK_PLAN_CODE || undefined,
       metadata: {
         user_id: userId,
         plan: "trail_plus",
+        billing_mode: "period_access",
         custom_fields: [
           {
             display_name: "User ID",
