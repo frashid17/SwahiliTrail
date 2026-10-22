@@ -18,8 +18,10 @@ export function ThingsToDoSection() {
   const { regionId, region } = useKenyaLocation();
   const scrollerRef = useRef<HTMLDivElement>(null);
 
+  // Cap the home strip so we do not saturate the network with 30+ images
+  // (that made clicks/nav feel broken on slow connections).
   const items = useMemo(
-    () => placesForCategory(category, regionId),
+    () => placesForCategory(category, regionId).slice(0, 8),
     [category, regionId],
   );
 
@@ -36,7 +38,7 @@ export function ThingsToDoSection() {
     <section className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ocean-deep sm:text-4xl">
             Places to start
           </h2>
           <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
@@ -89,10 +91,11 @@ export function ThingsToDoSection() {
             ref={scrollerRef}
             className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory [&::-webkit-scrollbar]:hidden"
           >
-            {items.map((item) => (
+            {items.map((item, index) => (
               <Link
                 key={item.id}
                 href={`/explore/${item.id}`}
+                prefetch={false}
                 className="group w-[min(78vw,17.5rem)] shrink-0 snap-start sm:w-72"
               >
                 <div className="relative aspect-[4/5] overflow-hidden rounded-md">
@@ -101,6 +104,8 @@ export function ThingsToDoSection() {
                     alt={item.name}
                     fill
                     sizes="(max-width: 640px) 78vw, 288px"
+                    quality={65}
+                    loading={index < 2 ? "eager" : "lazy"}
                     className="object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
