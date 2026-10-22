@@ -241,14 +241,22 @@ Rules:
         const supabase = createAdminClient();
         if (supabase) {
           fireAndForget(
-            Promise.resolve(
-              supabase.from("hotel_matches").insert({
+            (async () => {
+              await supabase.from("hotel_matches").insert({
                 user_id: userId,
                 preferences: input,
                 matched_hotel_ids: hotelsWithPhotos.map((h) => h.id),
                 rationale: cleanMeta.rationale,
-              }),
-            ),
+              });
+              await supabase.from("analytics_events").insert({
+                user_id: userId,
+                event_type: "hotel_match",
+                payload: {
+                  area: input.areaPreference ?? area,
+                  matchCount: hotelsWithPhotos.length,
+                },
+              });
+            })(),
           );
         }
 
