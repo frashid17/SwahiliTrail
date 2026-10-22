@@ -31,6 +31,14 @@ import {
   type Restaurant,
 } from "@/lib/data/restaurants";
 import { loadHotelSearch, saveHotelSearch } from "@/lib/hotel-history";
+import {
+  WorkspaceEmpty,
+  WorkspaceFrame,
+  WorkspaceHeader,
+  WorkspacePanel,
+  WorkspaceSectionLabel,
+  WorkspaceStage,
+} from "@/components/workspace/workspace-frame";
 import { addTripItem } from "@/lib/trip-cart";
 import { cn } from "@/lib/utils";
 
@@ -247,26 +255,19 @@ export default function HotelsPage() {
   const tips = mode === "hotels" ? hotelTips : restaurantTips;
 
   return (
-    <div className="paper-grain coastal-grid min-h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-4rem)] lg:overflow-hidden">
-      <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 py-3 sm:px-4 sm:py-4 lg:grid lg:h-full lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden lg:px-10 lg:py-5">
-        <aside className="relative flex shrink-0 flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:overflow-hidden">
-          <div className="relative z-[1] space-y-3.5 p-4 sm:space-y-4 sm:p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-                Stay & eat
-              </p>
-              <h1 className="mt-1.5 font-display text-2xl tracking-tight text-ocean-deep sm:mt-2 sm:text-3xl">
-                Find a stay or a meal
-              </h1>
-              <p className="mt-1.5 text-sm text-muted lg:hidden">
-                Set budget and vibe, then match. Results write below as they
-                come in.
-              </p>
-            </div>
+    <WorkspaceFrame>
+      <WorkspacePanel>
+          <div className="space-y-4">
+            <WorkspaceHeader
+              eyebrow="Stay & Eat"
+              title="Find a stay or a meal"
+              description="Set budget and vibe, then match - ranked options write on the right."
+            />
 
             <AiQuotaBanner quota={quota} />
 
-            <div className="grid grid-cols-2 gap-1.5 rounded-md bg-foam p-1">
+            <WorkspaceSectionLabel step="1">What do you need?</WorkspaceSectionLabel>
+            <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-foam p-1.5">
               {(
                 [
                   ["hotels", "Hotels", BedDouble],
@@ -278,9 +279,9 @@ export default function HotelsPage() {
                   type="button"
                   onClick={() => switchMode(value)}
                   className={cn(
-                    "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold transition",
+                    "inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-semibold transition",
                     mode === value
-                      ? "bg-brand-deep text-on-brand"
+                      ? "bg-brand-deep text-on-brand shadow-sm"
                       : "text-muted hover:text-ocean-deep",
                   )}
                 >
@@ -290,6 +291,7 @@ export default function HotelsPage() {
               ))}
             </div>
 
+            <WorkspaceSectionLabel step="2">Budget & vibe</WorkspaceSectionLabel>
             <label className="block text-sm">
               <span className="font-medium text-ocean-deep">
                 {mode === "hotels"
@@ -303,7 +305,7 @@ export default function HotelsPage() {
                 step={mode === "hotels" ? 500 : 100}
                 value={budgetMax}
                 onChange={(e) => setBudgetMax(Number(e.target.value))}
-                className="mt-2 w-full accent-ocean"
+                className="mt-2 w-full accent-coral"
               />
             </label>
 
@@ -317,6 +319,7 @@ export default function HotelsPage() {
               />
             </label>
 
+            <WorkspaceSectionLabel step="3">Where & who</WorkspaceSectionLabel>
             <label className="block text-sm">
               <span className="font-medium text-ocean-deep">Area preference</span>
               <select
@@ -370,27 +373,25 @@ export default function HotelsPage() {
               </select>
             </label>
 
-            <div>
-              <p className="text-sm font-medium text-ocean-deep">Must-haves</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {chips.map((option) => {
-                  const active = mustHaves.includes(option);
-                  return (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => toggleMustHave(option)}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium ${
-                        active
-                          ? "bg-ocean text-on-brand"
-                          : "bg-foam text-muted hover:bg-sand"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  );
-                })}
-              </div>
+            <WorkspaceSectionLabel step="4">Must-haves</WorkspaceSectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {chips.map((option) => {
+                const active = mustHaves.includes(option);
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => toggleMustHave(option)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                      active
+                        ? "bg-coral text-white"
+                        : "bg-foam text-muted hover:bg-sand hover:text-ocean-deep"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
             </div>
 
             <button
@@ -401,7 +402,7 @@ export default function HotelsPage() {
                 !vibe.trim() ||
                 (quota != null && (quota.remaining ?? 0) <= 0)
               }
-              className="btn-solid w-full disabled:opacity-60"
+              className="btn-solid sticky bottom-0 w-full disabled:opacity-60"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -419,11 +420,11 @@ export default function HotelsPage() {
             {error ? <p className="text-sm text-coral">{error}</p> : null}
             {cartNote ? <p className="text-sm text-aqua">{cartNote}</p> : null}
           </div>
-        </aside>
+      </WorkspacePanel>
 
-        <section className="relative flex min-h-[min(18rem,50dvh)] flex-col rounded-md border border-border bg-surface lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-          <div className="relative z-[1] shrink-0 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
-            <h2 className="font-display text-xl tracking-tight text-ocean-deep sm:text-2xl">
+      <WorkspaceStage>
+          <div className="relative z-[1] shrink-0 border-b border-border/80 px-4 py-3.5 sm:px-5">
+            <h2 className="font-display text-xl font-semibold tracking-tight text-ocean-deep sm:text-2xl">
               {mode === "hotels" ? "Matched stays" : "Matched restaurants"}
             </h2>
             <p className="mt-0.5 text-sm text-muted">
@@ -447,8 +448,8 @@ export default function HotelsPage() {
             ) : null}
 
             {!loading && rationale ? (
-              <div className="rounded-md border border-border bg-foam/70 p-4 sm:p-5">
-                <h3 className="font-display text-lg text-ocean-deep sm:text-xl">
+              <div className="rounded-xl border border-border/80 bg-foam/70 p-4 sm:p-5">
+                <h3 className="font-display text-lg font-semibold text-ocean-deep sm:text-xl">
                   Why these matches
                 </h3>
                 <p className="mt-2 text-sm text-muted">{rationale}</p>
@@ -463,15 +464,17 @@ export default function HotelsPage() {
             ) : null}
 
             {!loading && mode === "hotels" && hotels.length === 0 ? (
-              <div className="flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched hotels will write here after you run the matcher.
-              </div>
+              <WorkspaceEmpty
+                title="No matches yet"
+                body="Set budget, vibe, and must-haves on the left, then tap Match hotels. Ranked stays appear here."
+              />
             ) : null}
 
             {!loading && mode === "restaurants" && restaurants.length === 0 ? (
-              <div className="flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border bg-foam/40 p-5 text-center text-sm text-muted sm:min-h-[10rem] sm:p-8 sm:text-base lg:min-h-[280px]">
-                Matched restaurants will write here after you run the matcher.
-              </div>
+              <WorkspaceEmpty
+                title="No matches yet"
+                body="Set budget, vibe, and must-haves on the left, then tap Match restaurants. Ranked spots appear here."
+              />
             ) : null}
 
             {mode === "hotels"
@@ -483,7 +486,7 @@ export default function HotelsPage() {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className="overflow-hidden rounded-md border border-border bg-surface"
+                      className="overflow-hidden rounded-2xl border border-border/80 bg-surface"
                     >
                       <div className="relative h-44 sm:h-52">
                         <Image
@@ -632,8 +635,7 @@ export default function HotelsPage() {
                   </motion.article>
                 ))}
           </div>
-        </section>
-      </div>
-    </div>
+      </WorkspaceStage>
+    </WorkspaceFrame>
   );
 }
