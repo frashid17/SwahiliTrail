@@ -8,6 +8,8 @@ import {
 } from "@/lib/ai/subscription";
 import {
   isPaystackConfigured,
+  maybeCreateCardSubscription,
+  trailPlusPlanCode,
   verifyPaystackSignature,
 } from "@/lib/paystack";
 
@@ -92,11 +94,34 @@ export async function POST(req: Request) {
         const customer = data.customer as
           | { email?: string; customer_code?: string }
           | undefined;
+        const authorization = data.authorization as
+          | {
+              authorization_code?: string;
+              reusable?: boolean;
+            }
+          | undefined;
+
+        let subscriptionCode =
+          typeof data.subscription_code === "string"
+            ? data.subscription_code
+            : null;
+        const planCode = trailPlusPlanCode();
+        const authCode = authorization?.authorization_code;
+        const reusable = Boolean(authorization?.reusable);
+        const customerCode = customer?.customer_code;
+        if (!subscriptionCode && planCode && reusable && authCode && customerCode) {
+          subscriptionCode = await maybeCreateCardSubscription({
+            customerCode,
+            authorizationCode: authCode,
+            planCode,
+          });
+        }
+
         await fulfillPaystackCharge({
           userId,
           email: customer?.email ?? null,
           reference,
-          customerCode: customer?.customer_code ?? null,
+          customerCode: customerCode ?? null,
           amount: typeof data.amount === "number" ? data.amount : null,
           currency:
             typeof data.currency === "string" ? data.currency : null,
@@ -104,10 +129,7 @@ export async function POST(req: Request) {
             typeof data.paid_at === "string"
               ? data.paid_at
               : new Date().toISOString(),
-          subscriptionCode:
-            typeof data.subscription_code === "string"
-              ? data.subscription_code
-              : null,
+          subscriptionCode,
           providerEventId: eventId,
         });
       }
