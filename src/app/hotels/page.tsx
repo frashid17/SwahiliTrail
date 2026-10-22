@@ -91,6 +91,8 @@ export default function HotelsPage() {
     if (!isLoaded || !userId) return;
     const saved = loadHotelSearch(userId);
     if (!saved) return;
+    const nextMode = saved.mode === "restaurants" ? "restaurants" : "hotels";
+    setMode(nextMode);
     setBudgetMax(saved.budgetMax);
     setVibe(saved.vibe);
     setTravelers(saved.travelers);
@@ -99,9 +101,21 @@ export default function HotelsPage() {
       ? saved.areaPreference
       : "whole-coast";
     setAreaPreference(area);
-    setHotels(hydrateHotels(saved.hotels));
-    setHotelRationale(saved.rationale);
-    setHotelTips(saved.tips);
+    if (nextMode === "restaurants") {
+      setRestaurants(hydrateRestaurants(saved.restaurants ?? []));
+      setRestaurantRationale(saved.rationale);
+      setRestaurantTips(saved.tips);
+      setHotels([]);
+      setHotelRationale(null);
+      setHotelTips([]);
+    } else {
+      setHotels(hydrateHotels(saved.hotels));
+      setHotelRationale(saved.rationale);
+      setHotelTips(saved.tips);
+      setRestaurants([]);
+      setRestaurantRationale(null);
+      setRestaurantTips([]);
+    }
     setRestoredAt(saved.savedAt);
   }, [isLoaded, userId]);
 
@@ -177,24 +191,26 @@ export default function HotelsPage() {
         setHotels(nextHotels);
         setHotelRationale(nextRationale);
         setHotelTips(nextTips);
-        setRestoredAt(savedAt);
-        if (userId) {
-          saveHotelSearch(userId, {
-            budgetMax,
-            vibe,
-            travelers,
-            mustHaves,
-            areaPreference,
-            hotels: nextHotels,
-            rationale: nextRationale,
-            tips: nextTips,
-            savedAt,
-          });
-        }
       } else {
         setRestaurants(nextRestaurants);
         setRestaurantRationale(nextRationale);
         setRestaurantTips(nextTips);
+      }
+      setRestoredAt(savedAt);
+      if (userId) {
+        saveHotelSearch(userId, {
+          mode,
+          budgetMax,
+          vibe,
+          travelers,
+          mustHaves,
+          areaPreference,
+          hotels: mode === "hotels" ? nextHotels : [],
+          restaurants: mode === "restaurants" ? nextRestaurants : [],
+          rationale: nextRationale,
+          tips: nextTips,
+          savedAt,
+        });
       }
       setStreamDraft("");
     } catch (err) {
