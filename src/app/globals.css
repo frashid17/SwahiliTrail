@@ -1,43 +1,85 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Kikoy Luxe - mangrove coast, safari gold, cool mist (not cream SaaS) */
 :root {
-  --brand-deep: #0a3d3f;
-  --ocean-deep: #12383a;
-  --ocean: #1a6b6e;
-  --aqua: #2a8f8c;
-  --foam: #eef3f0;
-  --sand: #ebe4d6;
-  --coral: #c45c2a;
-  --ink: #1a2e2f;
-  --muted: #5c6f70;
-  --surface: #ffffff;
-  --surface-soft: #f5f7f5;
-  --border: color-mix(in oklab, var(--ocean-deep) 12%, white);
-  --background: #f3f1eb;
-  --foreground: #1a2e2f;
-  --wave: color-mix(in oklab, var(--ocean) 7%, transparent);
-  --on-brand: #f2f6f4;
+  --brand-deep: #062a2e;
+  --ocean-deep: #0c3d42;
+  --ocean: #1a7a7e;
+  --aqua: #2bb5b0;
+  --gold: #c4a35a;
+  --foam: #e6efeb;
+  --sand: #e2ddd4;
+  --coral: #d4653a;
+  --ink: #0a2428;
+  --muted: #5a7072;
+  --surface: #f7f8f5;
+  --surface-soft: #eef1ed;
+  --border: color-mix(in oklab, var(--ocean-deep) 11%, white);
+  --background: #e9ebe6;
+  --foreground: #0a2428;
+  --wave: color-mix(in oklab, var(--ocean) 8%, transparent);
+  --on-brand: #eef6f4;
+  --lux-glow: color-mix(in oklab, var(--gold) 35%, transparent);
+
+  /* shadcn / ShadcnSpace semantic tokens → Trail palette */
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--coral);
+  --primary-foreground: #ffffff;
+  --secondary: var(--foam);
+  --secondary-foreground: var(--ocean-deep);
+  --muted-bg: var(--surface-soft);
+  --muted-foreground: var(--muted);
+  --accent: color-mix(in oklab, var(--gold) 22%, var(--foam));
+  --accent-foreground: var(--ocean-deep);
+  --destructive: var(--coral);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: color-mix(in oklab, var(--gold) 55%, transparent);
+  --radius: 0.75rem;
 }
 
 .dark {
-  --brand-deep: #021c22;
-  --ocean-deep: #d5eef0;
-  --ocean: #2bb3bf;
+  --brand-deep: #021619;
+  --ocean-deep: #d4eef0;
+  --ocean: #3ec4c8;
   --aqua: #5ed4de;
-  --foam: #0c242b;
-  --sand: #14333b;
+  --gold: #e0c878;
+  --foam: #0a2228;
+  --sand: #123038;
   --coral: #f08a58;
-  --ink: #e7f4f3;
+  --ink: #e8f4f3;
   --muted: #8eaaaf;
-  --surface: #102c34;
-  --surface-soft: #0d252c;
+  --surface: #0d262e;
+  --surface-soft: #0a1f26;
   --border: color-mix(in oklab, var(--aqua) 22%, transparent);
-  --background: #07161b;
-  --foreground: #e7f4f3;
+  --background: #041316;
+  --foreground: #e8f4f3;
   --wave: color-mix(in oklab, var(--aqua) 10%, transparent);
   --on-brand: #e8f7f6;
+  --lux-glow: color-mix(in oklab, var(--gold) 28%, transparent);
+
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--coral);
+  --primary-foreground: #0a1a1c;
+  --secondary: var(--foam);
+  --secondary-foreground: var(--ocean-deep);
+  --muted-bg: var(--surface-soft);
+  --muted-foreground: var(--muted);
+  --accent: color-mix(in oklab, var(--gold) 18%, var(--foam));
+  --accent-foreground: var(--ocean-deep);
+  --destructive: var(--coral);
+  --destructive-foreground: #0a1a1c;
+  --input: var(--border);
+  --ring: color-mix(in oklab, var(--gold) 45%, transparent);
 }
 
 @theme inline {
@@ -47,6 +89,7 @@
   --color-ocean-deep: var(--ocean-deep);
   --color-ocean: var(--ocean);
   --color-aqua: var(--aqua);
+  --color-gold: var(--gold);
   --color-foam: var(--foam);
   --color-sand: var(--sand);
   --color-coral: var(--coral);
@@ -56,6 +99,26 @@
   --color-surface-soft: var(--surface-soft);
   --color-border: var(--border);
   --color-on-brand: var(--on-brand);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-bg: var(--muted-bg);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
@@ -66,6 +129,7 @@
 
 html {
   scroll-behavior: smooth;
+  max-width: 100%;
 }
 
 body {
@@ -74,6 +138,9 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
   min-height: 100vh;
   min-height: 100dvh;
+  max-width: 100%;
+  position: relative;
+  /* overflow-x clip pairs with overflow-y and traps mobile scroll - avoid on root */
 }
 
 input[type="date"],
@@ -89,22 +156,32 @@ input[type="datetime-local"] {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--aqua) 35%, transparent);
+  background: color-mix(in oklab, var(--gold) 40%, transparent);
   color: var(--foreground);
 }
 
+/* Atmosphere - cool mist + gold horizon wash */
 .coastal-grid {
   background-color: var(--background);
   background-image:
+    radial-gradient(
+      ellipse 80% 50% at 10% -10%,
+      color-mix(in oklab, var(--gold) 12%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 45% at 95% 5%,
+      color-mix(in oklab, var(--aqua) 14%, transparent),
+      transparent 50%
+    ),
     linear-gradient(
       180deg,
-      color-mix(in oklab, var(--foam) 55%, var(--background)) 0%,
-      var(--background) 42%,
-      color-mix(in oklab, var(--sand) 40%, var(--background)) 100%
+      color-mix(in oklab, var(--foam) 50%, var(--background)) 0%,
+      var(--background) 40%,
+      color-mix(in oklab, var(--sand) 35%, var(--background)) 100%
     );
 }
 
-/* Quiet paper grain - reads handmade, not neon SaaS */
 .paper-grain {
   position: relative;
 }
@@ -113,26 +190,44 @@ input[type="datetime-local"] {
   pointer-events: none;
   position: absolute;
   inset: 0;
-  opacity: 0.035;
+  z-index: 1;
+  opacity: 0.045;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
+.dark .paper-grain::after {
+  opacity: 0.07;
+  mix-blend-mode: soft-light;
+}
 
+/* Shared button language */
 .btn-solid {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   border-radius: 0.35rem;
-  background: var(--coral);
+  background: linear-gradient(
+    135deg,
+    var(--coral) 0%,
+    color-mix(in oklab, var(--coral) 70%, var(--gold)) 100%
+  );
   color: white;
   padding: 0.8rem 1.35rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background 0.15s ease, transform 0.15s ease;
+  letter-spacing: -0.01em;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.08),
+    0 12px 28px -16px var(--lux-glow);
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .btn-solid:hover {
-  background: color-mix(in oklab, var(--coral) 88%, black);
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.08),
+    0 16px 36px -14px var(--lux-glow);
 }
 
 .btn-ghost {
@@ -147,11 +242,14 @@ input[type="datetime-local"] {
   padding: 0.8rem 1.35rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  letter-spacing: -0.01em;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 .btn-ghost:hover {
   background: color-mix(in oklab, white 22%, transparent);
-  border-color: color-mix(in oklab, white 75%, transparent);
+  border-color: color-mix(in oklab, var(--gold) 50%, white);
+  transform: translateY(-1px);
 }
 
 .btn-outline {
@@ -166,11 +264,32 @@ input[type="datetime-local"] {
   padding: 0.8rem 1.35rem;
   font-size: 0.875rem;
   font-weight: 600;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  letter-spacing: -0.01em;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 .btn-outline:hover {
-  border-color: color-mix(in oklab, var(--ocean) 35%, var(--border));
+  border-color: color-mix(in oklab, var(--gold) 45%, var(--border));
   background: var(--foam);
+  box-shadow: 0 8px 24px -18px var(--lux-glow);
+}
+
+.btn-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.35rem;
+  background: var(--brand-deep);
+  color: var(--on-brand);
+  padding: 0.8rem 1.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-brand:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 12px 28px -16px color-mix(in oklab, var(--aqua) 40%, transparent);
 }
 
 .wave-mask {
@@ -191,6 +310,13 @@ input[type="datetime-local"] {
   border: 1px solid var(--border);
 }
 
+.glass-lux {
+  background: color-mix(in oklab, var(--surface) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid color-mix(in oklab, var(--gold) 22%, var(--border));
+  box-shadow: 0 20px 50px -28px color-mix(in oklab, var(--brand-deep) 45%, transparent);
+}
+
 .coastal-panel {
   position: relative;
   overflow: hidden;
@@ -206,7 +332,7 @@ input[type="datetime-local"] {
   height: 55%;
   background:
     radial-gradient(ellipse at 30% 0%, color-mix(in oklab, var(--aqua) 18%, transparent), transparent 55%),
-    radial-gradient(ellipse at 70% 40%, color-mix(in oklab, var(--coral) 12%, transparent), transparent 50%);
+    radial-gradient(ellipse at 70% 40%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 50%);
   pointer-events: none;
 }
 
@@ -222,88 +348,60 @@ input[type="datetime-local"] {
     radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--sand) 80%, white), var(--coral) 45%, transparent 70%);
 }
 
-/* Coastal motion */
+/* --- Motion --- */
 @keyframes tide-drift {
-  0% {
-    background-position: 0 bottom;
-  }
-  100% {
-    background-position: 720px bottom;
-  }
+  0% { background-position: 0 bottom; }
+  100% { background-position: 720px bottom; }
 }
 
 @keyframes tide-svg-drift {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 @keyframes wave-sway {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-2px) rotate(-6deg);
-  }
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-2px) rotate(-6deg); }
 }
 
 @keyframes float-soft {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.55;
-  }
-  50% {
-    transform: translate(12px, -18px) scale(1.08);
-    opacity: 0.9;
-  }
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.55; }
+  50% { transform: translateY(-14px) scale(1.05); opacity: 0.9; }
 }
 
 @keyframes float-soft-alt {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translate(-16px, 14px) scale(1.12);
-    opacity: 0.85;
-  }
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.45; }
+  50% { transform: translateY(10px) scale(1.06); opacity: 0.85; }
 }
 
 @keyframes shimmer-sheen {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 200% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 @keyframes foam-rise {
-  0%,
-  100% {
-    transform: translateY(8%);
-    opacity: 0.35;
-  }
-  50% {
-    transform: translateY(0%);
-    opacity: 0.55;
-  }
+  0%, 100% { transform: translateY(8%); opacity: 0.35; }
+  50% { transform: translateY(0%); opacity: 0.55; }
 }
 
 @keyframes horizon-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.75;
-  }
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.75; }
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1.05) translate(0, 0); }
+  100% { transform: scale(1.14) translate(-1.5%, -1%); }
+}
+
+@keyframes gold-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.65; }
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tide-line {
@@ -330,7 +428,7 @@ input[type="datetime-local"] {
   background: linear-gradient(
     110deg,
     transparent 20%,
-    color-mix(in oklab, var(--aqua) 28%, transparent) 45%,
+    color-mix(in oklab, var(--gold) 32%, transparent) 45%,
     transparent 70%
   );
   background-size: 200% 100%;
@@ -345,6 +443,19 @@ input[type="datetime-local"] {
   animation: horizon-pulse 5s ease-in-out infinite;
 }
 
+.ken-burns {
+  animation: ken-burns 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.gold-orb {
+  animation: gold-pulse 7s ease-in-out infinite;
+}
+
+.rise-in {
+  animation: rise-in 0.7s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tide-line,
   .tide-drift-svg,
@@ -353,7 +464,10 @@ input[type="datetime-local"] {
   .float-orb-alt,
   .coastal-shimmer,
   .foam-rise,
-  .horizon-glow {
+  .horizon-glow,
+  .ken-burns,
+  .gold-orb,
+  .rise-in {
     animation: none !important;
   }
 }
