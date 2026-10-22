@@ -339,17 +339,19 @@ export function AccountBilling({
                         onClick={() =>
                           setReceiptJob({
                             title: p.description || "Trail Plus",
+                            planDetail: "Monthly access",
                             amountFormatted: p.amountFormatted,
                             reference: p.reference,
                             paidAt: p.paidAt,
+                            paidWith: "Paystack",
                             downloadUrl: p.receiptUrl,
                             kind: "receipt",
                           })
                         }
                         className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-ocean-deep transition hover:border-aqua/40"
                       >
-                        <Download className="h-3.5 w-3.5" />
-                        Receipt
+                        <Printer className="h-3.5 w-3.5" />
+                        Print receipt
                       </button>
                     ) : isPending ? (
                       <span className="text-xs text-muted">Awaiting Paystack</span>
