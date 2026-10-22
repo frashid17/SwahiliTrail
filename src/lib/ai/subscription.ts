@@ -93,31 +93,53 @@ export async function userHasActiveTrailPlus(userId: string): Promise<boolean> {
   return row.status === "active" || row.status === "past_due";
 }
 
+function addDaysIso(fromMs: number, days: number) {
+  return new Date(fromMs + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+/** Extend access from the later of now or the current period end (+30 days). */
+export async function nextPeriodEndForUser(
+  userId: string,
+  explicit?: string | null,
+) {
+  if (explicit) return explicit;
+  const existing = await getSubscription(userId);
+  const base = Math.max(
+    Date.now(),
+    existing?.current_period_end
+      ? new Date(existing.current_period_end).getTime()
+      : 0,
+  );
+  return addDaysIso(base, 30);
+}
+
 export async function activateTrailPlus(input: {
   userId: string;
   email?: string | null;
   reference?: string | null;
   customerCode?: string | null;
   subscriptionCode?: string | null;
-  /** ISO end date; defaults to +30 days */
+  /** ISO end date; defaults to +30 days from now or current period end */
   periodEnd?: string | null;
   amount?: number | null;
   currency?: string | null;
   paidAt?: string | null;
 }) {
+  const existing = await getSubscription(input.userId);
   const periodEnd =
-    input.periodEnd ||
-    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    input.periodEnd || (await nextPeriodEndForUser(input.userId));
 
   const row: SubscriptionRow = {
     user_id: input.userId,
     status: "active",
     plan: "trail_plus",
     provider: "paystack",
-    paystack_reference: input.reference ?? null,
-    paystack_customer_code: input.customerCode ?? null,
-    paystack_subscription_code: input.subscriptionCode ?? null,
-    email: input.email ?? null,
+    paystack_reference: input.reference ?? existing?.paystack_reference ?? null,
+    paystack_customer_code:
+      input.customerCode ?? existing?.paystack_customer_code ?? null,
+    paystack_subscription_code:
+      input.subscriptionCode ?? existing?.paystack_subscription_code ?? null,
+    email: input.email ?? existing?.email ?? null,
     current_period_end: periodEnd,
     cancel_at_period_end: false,
   };
@@ -245,7 +267,10 @@ export async function recordPayment(input: {
   paidAt?: string | null;
   description?: string | null;
   providerEventId?: string | null;
+  /** Allow correcting a false-positive success (Paystack never cleared). */
+  allowDowngrade?: boolean;
 }) {
+  const status = input.status ?? "success";
   const payment: PaymentRow = {
     id: newId(),
     user_id: input.userId,
@@ -253,9 +278,9 @@ export async function recordPayment(input: {
     reference: input.reference,
     amount: input.amount,
     currency: input.currency,
-    status: input.status ?? "success",
+    status,
     paid_at:
-      input.status === "pending"
+      status === "pending" || status === "failed"
         ? null
         : (input.paidAt ?? new Date().toISOString()),
     description: input.description ?? `Trail Plus ($${TRAIL_PLUS_PRICE_USD}/mo)`,
@@ -268,11 +293,21 @@ export async function recordPayment(input: {
   const existingIdx = list.findIndex((p) => p.reference === payment.reference);
   if (existingIdx >= 0) {
     const prev = list[existingIdx]!;
-    // Never downgrade a successful payment back to pending/failed.
-    if (prev.status === "success" && payment.status !== "success") {
+    // Never downgrade a successful payment unless we are correcting a false clear.
+    if (
+      prev.status === "success" &&
+      payment.status !== "success" &&
+      !input.allowDowngrade
+    ) {
       return prev;
     }
-    list[existingIdx] = { ...prev, ...payment, id: prev.id };
+    list[existingIdx] = {
+      ...prev,
+      ...payment,
+      id: prev.id,
+      created_at: prev.created_at,
+      receipt_number: prev.receipt_number ?? payment.receipt_number,
+    };
     memoryPayments.set(input.userId, list);
   } else {
     memoryPayments.set(input.userId, [payment, ...list]);
@@ -294,7 +329,11 @@ export async function recordPayment(input: {
     .eq("reference", payment.reference)
     .maybeSingle();
 
-  if (existing?.status === "success" && payment.status !== "success") {
+  if (
+    existing?.status === "success" &&
+    payment.status !== "success" &&
+    !input.allowDowngrade
+  ) {
     return mapPaymentRow(existing as Record<string, unknown>);
   }
 
@@ -436,6 +475,54 @@ export async function fulfillPaystackCharge(input: {
     currency: input.currency ?? existing?.currency ?? trailPlusCurrency(),
     paidAt: input.paidAt ?? new Date().toISOString(),
   });
+}
+
+/**
+ * Align local payment row with Paystack (and unwind a false Plus grant).
+ * Use when callback/reconcile sees non-success after we may have marked success.
+ */
+export async function alignPaymentWithProvider(input: {
+  reference: string;
+  providerStatus: string;
+  amount?: number | null;
+  currency?: string | null;
+}): Promise<PaymentRow | null> {
+  const existing = await getPaymentByReference(input.reference);
+  if (!existing) return null;
+
+  const mapped =
+    input.providerStatus === "success"
+      ? ("success" as const)
+      : input.providerStatus === "failed" ||
+          input.providerStatus === "abandoned" ||
+          input.providerStatus === "reversed" ||
+          input.providerStatus === "cancelled" ||
+          input.providerStatus === "canceled"
+        ? ("failed" as const)
+        : ("pending" as const);
+
+  if (existing.status === mapped) return existing;
+
+  const updated = await recordPayment({
+    userId: existing.user_id,
+    reference: existing.reference,
+    amount: input.amount ?? existing.amount,
+    currency: input.currency ?? existing.currency,
+    status: mapped,
+    paidAt: mapped === "success" ? existing.paid_at ?? new Date().toISOString() : null,
+    description: existing.description,
+    allowDowngrade: true,
+  });
+
+  // If we wrongly activated Trail Plus off this reference, pull access back.
+  if (mapped !== "success") {
+    const sub = await getSubscription(existing.user_id);
+    if (sub?.paystack_reference === existing.reference) {
+      await deactivateTrailPlus(existing.user_id);
+    }
+  }
+
+  return updated;
 }
 
 /** Returns false if this webhook event was already processed. */
