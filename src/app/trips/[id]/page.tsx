@@ -101,7 +101,7 @@ export default function TripDetailPage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
+    <div className="paper-grain coastal-grid min-h-[80vh]">
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-10">
         <FadeIn>
           <Link
