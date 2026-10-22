@@ -66,15 +66,15 @@ export default function WildlifePage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
+    <div className="paper-grain coastal-grid min-h-[80vh]">
       <div className="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-10">
         <FadeIn className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
+            <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-gold">
               <Trees className="h-4 w-4" />
               Parks & nature · Kenya-wide
             </p>
-            <h1 className="mt-2 font-display text-4xl text-ocean-deep sm:text-5xl">
+            <h1 className="mt-2 font-display text-4xl font-semibold text-ocean-deep sm:text-5xl">
               Wildlife across Kenya
             </h1>
             <p className="mt-3 text-muted">
