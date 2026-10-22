@@ -81,6 +81,7 @@ async function reverseLabel(lat: number, lon: number): Promise<string> {
         Accept: "application/json",
       },
       next: { revalidate: 86_400 },
+      signal: AbortSignal.timeout(2500),
     });
     if (res.ok) {
       const json = (await res.json()) as {
@@ -113,26 +114,46 @@ async function reverseLabel(lat: number, lon: number): Promise<string> {
   return `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
 }
 
+function fallbackPayload(
+  location: string,
+  coastal: boolean,
+  source: CoastNowPayload["source"],
+): CoastNowPayload {
+  return {
+    location,
+    temperatureC: 24,
+    sunrise: "06:30",
+    sunset: "18:40",
+    nextTide: null,
+    coastal,
+    updatedAt: new Date().toISOString(),
+    source,
+  };
+}
+
 export async function GET(request: Request) {
+  const reqUrl = new URL(request.url);
+  const latParam = reqUrl.searchParams.get("lat");
+  const lonParam = reqUrl.searchParams.get("lon");
+  const rawLat = latParam != null && latParam !== "" ? Number(latParam) : NaN;
+  const rawLon = lonParam != null && lonParam !== "" ? Number(lonParam) : NaN;
+  const labelHint = reqUrl.searchParams.get("label")?.trim() || "";
+  const hasGeo =
+    Number.isFinite(rawLat) &&
+    Number.isFinite(rawLon) &&
+    Math.abs(rawLat) <= 90 &&
+    Math.abs(rawLon) <= 180;
+
+  const { lat, lon } = hasGeo
+    ? clampCoord(rawLat, rawLon)
+    : { lat: FALLBACK_COORDS.lat, lon: FALLBACK_COORDS.lon };
+  const source: CoastNowPayload["source"] = hasGeo
+    ? "geolocation"
+    : "fallback";
+  const coastal = isCoastalLocation(lat, lon);
+  const defaultLabel = labelHint || FALLBACK_COORDS.label;
+
   try {
-    const reqUrl = new URL(request.url);
-    const rawLat = Number(reqUrl.searchParams.get("lat"));
-    const rawLon = Number(reqUrl.searchParams.get("lon"));
-    const labelHint = reqUrl.searchParams.get("label")?.trim() || "";
-    const hasGeo =
-      Number.isFinite(rawLat) &&
-      Number.isFinite(rawLon) &&
-      Math.abs(rawLat) <= 90 &&
-      Math.abs(rawLon) <= 180;
-
-    const { lat, lon } = hasGeo
-      ? clampCoord(rawLat, rawLon)
-      : { lat: FALLBACK_COORDS.lat, lon: FALLBACK_COORDS.lon };
-    const source: CoastNowPayload["source"] = hasGeo
-      ? "geolocation"
-      : "fallback";
-    const coastal = isCoastalLocation(lat, lon);
-
     const weatherUrl = new URL("https://api.open-meteo.com/v1/forecast");
     weatherUrl.searchParams.set("latitude", String(lat));
     weatherUrl.searchParams.set("longitude", String(lon));
@@ -141,7 +162,11 @@ export async function GET(request: Request) {
     weatherUrl.searchParams.set("timezone", "auto");
     weatherUrl.searchParams.set("forecast_days", "1");
 
-    const weatherPromise = fetch(weatherUrl, { next: { revalidate: 300 } });
+    const weatherPromise = fetch(weatherUrl, {
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(4000),
+    }).catch(() => null);
+
     const marinePromise = coastal
       ? fetch(
           (() => {
@@ -156,14 +181,17 @@ export async function GET(request: Request) {
             marineUrl.searchParams.set("forecast_days", "2");
             return marineUrl;
           })(),
-          { next: { revalidate: 300 } },
-        )
+          {
+            next: { revalidate: 300 },
+            signal: AbortSignal.timeout(4000),
+          },
+        ).catch(() => null)
       : Promise.resolve(null);
 
     const labelPromise = labelHint
       ? Promise.resolve(labelHint)
       : hasGeo
-        ? reverseLabel(lat, lon)
+        ? reverseLabel(lat, lon).catch(() => defaultLabel)
         : Promise.resolve(FALLBACK_COORDS.label);
 
     const [weatherRes, marineRes, location] = await Promise.all([
@@ -172,8 +200,16 @@ export async function GET(request: Request) {
       labelPromise,
     ]);
 
-    if (!weatherRes.ok) {
-      throw new Error(`Weather upstream ${weatherRes.status}`);
+    if (!weatherRes?.ok) {
+      // Upstream timed out / failed - still return usable conditions.
+      return NextResponse.json(
+        fallbackPayload(location || defaultLabel, coastal, source),
+        {
+          headers: {
+            "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          },
+        },
+      );
     }
 
     const weather = (await weatherRes.json()) as {
@@ -205,11 +241,18 @@ export async function GET(request: Request) {
     const sunsetIso = weather.daily?.sunset?.[0];
 
     if (temp == null || !sunriseIso || !sunsetIso) {
-      throw new Error("Incomplete weather payload");
+      return NextResponse.json(
+        fallbackPayload(location || defaultLabel, coastal, source),
+        {
+          headers: {
+            "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+          },
+        },
+      );
     }
 
     const payload: CoastNowPayload = {
-      location,
+      location: location || defaultLabel,
       temperatureC: Math.round(temp),
       sunrise: formatHm(sunriseIso, timeZone),
       sunset: formatHm(sunsetIso, timeZone),
@@ -227,8 +270,12 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("[coast-now]", error);
     return NextResponse.json(
-      { error: "Unable to load live conditions" },
-      { status: 502 },
+      fallbackPayload(defaultLabel, coastal, source),
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=60",
+        },
+      },
     );
   }
 }
