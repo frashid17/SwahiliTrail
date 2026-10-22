@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getAdminSettings } from "@/lib/admin/settings";
 import { ensurePendingCheckout } from "@/lib/ai/subscription";
 import {
   appBaseUrl,
@@ -13,6 +14,17 @@ export async function POST(req: Request) {
   const { isAuthenticated, userId } = await auth();
   if (!isAuthenticated || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const settings = await getAdminSettings();
+  if (!settings.trailPlusSalesEnabled) {
+    return NextResponse.json(
+      {
+        error:
+          "Trail Plus upgrades are temporarily paused. Please try again later.",
+      },
+      { status: 503 },
+    );
   }
 
   if (!isPaystackConfigured()) {
