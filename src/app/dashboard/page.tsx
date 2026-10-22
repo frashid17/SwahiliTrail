@@ -3,221 +3,182 @@ import {
   ArrowRight,
   BarChart3,
   BedDouble,
-  Compass,
+  CalendarDays,
   Languages,
   MapPin,
   PawPrint,
-  Sparkles,
-  Sunrise,
+  Route,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { COAST_IMAGES as img } from "@/lib/data/coast-images";
 import { placePhoto } from "@/lib/data/place-photo-urls";
 
-const tools = [
+const primary = [
   {
     href: "/planner",
     title: "Trip Planner",
-    description:
-      "Multi-day plan for Nairobi, safari, Rift, or coast - with a rough KES total.",
-    icon: Sparkles,
-    imageUrl: img.beachTropical,
-    imageAlt: "Turquoise coastline for trip planning",
-    cta: "Plan a trip",
+    description: "Build multi-day Kenya itineraries with a rough KES total.",
+    icon: Route,
+    image: img.beachTropical,
+    cta: "Plan days",
+    featured: true,
+  },
+  {
+    href: "/guide",
+    title: "Guide",
+    description: "Ask about roads, food, parks, and phrases in six languages.",
+    icon: Languages,
+    image: placePhoto("old-town", img.oldTownStreet),
+    cta: "Ask anything",
   },
   {
     href: "/hotels",
     title: "Stay & Eat",
-    description:
-      "Filter lodging and meals by budget across Kenya's main regions.",
+    description: "Match hotels and meals to budget, vibe, and region.",
     icon: BedDouble,
-    imageUrl: placePhoto("tamarind-mombasa", img.seafoodDining),
-    imageAlt: "Coastal dining and stays",
-    cta: "Find stays & food",
+    image: placePhoto("tamarind-mombasa", img.seafoodDining),
+    cta: "Find a match",
+  },
+] as const;
+
+const secondary = [
+  {
+    href: "/explore",
+    title: "Explore",
+    description: "Places across Kenya",
+    icon: MapPin,
   },
   {
-    href: "/attractions",
-    title: "Attractions",
-    description:
-      "Delta stops, wildlife, and culture - add picks to your trip list.",
-    icon: MapPin,
-    imageUrl: placePhoto("fort-jesus", img.fortJesus),
-    imageAlt: "Fort Jesus in Mombasa",
-    cta: "Browse attractions",
+    href: "/events",
+    title: "Events",
+    description: "What's on this week",
+    icon: CalendarDays,
   },
   {
     href: "/wildlife",
     title: "Wildlife",
-    description:
-      "Safari parks, reserves, and coast nature days across Kenya.",
+    description: "Parks & reserves",
     icon: PawPrint,
-    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
-    imageAlt: "Riverine forest habitat",
-    cta: "Explore wildlife",
-  },
-  {
-    href: "/guide",
-    title: "Multilingual Guide",
-    description:
-      "Roads, food, lodging, phrases - answers in six languages.",
-    icon: Languages,
-    imageUrl: placePhoto("old-town", img.oldTownStreet),
-    imageAlt: "Old Town Mombasa street",
-    cta: "Ask the guide",
   },
   {
     href: "/analytics",
-    title: "Destination Analytics",
-    description:
-      "Visitor charts and attraction interest for planners and hosts.",
+    title: "Analytics",
+    description: "Visitor pulse",
     icon: BarChart3,
-    imageUrl: placePhoto("mama-ngina", img.mamaNginaWaterfront),
-    imageAlt: "Mama Ngina waterfront",
-    cta: "View insights",
   },
-];
+] as const;
 
-const highlights = [
+const corridors = [
   {
-    title: "Maasai Mara",
-    detail: "Safari · Big Five",
-    tip: "Allow at least two full game-drive days in the reserve.",
-    imageUrl: placePhoto("tana-primate-reserve", img.forestTrail),
+    href: "/wildlife",
+    label: "Safari",
+    line: "Mara · Tsavo · Amboseli",
+    image:
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=75",
   },
   {
-    title: "Nairobi",
-    detail: "Capital · city base",
-    tip: "Museums, markets, and easy day trips to parks and the Rift.",
-    imageUrl: placePhoto("hola-ibs", img.mamaNginaWaterfront),
+    href: "/explore",
+    label: "Nairobi",
+    line: "City base & day trips",
+    image: placePhoto("hola-ibs", img.mamaNginaWaterfront),
   },
   {
-    title: "Diani & Mombasa",
-    detail: "Swahili coast",
-    tip: "Pair beach time with Old Town and a marine park day.",
-    imageUrl: placePhoto("tana-delta", img.beachTropical),
+    href: "/explore",
+    label: "Coast",
+    line: "Nyali · Diani · Old Town",
+    image: img.nyaliBeach,
   },
-];
-
-const flow = [
-  { step: "01", label: "Save places", href: "/attractions" },
-  { step: "02", label: "Match a stay", href: "/hotels" },
-  { step: "03", label: "Plan days", href: "/planner" },
-  { step: "04", label: "Ask locally", href: "/guide" },
-];
+] as const;
 
 export default async function DashboardPage() {
   await auth.protect();
   const user = await currentUser();
   const name = user?.firstName ?? "Traveler";
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Habari za asubuhi" : hour < 17 ? "Habari za mchana" : "Habari za jioni";
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
-      <section className="relative overflow-hidden border-b border-border/50">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&q=80"
-            alt=""
-            fill
-            priority
-            className="object-cover object-[70%_35%] opacity-40"
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-foam via-foam/92 to-foam/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-foam via-transparent to-foam/40" />
-        </div>
+    <div className="w-full overflow-x-clip bg-background">
+      {/* Immersive welcome */}
+      <section className="relative min-h-[min(52vh,28rem)] overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=2200&q=80"
+          alt=""
+          fill
+          priority
+          unoptimized
+          className="object-cover object-[50%_40%]"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-deep via-brand-deep/75 to-brand-deep/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-transparent to-brand-deep/40" />
 
-        <div className="relative mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-10 lg:py-12">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.16em] text-aqua">
-                <Compass className="h-4 w-4" />
-                Dashboard
-              </p>
-              <h1 className="mt-3 font-display text-4xl leading-tight text-ocean-deep sm:text-5xl lg:text-6xl">
-                Karibu, {name}
-              </h1>
-              <p className="mt-3 max-w-2xl text-base text-muted sm:text-lg">
-                Plan a Kenya trip, find a stay, ask the guide, or open
-                destination analytics.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/planner"
-                className="inline-flex items-center gap-2 rounded-full bg-coral px-5 py-3 text-sm font-semibold text-white shadow-md shadow-coral/25 transition hover:brightness-110"
-              >
-                Start planning
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/guide"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-5 py-3 text-sm font-semibold text-ocean-deep backdrop-blur transition hover:border-aqua/40"
-              >
-                Ask the guide
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {flow.map((item) => (
-              <Link
-                key={item.step}
-                href={item.href}
-                className="group flex items-center gap-3 rounded-2xl border border-border/80 bg-surface/75 px-4 py-3 backdrop-blur transition hover:border-aqua/40 hover:bg-surface"
-              >
-                <span className="font-display text-lg text-aqua">{item.step}</span>
-                <span className="text-sm font-semibold text-ocean-deep group-hover:text-ocean">
-                  {item.label}
-                </span>
-                <ArrowRight className="ml-auto h-3.5 w-3.5 text-muted transition group-hover:translate-x-0.5 group-hover:text-aqua" />
-              </Link>
-            ))}
+        <div className="relative z-[1] mx-auto flex min-h-[min(52vh,28rem)] max-w-[90rem] flex-col justify-end px-4 pb-10 pt-20 sm:px-6 lg:px-10 lg:pb-12">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">
+            {greeting}
+          </p>
+          <h1 className="mt-2 font-display text-[clamp(2.5rem,6vw,4rem)] font-semibold leading-[0.95] tracking-tight text-white">
+            Karibu, {name}
+          </h1>
+          <p className="mt-3 max-w-lg text-sm text-white/75 sm:text-base">
+            Your Kenya workspace - plan days, match stays, and ask the guide
+            without leaving the trail.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link href="/planner" className="btn-solid">
+              Continue planning
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/trips" className="btn-ghost">
+              My trips
+            </Link>
           </div>
         </div>
       </section>
 
       <div className="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-10 lg:py-12">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-display text-2xl text-ocean-deep sm:text-3xl">
-              Your tools
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Pick one and start.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {tools.map((tool) => (
+        {/* Primary tools - bento */}
+        <div className="grid gap-4 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
+          {primary.map((tool, i) => (
             <Link
               key={tool.href}
               href={tool.href}
-              className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm transition hover:-translate-y-1 hover:border-aqua/35 hover:shadow-lg"
+              className={
+                i === 0
+                  ? "group relative flex min-h-[18rem] flex-col justify-end overflow-hidden rounded-2xl lg:col-span-2 lg:row-span-2 lg:min-h-[22rem]"
+                  : "group relative flex min-h-[11rem] flex-col justify-end overflow-hidden rounded-2xl"
+              }
             >
-              <div className="relative h-40 overflow-hidden sm:h-44">
-                <Image
-                  src={tool.imageUrl}
-                  alt={tool.imageAlt}
-                  fill
-                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  className="object-cover transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/85 via-brand-deep/25 to-transparent" />
-                <span className="absolute bottom-3 left-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-aqua text-brand-deep shadow-lg shadow-black/25 ring-2 ring-white/25">
-                  <tool.icon className="h-6 w-6" strokeWidth={2.25} />
+              <Image
+                src={tool.image}
+                alt=""
+                fill
+                unoptimized
+                sizes={i === 0 ? "(max-width: 1024px) 100vw, 66vw" : "33vw"}
+                className="object-cover transition duration-700 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-brand-deep/50 to-transparent" />
+              <div className="relative z-[1] p-5 sm:p-6">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 text-white backdrop-blur">
+                  <tool.icon className="h-5 w-5" />
                 </span>
-              </div>
-              <div className="flex flex-1 flex-col p-5 pt-4">
-                <h3 className="font-display text-xl text-ocean-deep">
+                <h2
+                  className={
+                    i === 0
+                      ? "mt-4 font-display text-3xl font-semibold text-white sm:text-4xl"
+                      : "mt-3 font-display text-xl font-semibold text-white"
+                  }
+                >
                   {tool.title}
-                </h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">
+                </h2>
+                <p className="mt-1.5 max-w-md text-sm text-white/70">
                   {tool.description}
                 </p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-aqua">
+                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold">
                   {tool.cta}
                   <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                 </span>
@@ -226,67 +187,81 @@ export default async function DashboardPage() {
           ))}
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <section className="rounded-3xl border border-border bg-surface p-6 sm:p-8">
-            <div className="flex items-center gap-2 text-aqua">
-              <MapPin className="h-4 w-4" />
-              <p className="text-sm font-semibold uppercase tracking-[0.14em]">
-                Coastal picks
-              </p>
-            </div>
-            <h2 className="mt-2 font-display text-2xl text-ocean-deep sm:text-3xl">
-              Places worth opening with
-            </h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {highlights.map((spot) => (
-                <div
-                  key={spot.title}
-                  className="overflow-hidden rounded-2xl bg-foam"
-                >
-                  <div className="relative h-28">
-                    <Image
-                      src={spot.imageUrl}
-                      alt={spot.title}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 33vw"
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/70 to-transparent" />
-                  </div>
-                  <div className="px-4 py-4">
-                    <p className="font-display text-lg text-ocean-deep">
-                      {spot.title}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-aqua">
-                      {spot.detail}
-                    </p>
-                    <p className="mt-2 text-sm text-muted">{spot.tip}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+        {/* Quick links */}
+        <div className="mt-10">
+          <Badge
+            variant="outline"
+            className="h-auto border-0 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold outline outline-border"
+          >
+            Quick open
+          </Badge>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {secondary.map((item) => (
+              <Link key={item.href} href={item.href} className="group block">
+                <Card className="h-full border-border py-0 transition hover:border-gold/35 hover:shadow-md">
+                  <CardContent className="flex items-center gap-3 px-4 py-4">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-deep text-on-brand">
+                      <item.icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-display text-base font-semibold text-card-foreground">
+                        {item.title}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {item.description}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-coral" />
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
 
-          <section className="relative overflow-hidden rounded-3xl bg-brand-deep p-6 text-on-brand sm:p-8">
-            <Sunrise className="absolute -right-2 -top-2 h-28 w-28 text-aqua/20" />
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-aqua">
-              Getting started
-            </p>
-            <h2 className="mt-2 font-display text-2xl leading-snug sm:text-3xl">
-              Build your first trail
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-on-brand/75">
-              Start with a 5-day Kenya plan, match a stay for your base, then ask
-              the guide in Kiswahili for roads, food, and park tips.
-            </p>
+        {/* Corridors */}
+        <div className="mt-12">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold">
+                Jump in
+              </p>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-ocean-deep sm:text-3xl">
+                Where next?
+              </h2>
+            </div>
             <Link
-              href="/planner"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-coral px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110"
+              href="/explore"
+              className="hidden text-sm font-semibold text-coral hover:text-ocean sm:inline"
             >
-              Start with the planner
-              <ArrowRight className="h-4 w-4" />
+              All places →
             </Link>
-          </section>
+          </div>
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            {corridors.map((c) => (
+              <Link
+                key={c.label}
+                href={c.href}
+                className="group relative flex min-h-[11rem] items-end overflow-hidden rounded-2xl"
+              >
+                <Image
+                  src={c.image}
+                  alt={c.label}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover transition duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/90 via-brand-deep/30 to-transparent" />
+                <div className="relative z-[1] p-5">
+                  <p className="font-display text-2xl font-semibold text-white">
+                    {c.label}
+                  </p>
+                  <p className="mt-1 text-sm text-white/70">{c.line}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
