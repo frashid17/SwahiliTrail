@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import {
+  alignPaymentWithProvider,
   fulfillPaystackCharge,
   getPaymentByReference,
 } from "@/lib/ai/subscription";
 import {
   appBaseUrl,
+  isPaystackChargeSuccess,
   isPaystackConfigured,
+  mapPaystackToPaymentStatus,
+  maybeCreateCardSubscription,
+  trailPlusPlanCode,
   verifyPaystackTransaction,
 } from "@/lib/paystack";
 
@@ -47,9 +52,21 @@ export async function GET(req: Request) {
 
   try {
     const tx = await verifyPaystackTransaction(reference);
-    if (tx.status !== "success") {
-      // Do not mark our pending row failed here - provider may still settle /
-      // customer may retry with the same reference.
+
+    // Strict: only Paystack "success" clears money. Keep row pending otherwise.
+    if (!isPaystackChargeSuccess(tx)) {
+      await alignPaymentWithProvider({
+        reference,
+        providerStatus: mapPaystackToPaymentStatus(tx),
+        amount: tx.amount,
+        currency: tx.currency,
+      });
+      const mapped = mapPaystackToPaymentStatus(tx);
+      if (mapped === "pending") {
+        return NextResponse.redirect(
+          `${base}/pricing?billing=pending_confirm&ref=${encodeURIComponent(reference)}`,
+        );
+      }
       return NextResponse.redirect(
         `${base}/pricing?billing=failed&ref=${encodeURIComponent(reference)}`,
       );
@@ -65,17 +82,31 @@ export async function GET(req: Request) {
       );
     }
 
+    // Card only: optional auto-renew. M-Pesa stays period access (pay again next month).
+    let subscriptionCode: string | null = null;
+    const planCode = trailPlusPlanCode();
+    const authCode = tx.authorization?.authorization_code;
+    const reusable = Boolean(tx.authorization?.reusable);
+    const customerCode = tx.customer?.customer_code;
+    if (planCode && reusable && authCode && customerCode) {
+      subscriptionCode = await maybeCreateCardSubscription({
+        customerCode,
+        authorizationCode: authCode,
+        planCode,
+      });
+    }
+
     await fulfillPaystackCharge({
       userId,
       email: tx.customer?.email ?? null,
       reference: tx.reference,
-      customerCode: tx.customer?.customer_code ?? null,
+      customerCode: customerCode ?? null,
+      subscriptionCode,
       amount: tx.amount,
       currency: tx.currency,
       paidAt: tx.paid_at,
     });
 
-    // Always land on pricing (works even if the Paystack hop dropped the session).
     return NextResponse.redirect(
       `${base}/pricing?billing=success&ref=${encodeURIComponent(reference)}`,
     );
@@ -84,7 +115,6 @@ export async function GET(req: Request) {
       "[paystack] verify",
       err instanceof Error ? err.message : err,
     );
-    // Payment may still succeed via webhook - ask user to sign in / refresh.
     return NextResponse.redirect(
       `${base}/pricing?billing=pending_confirm&ref=${encodeURIComponent(reference)}`,
     );
