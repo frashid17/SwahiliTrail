@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import { Sparkles } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -13,6 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import {
   FREE_AI_QUOTA,
   TRAIL_PLUS_PRICE_USD,
@@ -192,7 +192,7 @@ function UsageMeter({
   const pct = Math.min(100, Math.round((used / Math.max(limit, 1)) * 100));
   return (
     <div
-      className="h-2 w-full overflow-hidden rounded-full bg-border/80"
+      className="h-1.5 w-full overflow-hidden rounded-[1px] bg-border/80"
       role="progressbar"
       aria-valuenow={used}
       aria-valuemin={0}
@@ -201,7 +201,7 @@ function UsageMeter({
     >
       <div
         className={cn(
-          "h-full rounded-full transition-all duration-500",
+          "h-full rounded-[1px] transition-all duration-500",
           exhausted ? "bg-coral" : pct >= 66 ? "bg-coral/80" : "bg-aqua",
         )}
         style={{ width: `${pct}%` }}
@@ -226,11 +226,11 @@ export function AiQuotaNavChip({ className = "" }: { className?: string }) {
     <Link
       href="/pricing"
       className={cn(
-        "group flex min-w-[7.5rem] flex-col gap-1 rounded-md border px-2.5 py-1.5 transition",
+        "group flex min-w-[7.75rem] flex-col gap-1.5 rounded-[0.3rem] border px-2.5 py-1.5 transition",
         exhausted
           ? "border-coral/40 bg-coral/10 hover:bg-coral/15"
           : plus
-            ? "border-ocean/25 bg-foam hover:bg-sand/40"
+            ? "border-ocean/20 bg-foam hover:bg-sand/50"
             : "border-border bg-surface hover:border-ocean/30",
         className,
       )}
@@ -240,10 +240,15 @@ export function AiQuotaNavChip({ className = "" }: { className?: string }) {
           : `${used} of ${limit} free AI uses this month`
       }
     >
-      <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted">
-        <span className="inline-flex items-center gap-1">
-          {plus ? <Sparkles className="h-3 w-3 text-aqua" /> : null}
-          AI
+      <div className="flex items-center justify-between gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <TrailAiMark
+            className={cn(
+              "h-3.5 w-3.5",
+              exhausted ? "text-coral" : plus ? "text-aqua" : "text-ocean",
+            )}
+          />
+          Trail
         </span>
         <span className={exhausted ? "text-coral" : "text-ocean-deep"}>
           {used}/{limit}
@@ -272,7 +277,7 @@ export function AiQuotaBanner({
   return (
     <div
       className={cn(
-        "rounded-2xl border px-3.5 py-3 text-sm text-ocean-deep",
+        "rounded-[0.35rem] border px-3.5 py-3 text-sm text-ocean-deep",
         exhausted
           ? "border-coral/40 bg-coral/10"
           : plus
@@ -283,16 +288,17 @@ export function AiQuotaBanner({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-semibold">
+          <p className="font-semibold tracking-tight">
             {plus ? (
               <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-aqua" />
-                {used}/{limit} AI uses today
+                <TrailAiMark className="h-4 w-4 text-aqua" />
+                {used}/{limit} Trail AI today
               </span>
             ) : (
-              <>
-                {used}/{limit} AI queries used
-              </>
+              <span className="inline-flex items-center gap-1.5">
+                <TrailAiMark className="h-4 w-4 text-ocean" />
+                {used}/{limit} Trail AI this month
+              </span>
             )}
           </p>
           <p className="mt-0.5 text-xs text-muted">
@@ -309,7 +315,7 @@ export function AiQuotaBanner({
           <Link
             href="/pricing"
             className={cn(
-              "inline-flex shrink-0 items-center justify-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
+              "inline-flex shrink-0 items-center justify-center rounded-[0.3rem] px-3.5 py-1.5 text-xs font-semibold transition",
               exhausted
                 ? "bg-coral text-white hover:brightness-110"
                 : "border border-border bg-surface text-ocean-deep hover:border-aqua/40",
