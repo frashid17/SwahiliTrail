@@ -1,43 +1,69 @@
 import { NextResponse } from "next/server";
 import {
-  MONTHLY_VISITORS,
-  SOURCE_MARKETS,
-  TOP_ATTRACTIONS,
-  SENTIMENT_THEMES,
-} from "@/lib/data/analytics";
-import { createClient } from "@/lib/supabase/server";
+  ANNUAL_INBOUND,
+  KENYA_TOURISM_KPIS,
+  KENYA_TOURISM_SOURCES,
+  MONTHLY_INBOUND_2024,
+  PURPOSE_OF_VISIT_2024,
+  SOURCE_MARKETS_2024,
+  TOP_PARKS_2024,
+} from "@/lib/data/kenya-tourism";
 
+/**
+ * Public destination analytics — official Kenya tourism figures (TRI / Ministry / KWS),
+ * not Swahili Trail product metrics.
+ */
 export async function GET() {
-  // Public destination analytics - no auth required
-  let recentEvents: { event_type: string; created_at: string }[] = [];
-  const supabase = await createClient();
-  if (supabase) {
-    const { data } = await supabase
-      .from("analytics_events")
-      .select("event_type, created_at")
-      .order("created_at", { ascending: false })
-      .limit(12);
-    recentEvents = data ?? [];
-  }
-
-  const totalVisitors = MONTHLY_VISITORS.reduce((s, m) => s + m.visitors, 0);
-  const peak = MONTHLY_VISITORS.reduce((a, b) =>
-    a.visitors > b.visitors ? a : b,
+  const k = KENYA_TOURISM_KPIS;
+  const internationalShare = Math.round(
+    (k.bedNightsInternational / k.bedNightsTotal) * 100,
   );
 
-  return NextResponse.json({
-    kpis: {
-      totalVisitors,
-      peakMonth: peak.month,
-      peakVisitors: peak.visitors,
-      avgSatisfaction: 4.6,
-      internationalShare: 28,
+  return NextResponse.json(
+    {
+      generatedAt: new Date().toISOString(),
+      datasetYear: k.year,
+      kpis: {
+        totalVisitors: k.internationalArrivals,
+        arrivalsGrowthPct: k.arrivalsGrowthPct,
+        peakMonth: k.peakMonth,
+        peakVisitors: k.peakArrivals,
+        inboundEarningsKesBn: k.inboundEarningsKesBn,
+        earningsGrowthPct: k.earningsGrowthPct,
+        holidayLeisureShare: k.holidayLeisureShare,
+        internationalBedShare: internationalShare,
+        parksVisits: k.parksAndReservesVisits,
+        outlook2025: k.outlook2025,
+      },
+      monthly: MONTHLY_INBOUND_2024.map((m) => ({
+        month: m.month,
+        arrivals: m.arrivals,
+      })),
+      annual: ANNUAL_INBOUND.map((a) => ({
+        year: String(a.year),
+        arrivals: a.arrivals,
+        provisional: "provisional" in a ? Boolean(a.provisional) : false,
+      })),
+      attractions: TOP_PARKS_2024.map((p) => ({
+        name: p.name,
+        visits: p.visits,
+      })),
+      markets: SOURCE_MARKETS_2024.map((m) => ({
+        market: m.market,
+        share: m.share,
+        arrivals: m.arrivals,
+      })),
+      purpose: PURPOSE_OF_VISIT_2024.map((p) => ({
+        theme: p.theme,
+        score: p.score,
+      })),
+      sources: [...KENYA_TOURISM_SOURCES],
+      note: `Official Kenya tourism figures for ${k.year} from the Tourism Research Institute and Ministry of Tourism & Wildlife. 2025 outlook is preliminary. Updated when new national reports are published.`,
     },
-    monthly: MONTHLY_VISITORS,
-    attractions: TOP_ATTRACTIONS,
-    markets: SOURCE_MARKETS,
-    sentiment: SENTIMENT_THEMES,
-    recentEvents,
-    note: "Sample visitor numbers for Kenya destinations - for planners, hosts, and county teams.",
-  });
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    },
+  );
 }
