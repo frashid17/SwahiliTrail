@@ -74,7 +74,7 @@ export default function EventDetailPage() {
   }
 
   return (
-    <div className="coastal-grid min-h-[80vh]">
+    <div className="paper-grain coastal-grid min-h-[80vh]">
       <div className="relative h-[42vh] min-h-72 w-full overflow-hidden sm:h-[48vh]">
         <Image
           src={event.imageUrl}
