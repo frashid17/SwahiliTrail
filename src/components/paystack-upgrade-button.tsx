@@ -1,7 +1,8 @@
 "use client";
 
+import { ArrowUpRight, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { DynamicButton } from "@/components/motion/dynamic-button";
 import { cn } from "@/lib/utils";
 
 export function PaystackUpgradeButton({
@@ -36,19 +37,25 @@ export function PaystackUpgradeButton({
   }
 
   return (
-    <div className="w-full">
-      <button
+    <div className={cn("w-full", className)}>
+      <DynamicButton
         type="button"
         onClick={() => void startCheckout()}
         disabled={loading}
-        className={cn(
-          "btn-solid w-full disabled:opacity-60",
-          className,
-        )}
+        variant="coral"
+        size="lg"
+        width="full"
+        stateKey={loading ? "loading" : "idle"}
+        icon={
+          loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowUpRight className="h-4 w-4" aria-hidden />
+          )
+        }
       >
-        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        {loading ? "Redirecting…" : label}
-      </button>
+        {loading ? "Redirecting to Paystack…" : label}
+      </DynamicButton>
       {error ? (
         <p className="mt-2 text-center text-xs text-coral">{error}</p>
       ) : null}
