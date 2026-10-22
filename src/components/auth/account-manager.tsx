@@ -17,8 +17,20 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AccountBilling } from "@/components/auth/account-billing";
-import { CoastalOrbs } from "@/components/coastal-accents";
 import { FadeIn } from "@/components/fade-in";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  listSavedPlaces,
+  type SavedPlace,
+} from "@/lib/saved-places";
 import { cn } from "@/lib/utils";
 
 type Tab = "profile" | "security" | "billing";
@@ -49,6 +61,7 @@ export function AccountManager() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordNote, setPasswordNote] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [savedPlaces, setSavedPlaces] = useState<SavedPlace[]>([]);
 
   useEffect(() => {
     setTab(tabFromSearch(searchParams.get("tab")));
@@ -59,6 +72,16 @@ export function AccountManager() {
     setFirstName(user.firstName ?? "");
     setLastName(user.lastName ?? "");
     setUsername(user.username ?? "");
+    setSavedPlaces(listSavedPlaces(user.id));
+  }, [user]);
+
+  useEffect(() => {
+    function refresh() {
+      if (user) setSavedPlaces(listSavedPlaces(user.id));
+    }
+    window.addEventListener("swahili-trail-saved-places", refresh);
+    return () =>
+      window.removeEventListener("swahili-trail-saved-places", refresh);
   }, [user]);
 
   function selectTab(next: Tab) {
@@ -156,28 +179,27 @@ export function AccountManager() {
   }
 
   return (
-    <div className="coastal-grid min-h-[calc(100dvh-4rem)]">
-      <div className="mx-auto max-w-[90rem] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+    <div className="min-h-[calc(100dvh-4rem)] bg-muted-bg/40">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <FadeIn>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-aqua">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">
             Swahili Trail
           </p>
-          <h1 className="mt-2 font-display text-3xl text-ocean-deep sm:text-4xl">
+          <h1 className="mt-2 font-display text-3xl font-semibold text-foreground sm:text-4xl">
             Account settings
           </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted sm:text-base">
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:text-base">
             Profile, security, plan, payments, and receipts for Swahili Trail.
           </p>
         </FadeIn>
 
         <div className="mt-8 grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-6">
-          <aside className="relative overflow-hidden rounded-2xl border border-border bg-surface/90 p-3 shadow-sm sm:rounded-3xl sm:p-4">
-            <CoastalOrbs className="opacity-50" />
+          <aside className="relative overflow-hidden rounded-xl border border-border bg-card p-3 shadow-sm sm:p-4">
             <div className="relative z-[1] space-y-1">
-              <p className="px-2 pb-2 text-sm font-semibold text-ocean-deep">
+              <p className="px-2 pb-2 text-sm font-semibold text-card-foreground">
                 Account
               </p>
-              <p className="px-2 pb-3 text-xs text-muted">
+              <p className="px-2 pb-3 text-xs text-muted-foreground">
                 Manage your Swahili Trail info
               </p>
               <NavButton
@@ -222,7 +244,11 @@ export function AccountManager() {
               </Link>
               <button
                 type="button"
-                onClick={() => void signOut({ redirectUrl: "/" })}
+                onClick={() => {
+                  void signOut({ redirectUrl: "/" }).finally(() => {
+                    window.location.assign("/");
+                  });
+                }}
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-coral transition hover:bg-foam"
               >
                 <LogOut className="h-4 w-4" />
@@ -231,26 +257,25 @@ export function AccountManager() {
             </div>
           </aside>
 
-          <section className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm sm:rounded-3xl">
-            <CoastalOrbs className="opacity-40" />
-            <div className="relative z-[1] border-b border-border px-5 py-4 sm:px-6">
-              <h2 className="font-display text-2xl text-ocean-deep">
+          <Card className="gap-0 overflow-hidden p-0 shadow-sm">
+            <CardHeader className="gap-1 border-b border-border px-5 py-4 sm:px-6">
+              <CardTitle className="font-display text-2xl text-card-foreground">
                 {tab === "profile"
-                  ? "Profile details"
+                  ? "Edit your profile"
                   : tab === "security"
                     ? "Security"
                     : "Plan & billing"}
-              </h2>
-              <p className="mt-1 text-sm text-muted">
+              </CardTitle>
+              <CardDescription>
                 {tab === "profile"
                   ? "How you appear across Swahili Trail."
                   : tab === "security"
                     ? "Password and sign-in options."
                     : "Your plan, invoices, payment history, and receipts."}
-              </p>
-            </div>
+              </CardDescription>
+            </CardHeader>
 
-            <div className="relative z-[1] space-y-6 p-5 sm:p-6">
+            <CardContent className="space-y-6 p-5 sm:p-6">
               {tab === "billing" ? (
                 <AccountBilling
                   highlightSuccess={
@@ -292,42 +317,42 @@ export function AccountManager() {
                   <form onSubmit={saveProfile} className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <Field label="First name" htmlFor="firstName">
-                        <input
+                        <Input
                           id="firstName"
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
-                          className={fieldClass}
+                          className="h-9"
                           autoComplete="given-name"
                         />
                       </Field>
                       <Field label="Last name" htmlFor="lastName">
-                        <input
+                        <Input
                           id="lastName"
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
-                          className={fieldClass}
+                          className="h-9"
                           autoComplete="family-name"
                         />
                       </Field>
                     </div>
                     <Field label="Username" htmlFor="username">
-                      <input
+                      <Input
                         id="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className={fieldClass}
+                        className="h-9"
                         autoComplete="username"
                         placeholder="Optional display username"
                       />
                     </Field>
                     <Field label="Primary email" htmlFor="emailReadonly">
-                      <input
+                      <Input
                         id="emailReadonly"
                         value={primaryEmail ?? ""}
                         readOnly
-                        className={cn(fieldClass, "opacity-80")}
+                        className="h-9 opacity-80"
                       />
-                      <p className="mt-1 text-xs text-muted">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Email is managed through your sign-in provider. Contact
                         support to change a verified address.
                       </p>
@@ -338,17 +363,46 @@ export function AccountManager() {
                     {profileNote ? (
                       <p className="text-sm text-aqua">{profileNote}</p>
                     ) : null}
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-ocean px-5 py-2.5 text-sm font-semibold text-on-brand transition hover:bg-brand-deep disabled:opacity-60"
-                    >
+                    <Button type="submit" disabled={saving} className="rounded-lg">
                       {saving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : null}
                       Save profile
-                    </button>
+                    </Button>
                   </form>
+
+                  <div className="rounded-2xl border border-border bg-foam/60 p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-ocean-deep">
+                      <Map className="h-4 w-4 text-aqua" />
+                      Saved for trip
+                    </p>
+                    {savedPlaces.length === 0 ? (
+                      <p className="mt-2 text-sm text-muted">
+                        Save places from the Explore map to collect them here.{" "}
+                        <Link href="/explore" className="font-semibold text-ocean">
+                          Open map
+                        </Link>
+                      </p>
+                    ) : (
+                      <ul className="mt-3 space-y-2">
+                        {savedPlaces.map((place) => (
+                          <li key={place.id}>
+                            <Link
+                              href={`/explore/${place.id}`}
+                              className="flex items-center justify-between gap-2 rounded-lg bg-surface px-3 py-2 text-sm text-ocean-deep transition hover:bg-foam"
+                            >
+                              <span className="min-w-0 truncate font-medium">
+                                {place.name}
+                              </span>
+                              <span className="shrink-0 text-xs text-muted">
+                                {place.area}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
 
                   <div className="rounded-2xl border border-border bg-foam/60 p-4">
                     <p className="flex items-center gap-2 text-sm font-semibold text-ocean-deep">
@@ -414,22 +468,22 @@ export function AccountManager() {
                         className="mt-4 space-y-3"
                       >
                         <Field label="Current password" htmlFor="currentPassword">
-                          <input
+                          <Input
                             id="currentPassword"
                             type="password"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
-                            className={fieldClass}
+                            className="h-9"
                             autoComplete="current-password"
                           />
                         </Field>
                         <Field label="New password" htmlFor="newPassword">
-                          <input
+                          <Input
                             id="newPassword"
                             type="password"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            className={fieldClass}
+                            className="h-9"
                             autoComplete="new-password"
                           />
                         </Field>
@@ -437,12 +491,12 @@ export function AccountManager() {
                           label="Confirm new password"
                           htmlFor="confirmPassword"
                         >
-                          <input
+                          <Input
                             id="confirmPassword"
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className={fieldClass}
+                            className="h-9"
                             autoComplete="new-password"
                           />
                         </Field>
@@ -452,16 +506,16 @@ export function AccountManager() {
                         {passwordNote ? (
                           <p className="text-sm text-aqua">{passwordNote}</p>
                         ) : null}
-                        <button
+                        <Button
                           type="submit"
                           disabled={passwordSaving}
-                          className="inline-flex items-center justify-center gap-2 rounded-full bg-coral px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
+                          className="rounded-lg"
                         >
                           {passwordSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : null}
                           Update password
-                        </button>
+                        </Button>
                       </form>
                     ) : (
                       <p className="mt-2 text-sm text-muted">
@@ -482,7 +536,11 @@ export function AccountManager() {
                     </p>
                     <button
                       type="button"
-                      onClick={() => void signOut({ redirectUrl: "/" })}
+                      onClick={() => {
+                        void signOut({ redirectUrl: "/" }).finally(() => {
+                          window.location.assign("/");
+                        });
+                      }}
                       className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-ocean-deep transition hover:border-coral/40 hover:text-coral"
                     >
                       <LogOut className="h-4 w-4" />
@@ -491,8 +549,8 @@ export function AccountManager() {
                   </div>
                 </>
               ) : null}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
@@ -517,11 +575,11 @@ function NavButton({
       className={cn(
         "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
         active
-          ? "bg-ocean text-on-brand"
-          : "text-ocean-deep hover:bg-foam",
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-card-foreground hover:bg-secondary",
       )}
     >
-      <Icon className={cn("h-4 w-4", active ? "text-aqua" : "text-aqua")} />
+      <Icon className="h-4 w-4 opacity-90" />
       {label}
     </button>
   );
@@ -538,11 +596,8 @@ function Field({
 }) {
   return (
     <label htmlFor={htmlFor} className="block text-sm">
-      <span className="font-medium text-ocean-deep">{label}</span>
+      <span className="font-normal text-muted-foreground">{label}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   );
 }
-
-const fieldClass =
-  "w-full rounded-xl border border-border bg-foam px-3.5 py-2.5 text-sm text-ocean-deep outline-none transition placeholder:text-muted/70 focus:border-aqua focus:ring-2 focus:ring-aqua/20";
