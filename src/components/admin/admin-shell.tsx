@@ -1,41 +1,119 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Activity,
-  BarChart3,
   CreditCard,
   LayoutDashboard,
   Menu,
+  Settings,
   Sparkles,
   Users,
   X,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  AdminNavProvider,
+  useAdminNav,
+} from "@/components/admin/admin-nav-context";
 import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  ADMIN_SECTION_META,
+  type AdminSection,
+} from "@/lib/admin/sections";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { href: "/admin", label: "Overview", icon: LayoutDashboard },
-  { href: "/admin#revenue", label: "Revenue", icon: CreditCard },
-  { href: "/admin#subscribers", label: "Subscribers", icon: Users },
-  { href: "/admin#ai", label: "AI usage", icon: Sparkles },
-  { href: "/admin#pulse", label: "Product pulse", icon: Activity },
-  { href: "/analytics", label: "Public analytics", icon: BarChart3 },
+const NAV: {
+  id: AdminSection;
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+}[] = [
+  {
+    id: "overview",
+    label: ADMIN_SECTION_META.overview.label,
+    href: ADMIN_SECTION_META.overview.href,
+    icon: LayoutDashboard,
+  },
+  {
+    id: "revenue",
+    label: ADMIN_SECTION_META.revenue.label,
+    href: ADMIN_SECTION_META.revenue.href,
+    icon: CreditCard,
+  },
+  {
+    id: "subscribers",
+    label: ADMIN_SECTION_META.subscribers.label,
+    href: ADMIN_SECTION_META.subscribers.href,
+    icon: Users,
+  },
+  {
+    id: "ai",
+    label: ADMIN_SECTION_META.ai.label,
+    href: ADMIN_SECTION_META.ai.href,
+    icon: Sparkles,
+  },
+  {
+    id: "pulse",
+    label: ADMIN_SECTION_META.pulse.label,
+    href: ADMIN_SECTION_META.pulse.href,
+    icon: Activity,
+  },
+  {
+    id: "settings",
+    label: ADMIN_SECTION_META.settings.label,
+    href: ADMIN_SECTION_META.settings.href,
+    icon: Settings,
+  },
 ];
 
-export function AdminShell({
+function AdminShellInner({
   children,
   email,
 }: {
   children: React.ReactNode;
   email: string;
 }) {
-  const pathname = usePathname();
+  const { section, goTo } = useAdminNav();
+  const meta = ADMIN_SECTION_META[section];
   const [open, setOpen] = useState(false);
+
+  function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+    return (
+      <>
+        {NAV.map((item) => {
+          const Icon = item.icon;
+          const active = item.id === section;
+
+          return (
+            <button
+              key={item.href}
+              type="button"
+              onClick={() => {
+                goTo(item.id);
+                onNavigate?.();
+              }}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "group relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition",
+                active ? "text-on-brand" : "text-ocean-deep hover:bg-foam",
+              )}
+            >
+              {active ? (
+                <span className="absolute inset-0 -z-10 rounded-xl bg-ocean shadow-[0_10px_30px_-16px_var(--ocean)]" />
+              ) : null}
+              <Icon
+                className={cn("h-4 w-4", active ? "text-gold" : "text-aqua")}
+              />
+              {item.label}
+            </button>
+          );
+        })}
+      </>
+    );
+  }
 
   return (
     <div className="relative min-h-dvh overflow-x-clip bg-background text-foreground">
@@ -55,40 +133,7 @@ export function AdminShell({
             Ops console
           </p>
           <nav className="flex flex-1 flex-col gap-1">
-            {NAV.map((item) => {
-              const active =
-                item.href === "/admin"
-                  ? pathname === "/admin"
-                  : false;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "group relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition",
-                    active
-                      ? "text-on-brand"
-                      : "text-ocean-deep hover:bg-foam",
-                  )}
-                >
-                  {active ? (
-                    <motion.span
-                      layoutId="admin-nav-glow"
-                      className="absolute inset-0 -z-10 rounded-xl bg-ocean shadow-[0_10px_30px_-16px_var(--ocean)]"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  ) : null}
-                  <Icon
-                    className={cn(
-                      "h-4 w-4",
-                      active ? "text-gold" : "text-aqua",
-                    )}
-                  />
-                  {item.label}
-                </Link>
-              );
-            })}
+            <NavItems />
           </nav>
           <div className="mt-auto space-y-3 border-t border-border/60 px-2 pt-4">
             <p className="truncate text-xs text-muted">{email}</p>
@@ -113,11 +158,11 @@ export function AdminShell({
                 <Menu className="h-4 w-4" />
               </button>
               <div>
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-gold">
-                  Swahili Trail
+                <p className="mb-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-gold">
+                  Swahili Trail · Ops
                 </p>
                 <h1 className="font-display text-lg font-semibold text-ocean-deep sm:text-xl">
-                  Admin overview
+                  {meta.title}
                 </h1>
               </div>
             </div>
@@ -159,25 +204,26 @@ export function AdminShell({
                 </button>
               </div>
               <nav className="flex flex-col gap-1">
-                {NAV.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ocean-deep hover:bg-foam"
-                    >
-                      <Icon className="h-4 w-4 text-aqua" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                <NavItems onNavigate={() => setOpen(false)} />
               </nav>
             </motion.aside>
           </>
         ) : null}
       </AnimatePresence>
     </div>
+  );
+}
+
+export function AdminShell({
+  children,
+  email,
+}: {
+  children: React.ReactNode;
+  email: string;
+}) {
+  return (
+    <AdminNavProvider>
+      <AdminShellInner email={email}>{children}</AdminShellInner>
+    </AdminNavProvider>
   );
 }
