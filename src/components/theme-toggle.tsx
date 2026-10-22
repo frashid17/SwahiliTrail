@@ -12,7 +12,10 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/70" />
+      <span
+        className="inline-flex h-9 w-9 items-center justify-center rounded-[0.3rem] border border-border bg-surface/70"
+        aria-hidden
+      />
     );
   }
 
@@ -22,7 +25,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface/80 text-ocean-deep transition hover:border-aqua/40 hover:bg-foam"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-[0.3rem] border border-border bg-surface text-ocean-deep transition hover:border-ocean/30 hover:bg-foam"
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
