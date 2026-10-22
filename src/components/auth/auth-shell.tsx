@@ -1,7 +1,17 @@
-import Image from "next/image";
+"use client";
+
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export function AuthShell({
   title,
@@ -13,49 +23,52 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden lg:block">
-        <Image
-          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=80"
-          alt="Coastal shoreline at golden hour"
-          fill
-          priority
-          className="object-cover object-center"
-          sizes="50vw"
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-brand-deep">
+      <div className="pointer-events-none absolute inset-0 hidden overflow-hidden md:block">
+        <div className="absolute left-full top-0 h-[40rem] w-[40rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/10" />
+        <div className="absolute left-full top-0 h-[12rem] w-[12rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-deep" />
+        <div
+          aria-hidden
+          className="absolute bottom-0 left-0 h-72 w-72 rounded-full bg-gold/20 blur-3xl gold-orb"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-deep via-brand-deep/70 to-brand-deep/35 dark:from-brand-deep/95 dark:via-brand-deep/80 dark:to-brand-deep/45" />
-        <div className="absolute inset-0 bg-black/15 dark:bg-black/35" />
-        <div className="coastal-shimmer absolute inset-0 opacity-30 mix-blend-soft-light" />
-        <div className="absolute inset-x-0 bottom-0 p-10 text-white">
-          <p className="font-display text-4xl leading-tight drop-shadow-md xl:text-5xl">
-            Kenya first.
-            <br />
-            Then the trail.
-          </p>
-          <p className="mt-4 max-w-md text-sm text-white/80">
-            Sign in to save trips, guide chats, and stay matches across Swahili
-            Trail.
-          </p>
-        </div>
+        <div
+          aria-hidden
+          className="absolute right-1/4 top-1/3 h-56 w-56 rounded-full bg-aqua/15 blur-3xl float-orb"
+        />
       </div>
 
-      <div className="coastal-grid flex flex-col px-4 py-8 sm:px-8">
-        <div className="mb-10 flex items-center justify-between">
+      <div className="relative z-[2] mx-auto w-full max-w-lg px-4 py-10 sm:px-0 md:py-20">
+        <div className="mb-6 flex items-center justify-between px-1">
           <Link href="/">
-            <BrandLogo />
+            <BrandLogo onDark />
           </Link>
           <ThemeToggle />
         </div>
 
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-          <h1 className="font-display text-3xl text-ocean-deep sm:text-4xl">
-            {title}
-          </h1>
-          <p className="mt-2 text-muted">{subtitle}</p>
-          <div className="mt-8">{children}</div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <Card className="relative gap-6 border-border/40 bg-card px-6 py-8 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.55)] sm:p-12">
+            <CardHeader className="gap-2 p-0 text-center">
+              <CardTitle className="font-display text-2xl font-semibold tracking-tight text-card-foreground sm:text-3xl">
+                {title}
+              </CardTitle>
+              <CardDescription className="text-sm font-normal text-muted-foreground">
+                {subtitle}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">{children}</CardContent>
+          </Card>
+        </motion.div>
+
+        <p className="mt-6 text-center text-xs text-on-brand/50">
+          Karibu Kenya - plan safaris, coast weekends, and city days on Swahili
+          Trail.
+        </p>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -73,24 +86,33 @@ export function AuthField({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <label htmlFor={id} className="text-sm font-semibold text-ocean-deep">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <label
+          htmlFor={id}
+          className="text-sm font-normal text-muted-foreground"
+        >
           {label}
         </label>
         {hint}
       </div>
       {children}
-      {error ? <p className="mt-1.5 text-sm text-coral">{error}</p> : null}
+      {error ? <p className="text-sm text-coral">{error}</p> : null}
     </div>
   );
 }
 
-export const authInputClass =
-  "w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ocean-deep outline-none transition placeholder:text-muted/70 focus:border-aqua focus:ring-2 focus:ring-aqua/20";
+export const authInputClass = cn(
+  "h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs outline-none transition",
+  "placeholder:text-muted-foreground/70 focus-visible:border-gold/60 focus-visible:ring-2 focus-visible:ring-gold/25",
+);
 
-export const authPrimaryBtnClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full bg-ocean px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60";
+export const authPrimaryBtnClass = cn(
+  "inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition",
+  "hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60",
+);
 
-export const authSecondaryBtnClass =
-  "inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-surface px-5 py-3 text-sm font-semibold text-ocean-deep transition hover:border-aqua/40 hover:bg-foam disabled:cursor-not-allowed disabled:opacity-60";
+export const authSecondaryBtnClass = cn(
+  "inline-flex h-9 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-background px-5 text-sm font-semibold text-card-foreground shadow-xs transition",
+  "hover:border-gold/40 hover:bg-foam disabled:cursor-not-allowed disabled:opacity-60",
+);
