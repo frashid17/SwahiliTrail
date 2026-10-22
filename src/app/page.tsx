@@ -1,246 +1,299 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { Show } from "@clerk/nextjs";
+import { motion, useInView } from "motion/react";
+import { ArrowDown, ArrowRight, Bath, BedDouble, Car } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { CoastEventsSection } from "@/components/home/coast-events-section";
-import { CoastNowBar } from "@/components/home/coast-now-bar";
-import { ThingsToDoSection } from "@/components/home/things-to-do-section";
-import { KenyaLocationFilter } from "@/components/kenya-location-filter";
+import { useRef } from "react";
+import { CorridorFan } from "@/components/motion/corridor-fan";
+import { ScrambleText } from "@/components/motion/scramble-text";
+import { TrailCta } from "@/components/trail/trail-cta";
+import { TrailFaq } from "@/components/trail/trail-faq";
+import { TrailFeatures } from "@/components/trail/trail-features";
+import { TrailGallery } from "@/components/trail/trail-gallery";
+import { Button } from "@/components/ui/button";
+import { COAST_IMAGES } from "@/lib/data/coast-images";
 import { DESTINATION } from "@/lib/destination";
 
-const features = [
+const corridors = [
   {
-    href: "/planner",
-    n: "01",
-    title: "Trip Planner",
-    copy: "Multi-day routes for Nairobi, safari circuits, the Rift, or the coast - with a rough KES budget.",
+    href: "/explore?region=nairobi",
+    label: "Nairobi",
+    line: "City base · parks · nights out",
+    image:
+      "https://images.unsplash.com/photo-1611348524140-53c9a25263d6?auto=format&fit=crop&w=1600&q=75",
   },
   {
-    href: "/hotels",
-    n: "02",
-    title: "Stay & Eat",
-    copy: "Lodging and meals filtered by budget and vibe across Kenya’s main travel regions.",
+    href: "/explore?region=mara",
+    label: "Safari country",
+    line: "Mara · Tsavo · Amboseli",
+    image:
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1600&q=75",
   },
   {
-    href: "/attractions",
-    n: "03",
-    title: "Attractions",
-    copy: "Culture, coast, and city stops. Save what you want into a trip list.",
+    href: "/explore?region=nakuru",
+    label: "Rift Valley",
+    line: "Lakes · Hell’s Gate · highlands",
+    image:
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1600&q=75",
   },
   {
-    href: "/wildlife",
-    n: "04",
-    title: "Wildlife & nature",
-    copy: "Parks and nature days from the Mara to Tsavo and the coast.",
-  },
-  {
-    href: "/guide",
-    n: "05",
-    title: "Multilingual Guide",
-    copy: "Ask about roads, food, lodging, or phrases. Replies in six languages.",
-  },
-  {
-    href: "/analytics",
-    n: "06",
-    title: "Destination Analytics",
-    copy: "Visitor trends for planners, hosts, and county teams.",
+    href: "/explore?region=mombasa",
+    label: "Swahili coast",
+    line: "Diani · Old Town · dhow sunsets",
+    image: COAST_IMAGES.nyaliBeach,
   },
 ];
 
+const highlights = [
+  { icon: BedDouble, label: "Stays matched" },
+  { icon: Car, label: "Roads & transfers" },
+  { icon: Bath, label: "Coast & safari" },
+];
+
 export default function HomePage() {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const stripInView = useInView(stripRef, { once: true, amount: 0.35 });
+
   return (
-    <div className="paper-grain coastal-grid">
-      <section className="relative min-h-[min(88vh,860px)] overflow-hidden">
-        <motion.div
-          className="absolute inset-0"
-          initial={{ scale: 1.04 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 10, ease: "easeOut" }}
-        >
+    <div className="w-full overflow-x-clip bg-background">
+      {/* Luxury full-bleed hero (hero-02 pattern, Trail content, no nested nav) */}
+      <section className="relative flex min-h-[100svh] flex-col overflow-hidden">
+        <div className="pointer-events-none absolute inset-0">
           <Image
-            src="https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=2400&q=80"
-            alt="Elephants crossing the savannah at golden hour"
+            src="https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=2200&q=80"
+            alt="Dhow on the Kenyan coast at dusk"
             fill
             priority
+            unoptimized
             sizes="100vw"
-            className="object-cover object-[50%_40%]"
+            className="ken-burns object-cover object-[50%_45%]"
           />
-        </motion.div>
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-brand-deep/92 via-brand-deep/55 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-deep/85 via-transparent to-brand-deep/35" />
+        <div className="pointer-events-none absolute inset-0 coastal-shimmer opacity-30 mix-blend-soft-light" />
 
-        {/* Legibility only - keep the photo readable, not a dark SaaS veil */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/15" />
-
-        <div className="relative mx-auto flex min-h-[min(88vh,860px)] max-w-[90rem] flex-col justify-end px-4 pb-16 pt-28 sm:px-6 sm:pb-20 lg:px-10">
-          <div className="max-w-2xl">
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55 }}
-              className="font-display text-[clamp(3.25rem,9vw,6.5rem)] leading-[0.92] tracking-tight text-white"
-            >
-              Swahili Trail
-            </motion.p>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.08 }}
-              className="mt-4 max-w-lg text-lg font-medium leading-snug text-white/95 sm:text-xl"
-            >
+        <div className="relative z-[2] mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-4 py-28 sm:px-8 lg:px-16">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.75, ease: "easeOut" }}
+            className="max-w-2xl text-white"
+          >
+            <p className="text-xs font-medium tracking-wide text-white/70">
+              Kenya · coast to highlands
+            </p>
+            <p className="mt-3 font-display text-[clamp(3.5rem,12vw,7.5rem)] font-semibold leading-[0.88] tracking-tight">
+              Swahili
+              <span className="mt-1 block text-gold">
+                <ScrambleText>Trail</ScrambleText>
+              </span>
+            </p>
+            <h1 className="mt-6 max-w-md text-lg font-medium text-white/95 sm:text-xl">
               {DESTINATION.tagline}
-            </motion.h1>
+            </h1>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/70 sm:text-base">
+              Plan safaris, city days, and coast weekends - with a map, a guide
+              in six languages, and stays that fit your budget.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-3">
+              <Button
+                asChild
+                className="h-auto rounded-full bg-white px-6 py-3.5 font-medium text-brand-deep hover:bg-white/90"
+              >
+                <Link href="/explore?region=mombasa">
+                  Explore on the map
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto rounded-full border-white/40 bg-transparent px-6 py-3.5 text-white hover:bg-white/10"
+              >
+                <Link href="/planner">Start planning</Link>
+              </Button>
+            </div>
+          </motion.div>
+        </div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.14 }}
-              className="mt-3 max-w-md text-sm leading-relaxed text-white/80 sm:text-base"
-            >
-              {DESTINATION.supportingLine}
-            </motion.p>
+        <motion.a
+          href="#corridors"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.85, duration: 0.5 }}
+          className="relative z-[2] mb-4 flex flex-col items-center gap-2 self-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55 transition hover:text-gold"
+        >
+          Enter Kenya
+          <ArrowDown className="h-4 w-4 animate-bounce" />
+        </motion.a>
 
+        <div
+          ref={stripRef}
+          className="relative z-[2] mt-auto w-full border-t border-white/10 bg-background"
+        >
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8 sm:py-7 lg:px-16">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+              {highlights.map((item, index) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={stripInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.06 * index, duration: 0.4 }}
+                  className="flex items-center gap-2.5"
+                >
+                  <item.icon
+                    className="h-4 w-4 shrink-0 text-coral sm:h-5 sm:w-5"
+                    strokeWidth={1.5}
+                  />
+                  <span className="text-sm font-medium text-foreground">
+                    {item.label}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
             <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.22 }}
-              className="mt-8 flex flex-wrap gap-3"
+              initial={{ opacity: 0, y: 12 }}
+              animate={stripInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.22, duration: 0.4 }}
+              className="border-t border-border pt-4 sm:border-t-0 sm:border-l sm:pl-8 sm:pt-0"
             >
-              <Link href="/planner" className="btn-solid">
-                Plan a trip
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/explore" className="btn-ghost">
-                Explore places
-              </Link>
+              <p className="font-display text-xl font-semibold text-foreground sm:text-2xl">
+                <ScrambleText>Free to start</ScrambleText>
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Trail Plus when you need more AI
+              </p>
             </motion.div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-border/70 bg-surface">
-        <div className="mx-auto flex max-w-[90rem] flex-col gap-4 px-4 py-6 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-10">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-              Conditions
-            </p>
-            <p className="mt-1 text-sm text-ocean-deep">
-              Weather for where you&apos;re headed - pick a region or use your
-              location.
-            </p>
-          </div>
-          <div className="flex w-full max-w-xl flex-col gap-3">
-            <KenyaLocationFilter
-              variant="select"
-              label="Show for"
-              className="[&_select]:rounded-md"
-            />
-            <CoastNowBar variant="light" className="sm:max-w-none" />
+      <section id="corridors" className="bg-brand-deep">
+        <div className="mx-auto max-w-[90rem] px-4 py-12 sm:px-6 lg:px-10">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">
+            Four corridors
+          </p>
+          <h2 className="mt-3 max-w-xl font-display text-3xl font-semibold tracking-tight text-on-brand sm:text-4xl">
+            Choose where the trail begins.
+          </h2>
+          <p className="mt-3 max-w-lg text-sm text-on-brand/65">
+            Thumb through the hand, then play a corridor into Explore - map
+            filtered and ready.
+          </p>
+          <div className="mt-10 hidden sm:block">
+            <CorridorFan cards={corridors} />
           </div>
         </div>
-      </section>
-
-      <ThingsToDoSection />
-
-      <CoastEventsSection />
-
-      <section className="mx-auto max-w-[90rem] px-4 py-16 sm:px-6 sm:py-20 lg:px-10">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.45 }}
-          className="max-w-xl"
-        >
-          <h2 className="font-display text-3xl tracking-tight text-ocean-deep sm:text-4xl">
-            Tools for the road
-          </h2>
-          <p className="mt-3 text-muted leading-relaxed">
-            Six ways to plan and get around Kenya - no dashboard clutter.
-          </p>
-        </motion.div>
-
-        <div className="mt-12 divide-y divide-border/80 border-y border-border/80">
-          {features.map((feature, index) => (
+        <div className="flex flex-col sm:hidden">
+          {corridors.map((c, i) => (
             <motion.div
-              key={feature.href}
-              initial={{ opacity: 0, y: 12 }}
+              key={c.label}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.35, delay: index * 0.04 }}
+              viewport={{ once: true, amount: 0.35 }}
+              transition={{ duration: 0.5, delay: i * 0.05 }}
             >
               <Link
-                href={feature.href}
-                className="group grid gap-3 py-6 sm:grid-cols-[4rem_1fr_auto] sm:items-baseline sm:gap-8"
+                href={c.href}
+                className="group relative flex min-h-[42vw] items-end overflow-hidden"
               >
-                <span className="font-display text-sm text-muted tabular-nums">
-                  {feature.n}
-                </span>
-                <div>
-                  <h3 className="font-display text-xl text-ocean-deep transition group-hover:text-ocean sm:text-2xl">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-muted sm:text-base">
-                    {feature.copy}
-                  </p>
+                <Image
+                  src={c.image}
+                  alt={c.label}
+                  fill
+                  unoptimized
+                  sizes="100vw"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-deep/85 via-brand-deep/40 to-transparent" />
+                <div className="relative z-[1] flex w-full items-end justify-between gap-4 px-4 py-8">
+                  <div>
+                    <p className="font-display text-3xl font-semibold text-white">
+                      {c.label}
+                    </p>
+                    <p className="mt-2 text-sm text-white/70">{c.line}</p>
+                  </div>
+                  <span className="mb-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white backdrop-blur">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-semibold text-coral opacity-80 transition group-hover:translate-x-0.5 group-hover:opacity-100">
-                  Open
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </span>
               </Link>
             </motion.div>
           ))}
         </div>
+        <div className="hidden pb-10 sm:block" />
       </section>
 
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=2000&q=80"
-            alt="Dhow on the Kenyan coast at dusk"
-            fill
-            sizes="100vw"
-            className="object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-brand-deep/75" />
-        </div>
-        <div className="relative mx-auto grid max-w-[90rem] gap-8 px-4 py-16 sm:px-6 md:grid-cols-[1.3fr_1fr] md:items-end md:py-20 lg:px-10">
+      <TrailFeatures />
+      <TrailGallery />
+
+      <section className="relative min-h-[70vh] overflow-hidden">
+        <Image
+          src="https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=2000&q=75"
+          alt="Kenya market street"
+          fill
+          unoptimized
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-brand-deep/70" />
+        <div className="relative z-[1] mx-auto flex min-h-[70vh] max-w-[90rem] flex-col justify-end px-4 py-16 sm:px-6 lg:px-10">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.45 }}
+            transition={{ duration: 0.55 }}
+            className="max-w-lg"
           >
-            <h2 className="font-display text-3xl tracking-tight text-on-brand sm:text-4xl">
-              For travelers - and the places that host them.
-            </h2>
-            <p className="mt-4 max-w-lg text-on-brand/80 leading-relaxed">
-              Plan city, safari, Rift, and coast trips. Hosts and county teams
-              get a clearer view of what people ask for and where they go.
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold">
+              Multilingual guide
             </p>
+            <h2 className="mt-3 font-display text-3xl font-semibold text-white sm:text-5xl">
+              Ask anything. Get Kenya answers.
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-white/75 sm:text-base">
+              Roads, matatus, meals, Swahili phrases - replies in English,
+              Kiswahili, and more.
+            </p>
+            <Link href="/guide" className="btn-solid mt-8">
+              Open the guide
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </motion.div>
-          <motion.ul
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.08 }}
-            className="space-y-2.5 text-sm text-on-brand/85"
+        </div>
+      </section>
+
+      <TrailFaq />
+      <TrailCta />
+
+      <section className="border-t border-border bg-surface-soft/40 py-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 text-sm text-muted-foreground lg:px-8">
+          <Show
+            when="signed-in"
+            fallback={
+              <p>
+                New here?{" "}
+                <Link href="/sign-up" className="font-semibold text-foreground">
+                  Create a free account
+                </Link>{" "}
+                to save trips and map pins.
+              </p>
+            }
           >
-            <li className="border-l-2 border-coral pl-3">
-              Itineraries with budgets in KES
-            </li>
-            <li className="border-l-2 border-coral/70 pl-3">
-              Hotels, meals, and wildlife days
-            </li>
-            <li className="border-l-2 border-coral/50 pl-3">
-              A local guide in six languages
-            </li>
-            <li className="border-l-2 border-white/25 pl-3 text-on-brand/65">
-              Save trips and pick up anywhere
-            </li>
-          </motion.ul>
+            <p>
+              Welcome back -{" "}
+              <Link href="/dashboard" className="font-semibold text-foreground">
+                open your dashboard
+              </Link>
+              .
+            </p>
+          </Show>
+          <Link href="/pricing" className="font-semibold text-coral">
+            See Trail Plus →
+          </Link>
         </div>
       </section>
     </div>
