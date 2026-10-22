@@ -9,8 +9,9 @@ export function ConditionalShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/sign-up") ||
     pathname.startsWith("/sso-callback");
+  const isAdminRoute = pathname.startsWith("/admin");
 
-  if (isAuthRoute) {
+  if (isAuthRoute || isAdminRoute) {
     return <>{children}</>;
   }
 
