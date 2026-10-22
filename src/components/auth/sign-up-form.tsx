@@ -12,6 +12,9 @@ import {
   authPrimaryBtnClass,
   authSecondaryBtnClass,
 } from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
+import { FieldSeparator } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 function GoogleIcon() {
   return (
@@ -117,8 +120,12 @@ export function SignUpForm() {
         subtitle="Enter the verification code we sent to finish creating your Swahili Trail account."
       >
         <form action={handleVerify} className="space-y-4">
-          <AuthField id="code" label="Verification code" error={errors.fields.code?.message}>
-            <input
+          <AuthField
+            id="code"
+            label="Verification code*"
+            error={errors.fields.code?.message}
+          >
+            <Input
               id="code"
               name="code"
               inputMode="numeric"
@@ -129,8 +136,9 @@ export function SignUpForm() {
             />
           </AuthField>
           {formError ? <p className="text-sm text-coral">{formError}</p> : null}
-          <button
+          <Button
             type="submit"
+            size="lg"
             className={authPrimaryBtnClass}
             disabled={fetchStatus === "fetching"}
           >
@@ -140,15 +148,16 @@ export function SignUpForm() {
               <ArrowRight className="h-4 w-4" />
             )}
             Verify email
-          </button>
+          </Button>
         </form>
-        <button
+        <Button
           type="button"
-          className="mt-4 text-sm text-aqua hover:underline"
+          variant="link"
+          className="mt-4 h-auto px-0 text-sm text-aqua"
           onClick={() => signUp.verifications.sendEmailCode()}
         >
           Resend code
-        </button>
+        </Button>
       </AuthShell>
     );
   }
@@ -156,27 +165,30 @@ export function SignUpForm() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Create an account to save trips and guide chats across Kenya."
+      subtitle="Save trips, guide chats, and stay matches across Kenya."
     >
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={handleGoogle}
         className={authSecondaryBtnClass}
         disabled={fetchStatus === "fetching"}
       >
         <GoogleIcon />
         Continue with Google
-      </button>
+      </Button>
 
-      <div className="my-6 flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-muted">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      <FieldSeparator className="my-6 *:data-[slot=field-separator-content]:bg-card text-sm text-muted-foreground">
+        <span className="px-4">or sign up with email</span>
+      </FieldSeparator>
 
       <form action={handleSubmit} className="space-y-4">
-        <AuthField id="firstName" label="First name" error={errors.fields.firstName?.message}>
-          <input
+        <AuthField
+          id="firstName"
+          label="First name"
+          error={errors.fields.firstName?.message}
+        >
+          <Input
             id="firstName"
             name="firstName"
             type="text"
@@ -188,10 +200,10 @@ export function SignUpForm() {
 
         <AuthField
           id="email"
-          label="Email address"
+          label="Email*"
           error={errors.fields.emailAddress?.message}
         >
-          <input
+          <Input
             id="email"
             name="email"
             type="email"
@@ -204,11 +216,11 @@ export function SignUpForm() {
 
         <AuthField
           id="password"
-          label="Password"
+          label="Password*"
           error={errors.fields.password?.message}
         >
           <div className="relative">
-            <input
+            <Input
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
@@ -220,7 +232,7 @@ export function SignUpForm() {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted hover:text-ocean-deep"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground hover:text-foreground"
               onClick={() => setShowPassword((v) => !v)}
             >
               {showPassword ? "Hide" : "Show"}
@@ -233,8 +245,9 @@ export function SignUpForm() {
           <p className="text-sm text-coral">{errors.global[0].message}</p>
         ) : null}
 
-        <button
+        <Button
           type="submit"
+          size="lg"
           className={authPrimaryBtnClass}
           disabled={fetchStatus === "fetching"}
         >
@@ -244,12 +257,15 @@ export function SignUpForm() {
             <ArrowRight className="h-4 w-4" />
           )}
           Create account
-        </button>
+        </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/sign-in" className="font-semibold text-ocean hover:underline">
+        <Link
+          href="/sign-in"
+          className="font-medium text-card-foreground hover:underline"
+        >
           Sign in
         </Link>
       </p>
