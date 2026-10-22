@@ -7,6 +7,7 @@ import {
   LogOut,
   Map,
   Settings,
+  Shield,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +18,7 @@ export function AccountMenu({ className = "" }: { className?: string }) {
   const { user, isLoaded } = useUser();
   const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,6 +36,25 @@ export function AccountMenu({ className = "" }: { className?: string }) {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!isLoaded || !user) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/admin/me")
+      .then(async (res) => {
+        const json = (await res.json()) as { isAdmin?: boolean };
+        if (!cancelled) setIsAdmin(Boolean(json.isAdmin));
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, user]);
 
   if (!isLoaded || !user) {
     return (
@@ -59,7 +80,7 @@ export function AccountMenu({ className = "" }: { className?: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full ring-2 ring-aqua/30 transition hover:ring-aqua/60"
+        className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-[0.3rem] ring-1 ring-border transition hover:ring-ocean/40"
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Open account menu"
@@ -82,7 +103,7 @@ export function AccountMenu({ className = "" }: { className?: string }) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-border bg-surface shadow-lg"
+          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-[0.35rem] border border-border bg-surface shadow-[0_16px_40px_-20px_rgba(10,61,63,0.5)]"
         >
           <div className="border-b border-border px-4 py-3">
             <p className="truncate text-sm font-semibold text-ocean-deep">
@@ -117,12 +138,29 @@ export function AccountMenu({ className = "" }: { className?: string }) {
               label="My Trips"
               onClick={() => setOpen(false)}
             />
+            {isAdmin ? (
+              <MenuLink
+                href="/admin"
+                icon={Shield}
+                label="Admin console"
+                onClick={() => setOpen(false)}
+              />
+            ) : null}
           </div>
           <div className="border-t border-border p-1.5">
             <button
               type="button"
               role="menuitem"
-              onClick={() => void signOut({ redirectUrl: "/" })}
+              onClick={() => {
+                setOpen(false);
+                // Hard fallback so sign-out still works if Clerk redirect stalls
+                // under a heavy page (image/network saturation).
+                void signOut({ redirectUrl: "/" }).finally(() => {
+                  if (typeof window !== "undefined") {
+                    window.location.assign("/");
+                  }
+                });
+              }}
               className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-coral transition hover:bg-foam"
             >
               <LogOut className="h-4 w-4" />
