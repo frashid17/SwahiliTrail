@@ -1,4 +1,8 @@
-export type EventSource = "coast-calendar" | "ticketmaster";
+export type EventSource =
+  | "coast-calendar"
+  | "ticketmaster"
+  | "hustlesasa"
+  | "google";
 
 export type CoastEvent = {
   id: string;
