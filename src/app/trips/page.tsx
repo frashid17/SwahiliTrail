@@ -18,6 +18,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import { downloadTripPdf } from "@/lib/plan-pdf";
 import {
+  loadSavedTrips,
   markTripComplete,
   markTripUpcoming,
   removeSavedTrip,
@@ -30,13 +31,28 @@ export default function MyTripsPage() {
   const { userId, isLoaded } = useAuth();
   const router = useRouter();
   const [trips, setTrips] = useState<SavedTrip[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !userId) return;
+    if (!isLoaded) return;
+    if (!userId) {
+      setTrips([]);
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
-    void syncSavedTripsFromCloud(userId).then((trips) => {
-      if (!cancelled) setTrips(trips);
-    });
+    setReady(false);
+    setTrips(loadSavedTrips(userId));
+
+    void syncSavedTripsFromCloud(userId)
+      .then((next) => {
+        if (!cancelled) setTrips(next);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -99,7 +115,9 @@ export default function MyTripsPage() {
           </ButtonLink>
         </FadeIn>
 
-        {trips.length === 0 ? (
+        {!ready ? (
+          <p className="mt-10 text-sm text-muted">Loading your trips…</p>
+        ) : trips.length === 0 ? (
           <FadeIn delay={0.1} className="mt-8">
             <EmptyState
               icon={<Map />}
