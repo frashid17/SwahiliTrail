@@ -12,6 +12,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  isAiQuotaExceededError,
+  UpgradeModal,
+} from "@/components/upgrade-modal";
 import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import {
   FREE_AI_QUOTA,
@@ -32,6 +36,10 @@ type AiQuotaContextValue = {
   /** Apply quota from an AI response - never lowers free usage for the same period. */
   applyQuota: (quota: Partial<UsagePayload> | AiQuotaStatus | null | undefined) => void;
   refresh: () => Promise<void>;
+  /** Open the Trail Plus upgrade popup (e.g. when free AI quota is exhausted). */
+  promptUpgrade: () => void;
+  /** If err is AI_QUOTA_EXCEEDED, open the upgrade popup. */
+  promptUpgradeFromError: (err: unknown) => boolean;
 };
 
 const AiQuotaContext = createContext<AiQuotaContextValue | null>(null);
@@ -124,11 +132,25 @@ function normalizeQuota(
 export function AiQuotaProvider({ children }: { children: ReactNode }) {
   const { isLoaded, userId } = useAuth();
   const [quota, setQuotaState] = useState<UsagePayload | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const refreshSeq = useRef(0);
 
   const setQuota = useCallback((next: UsagePayload | null) => {
     setQuotaState(next);
   }, []);
+
+  const promptUpgrade = useCallback(() => {
+    setUpgradeOpen(true);
+  }, []);
+
+  const promptUpgradeFromError = useCallback(
+    (err: unknown) => {
+      if (!isAiQuotaExceededError(err)) return false;
+      setUpgradeOpen(true);
+      return true;
+    },
+    [],
+  );
 
   const applyQuota = useCallback(
     (incoming: Partial<UsagePayload> | AiQuotaStatus | null | undefined) => {
@@ -163,12 +185,29 @@ export function AiQuotaProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, refresh]);
 
   const value = useMemo(
-    () => ({ quota, setQuota, applyQuota, refresh }),
-    [quota, setQuota, applyQuota, refresh],
+    () => ({
+      quota,
+      setQuota,
+      applyQuota,
+      refresh,
+      promptUpgrade,
+      promptUpgradeFromError,
+    }),
+    [
+      quota,
+      setQuota,
+      applyQuota,
+      refresh,
+      promptUpgrade,
+      promptUpgradeFromError,
+    ],
   );
 
   return (
-    <AiQuotaContext.Provider value={value}>{children}</AiQuotaContext.Provider>
+    <AiQuotaContext.Provider value={value}>
+      {children}
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+    </AiQuotaContext.Provider>
   );
 }
 
@@ -259,6 +298,19 @@ export function AiQuotaNavChip({ className = "" }: { className?: string }) {
   );
 }
 
+function UpgradeBannerButton() {
+  const { promptUpgrade } = useAiQuota();
+  return (
+    <button
+      type="button"
+      onClick={promptUpgrade}
+      className="inline-flex shrink-0 items-center justify-center rounded-[0.3rem] bg-coral px-3.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110"
+    >
+      Upgrade
+    </button>
+  );
+}
+
 export function AiQuotaBanner({
   className,
   quota,
@@ -311,17 +363,14 @@ export function AiQuotaBanner({
                 : `${remaining} free ${remaining === 1 ? "use" : "uses"} left this month`}
           </p>
         </div>
-        {plus ? null : (
+        {plus ? null : exhausted ? (
+          <UpgradeBannerButton />
+        ) : (
           <Link
             href="/pricing"
-            className={cn(
-              "inline-flex shrink-0 items-center justify-center rounded-[0.3rem] px-3.5 py-1.5 text-xs font-semibold transition",
-              exhausted
-                ? "bg-coral text-white hover:brightness-110"
-                : "border border-border bg-surface text-ocean-deep hover:border-aqua/40",
-            )}
+            className="inline-flex shrink-0 items-center justify-center rounded-[0.3rem] border border-border bg-surface px-3.5 py-1.5 text-xs font-semibold text-ocean-deep transition hover:border-aqua/40"
           >
-            {exhausted ? "Upgrade" : "Trail Plus"}
+            Trail Plus
           </Link>
         )}
       </div>
