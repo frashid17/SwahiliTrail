@@ -8,10 +8,10 @@ export type AiSource = "guide" | "plan" | "hotels";
 /** Abuse / fair-use caps. Trail Plus is high-volume, not infinite. */
 export const AI_CAPS = {
   free: {
-    perMinute: 2,
-    perHour: 5,
-    perDay: 3,
-    perMonth: 3,
+    perMinute: 1,
+    perHour: 1,
+    perDay: 1,
+    perMonth: 1,
   },
   trail_plus: {
     perMinute: 6,
