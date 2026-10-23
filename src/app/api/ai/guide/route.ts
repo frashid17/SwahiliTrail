@@ -15,12 +15,27 @@ import {
   type AiQuotaStatus,
 } from "@/lib/ai/quota";
 import { ATTRACTIONS, GUIDE_LANGUAGES } from "@/lib/data/attractions";
+import { formatTripContextBlock } from "@/lib/catalogue";
 import { titleFromMessages } from "@/lib/guide-history";
 import { AI_REGION_CONTEXT, DESTINATION } from "@/lib/destination";
+import { normalizePlan } from "@/lib/plan-normalize";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toPlainText } from "@/lib/text";
 
 const langCodes = ["en", "sw", "fr", "de", "zh", "ar"] as const;
+
+const tripContextSchema = z
+  .object({
+    tripId: z.string().optional(),
+    title: z.string().max(160),
+    startDate: z.string().max(32).optional(),
+    partySize: z.number().int().min(1).max(12).optional(),
+    budget: z.string().max(40).optional(),
+    companions: z.string().max(40).optional(),
+    focusDay: z.number().int().min(1).max(21).optional(),
+    plan: z.record(z.string(), z.unknown()),
+  })
+  .optional();
 
 const bodySchema = z.object({
   message: z.string().min(1).max(2000),
@@ -35,6 +50,7 @@ const bodySchema = z.object({
     )
     .max(20)
     .optional(),
+  tripContext: tripContextSchema,
 });
 
 function quotaPayload(quota: AiQuotaStatus) {
@@ -83,6 +99,20 @@ export async function POST(req: Request) {
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
 
+    let tripBlock = "";
+    if (input.tripContext) {
+      const plan = normalizePlan(input.tripContext.plan);
+      tripBlock = formatTripContextBlock({
+        title: input.tripContext.title,
+        startDate: input.tripContext.startDate,
+        partySize: input.tripContext.partySize,
+        budget: input.tripContext.budget,
+        companions: input.tripContext.companions,
+        focusDay: input.tripContext.focusDay,
+        plan,
+      });
+    }
+
     return ndjsonResponse(async (emit) => {
       let accumulated = "";
       for await (const chunk of streamGenerateContent(
@@ -98,10 +128,16 @@ Output format (strict):
 Line 1: LANG:<code>  (one of en, sw, fr, de, zh, ar)
 Then a blank line
 Then the reply: 2-4 short paragraphs plus one follow-up question.
-Do not use JSON or markdown.`,
+Do not use JSON or markdown.
+${
+  tripBlock
+    ? `\nTHIS TRAVELER'S SAVED TRIP (answer against it — tomorrow's stop, party size, budget, named places):\n${tripBlock}\nIf they ask something outside the trip, still prefer places already on the itinerary when relevant.`
+    : ""
+}`,
         `Local guide for ${DESTINATION.regionLong} (Swahili Trail).
 ${AI_REGION_CONTEXT}
 Be concrete (places, timing, transport, rough KES). No brochure tone.
+${tripBlock ? "You are trip-aware: ground answers in the saved itinerary above." : ""}
 Places: ${context}`,
         { maxOutputTokens: 900, temperature: 0.45, json: false },
       )) {
