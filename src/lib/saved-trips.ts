@@ -8,6 +8,20 @@ export type PlanPlaceLink = {
   mapsQuery: string;
   why?: string;
   estCostKes?: number;
+  /** Swahili Trail catalogue id when grounded */
+  catalogueId?: string;
+  /** True when matched to attractions/hotels/restaurants/wildlife */
+  catalogueLocked?: boolean;
+  durationHours?: number;
+  imageUrl?: string;
+};
+
+export type PlanRouteLeg = {
+  from: string;
+  to: string;
+  mapsQuery: string;
+  estHours: number | null;
+  warning?: string;
 };
 
 export type SavedDayPlan = {
@@ -45,9 +59,22 @@ export type SavedPlan = {
     contingencyKes: number;
     totalKes: number;
     notes: string;
+    /** True when totals used catalogue rates */
+    catalogueBacked?: boolean;
   };
   /** Ordered route legs when the traveler planned multiple bases */
   stops?: TripStop[];
+  /** Drive-time legs between stops */
+  routeLegs?: PlanRouteLeg[];
+  warnings?: {
+    code: string;
+    day?: number;
+    message: string;
+  }[];
+  catalogueStats?: {
+    lockedPlaces: number;
+    unlockedPlaces: number;
+  };
 };
 
 export type TripStatus = "upcoming" | "completed";
@@ -175,7 +202,9 @@ export function addSavedTrip(
 export function updateSavedTrip(
   userId: string,
   tripId: string,
-  patch: Partial<Pick<SavedTrip, "status" | "completedAt" | "plan" | "startDate">>,
+  patch: Partial<
+    Pick<SavedTrip, "status" | "completedAt" | "plan" | "startDate" | "days">
+  >,
 ): SavedTrip[] {
   const trips = loadSavedTrips(userId).map((t) =>
     t.id === tripId ? { ...t, ...patch } : t,
