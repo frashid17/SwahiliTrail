@@ -54,7 +54,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). Allow location for Live now conditions, sign in, then try Planner, Hotels, Guide, Explore, and Analytics.
 
-## Monetization: AI fair-use caps & Trail Plus ($4/mo)
+## Monetization: AI fair-use caps & Trail Plus ($6/mo)
 
 AI is rate-limited for **both free and paid** users (see `src/lib/ai/guardrails.ts`):
 
@@ -79,7 +79,7 @@ Run in the Supabase SQL editor (or use updated `supabase/schema.sql` on a fresh 
 ### 2. Paystack
 
 1. Create a Paystack account and copy the **secret key** into `.env.local` as `PAYSTACK_SECRET_KEY`
-2. Set charge amount (smallest currency unit) and currency, e.g. `PAYSTACK_TRAIL_PLUS_AMOUNT=52000` and `PAYSTACK_CURRENCY=KES` for ~520 KES (~$4)
+2. Set charge amount (smallest currency unit) and currency, e.g. `PAYSTACK_TRAIL_PLUS_AMOUNT=78000` and `PAYSTACK_CURRENCY=KES` for ~780 KES (~$6)
 3. Optional: create a recurring Plan in Paystack and set `PAYSTACK_PLAN_CODE=PLN_...`
 4. Set `NEXT_PUBLIC_APP_URL` to your public site URL (needed for callbacks in production)
 5. In Paystack Dashboard → Settings → Webhooks, point to  
