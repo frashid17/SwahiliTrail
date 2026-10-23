@@ -21,6 +21,10 @@ import { RESTAURANTS } from "@/lib/data/restaurants";
 import { WILDLIFE_SITES } from "@/lib/data/wildlife";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AI_REGION_CONTEXT, DESTINATION } from "@/lib/destination";
+import {
+  groundPlan,
+  recomputeBudgetFromCatalogue,
+} from "@/lib/catalogue";
 import { normalizePlan } from "@/lib/plan-normalize";
 import {
   MAX_STOP_DAYS,
@@ -327,21 +331,21 @@ ${
     : ""
 }
 
-VOICE & VALUE (critical — travelers pay for this vs free ChatGPT):
-- Ban vague filler: never write only "relax on the beach", "enjoy local food", "explore the area", "visit a restaurant".
-- Name real venues from the catalogues below when they fit; invent only if catalogue lacks a fit, and still use a specific Kenya place name + mapsQuery.
-- Include Kenya logistics: M-Pesa vs cash, park/reserve fees when relevant, Likoni ferry / SGR / domestic flight / matatu / Bolt where it matters, heat/tide/season windows, safety street-smart tips without scaremongering.
-- Each day needs 3–5 places[] with mapsQuery like "Ali Barbour's Cave Diani Kenya" (town + Kenya) so Google Maps opens correctly.
-- morning/afternoon/evening: 2–4 sentences each with what to do, roughly when, and what it costs or how to book.
-- foodTip: name a dish + venue (or market) and what to order; transportTip: how to get between that day's places with fare ballparks in KES.
-- localIntel: one dense paragraph of corridor knowledge (roads, crowds, what tourists waste money on).
-- timingNote: best arrival/start window.
-- insiderTip: something a generic AI would miss (e.g. which beach access is free vs club, tip for guides, photo etiquette).
-- estimatedDayCostKes: realistic for the whole party (not per person unless party is 1).
-- summary: 3–5 sentences selling the arc of the trip; recommendedStay: ONE plain string (never an object) naming area + hotel ideas + rough nightly KES.
-- packingTips: 5 specific items for THIS route; localEtiquette: 5 Kenya/coast/safari-aware rules.
+CATALOGUE LOCK (critical — this is why travelers use Swahili Trail, not ChatGPT):
+- Prefer catalogue IDs for EVERY place. Set places[].catalogueId to the catalogue id string whenever the place is in the lists below.
+- Wishlist items MUST appear in the plan (use their exact id as catalogueId).
+- You may invent at most 1 place per day if the catalogue lacks a fit — those must omit catalogueId and still use a specific Kenya name + mapsQuery.
+- Use catalogue KES costs for estCostKes when catalogueId is set.
+- Ban vague filler: never write only "relax on the beach", "enjoy local food", "explore the area".
+- Include Kenya logistics: M-Pesa vs cash, park fees, Likoni ferry / SGR / matatu / Bolt, heat/tide windows.
+- Each day needs 3–5 places[] with mapsQuery like "Ali Barbour's Cave Diani Kenya".
+- morning/afternoon/evening: 2–4 sentences with what/when/cost.
+- foodTip: dish + venue; transportTip: between places with KES fares.
+- localIntel, timingNote, insiderTip: dense and specific.
+- estimatedDayCostKes: whole party. recommendedStay: ONE plain string with area + hotel + nightly KES.
+- packingTips + localEtiquette: 5 each for THIS route.
 
-Wishlist (prioritize these):
+Wishlist (MUST include these catalogue ids in places[]):
 ${cartText}
 
 Car hires (use ONLY these real names/phones when recommending hire):
@@ -361,11 +365,12 @@ ${restaurants}
 
 Return ONLY JSON with keys:
 title (string), summary (string), recommendedStay (string — never object/array),
-days[{day,theme,location,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes,localIntel,timingNote,insiderTip,places[{name,kind,mapsQuery,why,estCostKes}]}],
+days[{day,theme,location,morning,afternoon,evening,foodTip,transportTip,estimatedDayCostKes,localIntel,timingNote,insiderTip,places[{name,kind,mapsQuery,why,estCostKes,catalogueId,durationHours}]}],
 packingTips (5 strings), localEtiquette (5 strings),
 budgetBreakdown{lodgingKes,activitiesKes,foodKes,transportKes,contingencyKes,totalKes,notes}.
-Cover exactly ${totalDays} days. Every day must include places (min 3). kind is one of attraction|restaurant|stay|viewpoint|beach|transfer|market|park.`,
-        "Swahili Trail proprietary Kenya trip planner. Operator-grade, map-ready, anti-generic. Prefer catalogue places. No marketing fluff, no ChatGPT tourist clichés.",
+Cover exactly ${totalDays} days. Every day must include places (min 3). kind is one of attraction|wildlife|restaurant|hotel|stay|viewpoint|beach|transfer|market|park.
+catalogueId = catalogue id when known, else null.`,
+        "Swahili Trail proprietary Kenya trip planner. Catalogue-first, operator-grade, map-ready. Prefer catalogue ids. No ChatGPT tourist clichés.",
         { maxOutputTokens, temperature: 0.45, json: true },
       )) {
         accumulated += chunk;
@@ -379,10 +384,16 @@ Cover exactly ${totalDays} days. Every day must include places (min 3). kind is 
         throw new Error("Could not parse the trip plan. Please try again.");
       }
 
-      const cleanPlan = {
+      const normalized = {
         ...normalizePlan(sanitizeAiStrings(parsed)),
         stops,
       };
+      const grounded = groundPlan(normalized);
+      const cleanPlan = recomputeBudgetFromCatalogue(grounded, {
+        partySize: input.partySize,
+        budgetTier: input.budget,
+        nights: Math.max(1, totalDays - 1),
+      });
 
       const nextQuota = await consumeAiQuota(userId, "plan", {
         requestHash: quota.requestHash,
