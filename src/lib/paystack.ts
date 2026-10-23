@@ -3,13 +3,13 @@ import { createHmac, timingSafeEqual } from "crypto";
 const PAYSTACK_BASE = "https://api.paystack.co";
 
 /** Trail Plus display price (USD). */
-export const TRAIL_PLUS_PRICE_USD = 4;
+export const TRAIL_PLUS_PRICE_USD = 6;
 
-/** Default charge in smallest currency unit (520 KES → 52000). Override via env. */
+/** Default charge in smallest currency unit (780 KES → 78000 ≈ $6). Override via env. */
 export function trailPlusAmountSubunits() {
   const raw = process.env.PAYSTACK_TRAIL_PLUS_AMOUNT;
   if (raw && /^\d+$/.test(raw)) return Number(raw);
-  return 52000;
+  return 78000;
 }
 
 export function trailPlusCurrency() {
