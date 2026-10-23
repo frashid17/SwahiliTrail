@@ -10,7 +10,9 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   AiQuotaBanner,
   aiQuotaErrorMessage,
@@ -36,6 +38,7 @@ import {
   type GuideMessage,
   type GuideSession,
 } from "@/lib/guide-history";
+import { getSavedTrip, type SavedTrip } from "@/lib/saved-trips";
 import {
   WorkspaceFrame,
   WorkspaceHeader,
@@ -79,8 +82,24 @@ const starters = [
 ];
 
 export default function GuidePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-muted">
+          Loading guide…
+        </div>
+      }
+    >
+      <GuideContent />
+    </Suspense>
+  );
+}
+
+function GuideContent() {
   const { userId, isLoaded } = useAuth();
-  const { quota, applyQuota } = useAiQuota();
+  const searchParams = useSearchParams();
+  const tripIdParam = searchParams.get("tripId");
+  const { quota, applyQuota, promptUpgradeFromError } = useAiQuota();
   const [language, setLanguage] = useState<GuideLanguage>("en");
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState(() => createGuideSessionId());
@@ -90,8 +109,17 @@ export default function GuidePage() {
   const [streamingReply, setStreamingReply] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [linkedTrip, setLinkedTrip] = useState<SavedTrip | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!userId || !tripIdParam) {
+      setLinkedTrip(null);
+      return;
+    }
+    setLinkedTrip(getSavedTrip(userId, tripIdParam));
+  }, [userId, tripIdParam]);
 
   const refreshSessions = useCallback(() => {
     if (!userId) {
@@ -208,6 +236,17 @@ export default function GuidePage() {
           language,
           history: nextMessages.slice(-10),
           sessionId,
+          tripContext: linkedTrip
+            ? {
+                tripId: linkedTrip.id,
+                title: linkedTrip.plan.title,
+                startDate: linkedTrip.startDate,
+                partySize: linkedTrip.partySize,
+                budget: linkedTrip.budget,
+                companions: linkedTrip.companions,
+                plan: linkedTrip.plan,
+              }
+            : undefined,
         }),
       });
       const data = await consumeAiNdjsonStream<{
@@ -240,6 +279,7 @@ export default function GuidePage() {
               priceUsdPerMonth?: number;
             })
           : {};
+      promptUpgradeFromError(err);
       setError(
         payload.code
           ? aiQuotaErrorMessage(payload)
@@ -262,9 +302,28 @@ export default function GuidePage() {
     <>
       <WorkspaceHeader
         eyebrow="Guide"
-        title="Ask about Kenya"
-        description="Roads, lodging, food, parks, or phrases - in your language."
+        title={linkedTrip ? "Trip-aware guide" : "Ask about Kenya"}
+        description={
+          linkedTrip
+            ? `Answering against “${linkedTrip.plan.title}” — party, budget, and stops.`
+            : "Roads, lodging, food, parks, or phrases - in your language."
+        }
       />
+
+      {linkedTrip ? (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ocean/25 bg-ocean/5 px-4 py-3 text-sm">
+          <p className="text-ocean-deep">
+            Linked trip:{" "}
+            <span className="font-semibold">{linkedTrip.plan.title}</span>
+          </p>
+          <Link
+            href={`/trips/${linkedTrip.id}`}
+            className="font-semibold text-ocean underline-offset-2 hover:underline"
+          >
+            Open itinerary
+          </Link>
+        </div>
+      ) : null}
 
       <AiQuotaBanner className="mb-4" quota={quota} />
 
