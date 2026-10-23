@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FadeIn } from "@/components/fade-in";
+import { TripRefinePanel } from "@/components/trip/trip-refine-panel";
 import { TripSharePanel } from "@/components/trip/trip-share-panel";
 import {
   downloadIcs,
@@ -19,6 +20,7 @@ import {
   planToIcs,
 } from "@/lib/plan-export";
 import {
+  getSavedTrip,
   markTripComplete,
   markTripUpcoming,
   removeSavedTrip,
@@ -28,6 +30,7 @@ import {
 } from "@/lib/saved-trips";
 import {
   googleMapsDirectionsUrl,
+  googleMapsMultiStopUrl,
   googleMapsSearchUrl,
 } from "@/lib/maps-link";
 import { asPlainText } from "@/lib/plan-normalize";
@@ -38,34 +41,52 @@ export default function TripDetailPage() {
   const router = useRouter();
   const { userId, isLoaded } = useAuth();
   const [trip, setTrip] = useState<SavedTrip | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !userId) return;
+    if (!isLoaded) return;
+    if (!userId) {
+      setTrip(null);
+      setReady(true);
+      return;
+    }
+
     let cancelled = false;
-    void syncSavedTripsFromCloud(userId).then((trips) => {
-      if (cancelled) return;
-      setTrip(trips.find((t) => t.id === params.id) ?? null);
-    });
+    setReady(false);
+
+    // Show local trip immediately so we never flash "not found" while cloud syncs.
+    const local = getSavedTrip(userId, params.id);
+    if (local) setTrip(local);
+
+    void syncSavedTripsFromCloud(userId)
+      .then((trips) => {
+        if (cancelled) return;
+        setTrip(trips.find((t) => t.id === params.id) ?? null);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+
     return () => {
       cancelled = true;
     };
   }, [isLoaded, userId, params.id]);
 
-  if (isLoaded && userId && !trip) {
+  if (!isLoaded || !ready) {
+    return (
+      <div className="coastal-grid flex min-h-[40vh] items-center justify-center text-muted">
+        Loading trip…
+      </div>
+    );
+  }
+
+  if (!userId || !trip) {
     return (
       <div className="coastal-grid mx-auto max-w-3xl px-4 py-20 text-center">
         <p className="text-muted">Trip not found.</p>
         <Link href="/trips" className="mt-4 inline-block font-semibold text-ocean">
           Back to My Trips
         </Link>
-      </div>
-    );
-  }
-
-  if (!trip) {
-    return (
-      <div className="coastal-grid min-h-[40vh] flex items-center justify-center text-muted">
-        Loading trip…
       </div>
     );
   }
@@ -170,18 +191,90 @@ export default function TripDetailPage() {
           <p className="mt-4 text-muted leading-relaxed">{trip.plan.summary}</p>
           {trip.plan.stops && trip.plan.stops.length > 0 ? (
             <p className="mt-3 text-sm text-muted">
-              Route: {formatStopsSummary(trip.plan.stops)}
+              Route: {formatStopsSummary(trip.plan.stops)}{" "}
+              <a
+                href={googleMapsMultiStopUrl(
+                  trip.plan.stops.map((s) => `${s.location} Kenya`),
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold text-ocean underline-offset-2 hover:underline"
+              >
+                Open route in Maps
+              </a>
             </p>
           ) : null}
           <p className="mt-3 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ocean-deep">
             <span className="font-semibold">Recommended stay:</span>{" "}
             {asPlainText(trip.plan.recommendedStay)}
           </p>
+          <div className="mt-4 flex flex-wrap gap-3 text-sm">
+            <Link
+              href={`/guide?tripId=${encodeURIComponent(trip.id)}`}
+              className="font-semibold text-ocean underline-offset-2 hover:underline"
+            >
+              Ask the guide about this trip →
+            </Link>
+          </div>
         </FadeIn>
+
+        {userId ? (
+          <FadeIn delay={0.04} className="mt-6">
+            <TripRefinePanel
+              userId={userId}
+              trip={trip}
+              onUpdated={setTrip}
+            />
+          </FadeIn>
+        ) : null}
+
+        {trip.plan.warnings && trip.plan.warnings.length > 0 ? (
+          <FadeIn delay={0.05} className="mt-6 rounded-3xl border border-coral/30 bg-coral/5 p-5">
+            <h2 className="font-display text-lg text-ocean-deep">
+              Timing & logistics
+            </h2>
+            <ul className="mt-2 space-y-2 text-sm text-muted">
+              {trip.plan.warnings.map((w, i) => (
+                <li key={`${w.code}-${i}`}>{w.message}</li>
+              ))}
+            </ul>
+          </FadeIn>
+        ) : null}
+
+        {trip.plan.routeLegs && trip.plan.routeLegs.length > 0 ? (
+          <FadeIn delay={0.05} className="mt-4 rounded-3xl border border-border bg-surface p-5">
+            <h2 className="font-display text-lg text-ocean-deep">
+              Drive between stops
+            </h2>
+            <ul className="mt-2 space-y-2 text-sm text-muted">
+              {trip.plan.routeLegs.map((leg) => (
+                <li key={`${leg.from}-${leg.to}`}>
+                  <span className="font-medium text-ocean-deep">
+                    {leg.from} → {leg.to}
+                  </span>
+                  {leg.estHours != null ? ` · ~${leg.estHours}h` : ""}
+                  {leg.warning ? ` · ${leg.warning}` : ""}{" "}
+                  <a
+                    href={googleMapsDirectionsUrl(leg.mapsQuery)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-ocean underline-offset-2 hover:underline"
+                  >
+                    Directions
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </FadeIn>
+        ) : null}
 
         {trip.plan.budgetBreakdown ? (
           <FadeIn delay={0.05} className="mt-6 rounded-3xl bg-brand-deep p-6 text-on-brand">
-            <p className="text-sm text-aqua">Damage cost estimate</p>
+            <p className="text-sm text-aqua">
+              {trip.plan.budgetBreakdown.catalogueBacked
+                ? "Catalogue-backed estimate"
+                : "Trip cost estimate"}
+            </p>
             <p className="mt-1 text-3xl font-semibold text-aqua">
               ~KES {trip.plan.budgetBreakdown.totalKes.toLocaleString()}
             </p>
@@ -251,6 +344,16 @@ export default function TripDetailPage() {
                       >
                         <p className="text-sm font-semibold text-ocean-deep">
                           {place.name}
+                          {place.catalogueLocked ? (
+                            <span className="ml-2 rounded-full bg-ocean/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ocean">
+                              Catalogue
+                            </span>
+                          ) : null}
+                          {place.estCostKes != null ? (
+                            <span className="ml-2 text-xs font-medium text-muted">
+                              ~KES {place.estCostKes.toLocaleString("en-KE")}
+                            </span>
+                          ) : null}
                         </p>
                         {place.why ? (
                           <p className="text-xs text-muted">{place.why}</p>
