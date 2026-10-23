@@ -3,26 +3,29 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Kikoy Luxe - mangrove coast, safari gold, cool mist (not cream SaaS) */
+/* Kikoy Luxe — mangrove coast, safari gold, lively aqua (ShadcnSpace glass + contrast) */
 :root {
-  --brand-deep: #062a2e;
-  --ocean-deep: #0c3d42;
-  --ocean: #1a7a7e;
-  --aqua: #2bb5b0;
-  --gold: #c4a35a;
-  --foam: #e6efeb;
-  --sand: #e2ddd4;
-  --coral: #d4653a;
-  --ink: #0a2428;
-  --muted: #5a7072;
-  --surface: #f7f8f5;
-  --surface-soft: #eef1ed;
-  --border: color-mix(in oklab, var(--ocean-deep) 11%, white);
-  --background: #e9ebe6;
-  --foreground: #0a2428;
-  --wave: color-mix(in oklab, var(--ocean) 8%, transparent);
-  --on-brand: #eef6f4;
-  --lux-glow: color-mix(in oklab, var(--gold) 35%, transparent);
+  --brand-deep: #05353a;
+  --ocean-deep: #0a4550;
+  --ocean: #178f96;
+  --aqua: #1fc4bc;
+  --gold: #d4ae4a;
+  --foam: #eef7f4;
+  --sand: #f3eee4;
+  --coral: #e56a35;
+  --ink: #082a30;
+  --muted: #4f6a6e;
+  --surface: #ffffff;
+  --surface-soft: #f2f7f5;
+  --border: color-mix(in oklab, var(--ocean) 16%, white);
+  --background: #f4f7f5;
+  --foreground: #082a30;
+  --wave: color-mix(in oklab, var(--aqua) 12%, transparent);
+  --on-brand: #f2fbf9;
+  --lux-glow: color-mix(in oklab, var(--gold) 42%, transparent);
+  --focus-ring: color-mix(in oklab, var(--aqua) 55%, var(--gold));
+  --interactive: color-mix(in oklab, var(--aqua) 14%, transparent);
+  --interactive-strong: color-mix(in oklab, var(--coral) 16%, transparent);
 
   /* shadcn / ShadcnSpace semantic tokens → Trail palette */
   --card: var(--surface);
@@ -35,51 +38,55 @@
   --secondary-foreground: var(--ocean-deep);
   --muted-bg: var(--surface-soft);
   --muted-foreground: var(--muted);
-  --accent: color-mix(in oklab, var(--gold) 22%, var(--foam));
+  --accent: color-mix(in oklab, var(--gold) 28%, var(--foam));
   --accent-foreground: var(--ocean-deep);
   --destructive: var(--coral);
   --destructive-foreground: #ffffff;
   --input: var(--border);
-  --ring: color-mix(in oklab, var(--gold) 55%, transparent);
+  --ring: color-mix(in oklab, var(--aqua) 45%, var(--gold));
   --radius: 0.75rem;
 }
 
 .dark {
-  --brand-deep: #021619;
-  --ocean-deep: #d4eef0;
-  --ocean: #3ec4c8;
-  --aqua: #5ed4de;
-  --gold: #e0c878;
-  --foam: #0a2228;
-  --sand: #123038;
-  --coral: #f08a58;
-  --ink: #e8f4f3;
-  --muted: #8eaaaf;
-  --surface: #0d262e;
-  --surface-soft: #0a1f26;
-  --border: color-mix(in oklab, var(--aqua) 22%, transparent);
-  --background: #041316;
-  --foreground: #e8f4f3;
-  --wave: color-mix(in oklab, var(--aqua) 10%, transparent);
-  --on-brand: #e8f7f6;
-  --lux-glow: color-mix(in oklab, var(--gold) 28%, transparent);
+  /* Lifted teal night — readable cards, vivid accents, not near-black */
+  --brand-deep: #0a2f36;
+  --ocean-deep: #e7f8f9;
+  --ocean: #3fd0d4;
+  --aqua: #5eebf0;
+  --gold: #efc96a;
+  --foam: #123740;
+  --sand: #1a4550;
+  --coral: #ff8f55;
+  --ink: #f2fbfa;
+  --muted: #a8c5ca;
+  --surface: #143a44;
+  --surface-soft: #102f38;
+  --border: color-mix(in oklab, var(--aqua) 32%, transparent);
+  --background: #0b242c;
+  --foreground: #f2fbfa;
+  --wave: color-mix(in oklab, var(--aqua) 16%, transparent);
+  --on-brand: #eefcfa;
+  --lux-glow: color-mix(in oklab, var(--gold) 40%, transparent);
+  --focus-ring: color-mix(in oklab, var(--aqua) 65%, var(--gold));
+  --interactive: color-mix(in oklab, var(--aqua) 18%, transparent);
+  --interactive-strong: color-mix(in oklab, var(--coral) 22%, transparent);
 
   --card: var(--surface);
   --card-foreground: var(--ink);
-  --popover: var(--surface);
+  --popover: color-mix(in oklab, var(--surface) 92%, var(--aqua));
   --popover-foreground: var(--ink);
   --primary: var(--coral);
-  --primary-foreground: #0a1a1c;
+  --primary-foreground: #14110e;
   --secondary: var(--foam);
   --secondary-foreground: var(--ocean-deep);
   --muted-bg: var(--surface-soft);
   --muted-foreground: var(--muted);
-  --accent: color-mix(in oklab, var(--gold) 18%, var(--foam));
+  --accent: color-mix(in oklab, var(--gold) 24%, var(--foam));
   --accent-foreground: var(--ocean-deep);
   --destructive: var(--coral);
-  --destructive-foreground: #0a1a1c;
+  --destructive-foreground: #14110e;
   --input: var(--border);
-  --ring: color-mix(in oklab, var(--gold) 45%, transparent);
+  --ring: color-mix(in oklab, var(--aqua) 55%, var(--gold));
 }
 
 @theme inline {
@@ -115,6 +122,9 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-focus-ring: var(--focus-ring);
+  --color-interactive: var(--interactive);
+  --color-interactive-strong: var(--interactive-strong);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -156,29 +166,64 @@ input[type="datetime-local"] {
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--gold) 40%, transparent);
+  background: color-mix(in oklab, var(--aqua) 35%, var(--gold));
   color: var(--foreground);
 }
 
-/* Atmosphere - cool mist + gold horizon wash */
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Atmosphere — brighter gold + aqua washes (ShadcnSpace-style depth) */
 .coastal-grid {
   background-color: var(--background);
   background-image:
     radial-gradient(
-      ellipse 80% 50% at 10% -10%,
-      color-mix(in oklab, var(--gold) 12%, transparent),
-      transparent 55%
+      ellipse 85% 55% at 8% -8%,
+      color-mix(in oklab, var(--gold) 22%, transparent),
+      transparent 58%
     ),
     radial-gradient(
-      ellipse 70% 45% at 95% 5%,
-      color-mix(in oklab, var(--aqua) 14%, transparent),
-      transparent 50%
+      ellipse 75% 50% at 96% 0%,
+      color-mix(in oklab, var(--aqua) 24%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 50% 100%,
+      color-mix(in oklab, var(--coral) 10%, transparent),
+      transparent 60%
     ),
     linear-gradient(
       180deg,
-      color-mix(in oklab, var(--foam) 50%, var(--background)) 0%,
-      var(--background) 40%,
-      color-mix(in oklab, var(--sand) 35%, var(--background)) 100%
+      color-mix(in oklab, var(--foam) 55%, var(--background)) 0%,
+      var(--background) 42%,
+      color-mix(in oklab, var(--sand) 40%, var(--background)) 100%
+    );
+}
+
+.dark .coastal-grid {
+  background-image:
+    radial-gradient(
+      ellipse 90% 60% at 12% -12%,
+      color-mix(in oklab, var(--gold) 28%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 55% at 92% 4%,
+      color-mix(in oklab, var(--aqua) 30%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 40% 110%,
+      color-mix(in oklab, var(--coral) 16%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--surface) 45%, var(--background)) 0%,
+      var(--background) 48%,
+      color-mix(in oklab, var(--sand) 50%, var(--background)) 100%
     );
 }
 
@@ -191,12 +236,12 @@ input[type="datetime-local"] {
   position: absolute;
   inset: 0;
   z-index: 1;
-  opacity: 0.045;
+  opacity: 0.04;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .dark .paper-grain::after {
-  opacity: 0.07;
+  opacity: 0.09;
   mix-blend-mode: soft-light;
 }
 
@@ -223,11 +268,12 @@ input[type="datetime-local"] {
   transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .btn-solid:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.08) saturate(1.05);
   transform: translateY(-1px);
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.08),
-    0 16px 36px -14px var(--lux-glow);
+    0 18px 40px -12px var(--lux-glow),
+    0 0 0 1px color-mix(in oklab, var(--gold) 35%, transparent);
 }
 
 .btn-ghost {
@@ -268,9 +314,11 @@ input[type="datetime-local"] {
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 .btn-outline:hover {
-  border-color: color-mix(in oklab, var(--gold) 45%, var(--border));
-  background: var(--foam);
-  box-shadow: 0 8px 24px -18px var(--lux-glow);
+  border-color: color-mix(in oklab, var(--aqua) 45%, var(--gold));
+  background: var(--interactive);
+  box-shadow:
+    0 10px 28px -16px var(--lux-glow),
+    0 0 0 1px color-mix(in oklab, var(--aqua) 25%, transparent);
 }
 
 .btn-brand {
@@ -306,15 +354,17 @@ input[type="datetime-local"] {
 
 .glass {
   background: color-mix(in oklab, var(--surface) 78%, transparent);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid color-mix(in oklab, var(--border) 80%, var(--aqua));
 }
 
 .glass-lux {
   background: color-mix(in oklab, var(--surface) 72%, transparent);
-  backdrop-filter: blur(18px) saturate(1.2);
-  border: 1px solid color-mix(in oklab, var(--gold) 22%, var(--border));
-  box-shadow: 0 20px 50px -28px color-mix(in oklab, var(--brand-deep) 45%, transparent);
+  backdrop-filter: blur(18px) saturate(1.25);
+  border: 1px solid color-mix(in oklab, var(--gold) 28%, var(--border));
+  box-shadow:
+    0 20px 50px -28px color-mix(in oklab, var(--brand-deep) 45%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--aqua) 12%, transparent);
 }
 
 .coastal-panel {
@@ -323,6 +373,17 @@ input[type="datetime-local"] {
   border: 1px solid var(--border);
   background: var(--surface);
   border-radius: 1.5rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.coastal-panel:hover {
+  border-color: color-mix(in oklab, var(--aqua) 40%, var(--border));
+  box-shadow:
+    0 16px 40px -24px var(--lux-glow),
+    0 0 0 1px color-mix(in oklab, var(--aqua) 18%, transparent);
 }
 
 .coastal-panel::before {
@@ -331,9 +392,14 @@ input[type="datetime-local"] {
   inset: auto -20% -40% -20%;
   height: 55%;
   background:
-    radial-gradient(ellipse at 30% 0%, color-mix(in oklab, var(--aqua) 18%, transparent), transparent 55%),
-    radial-gradient(ellipse at 70% 40%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 50%);
+    radial-gradient(ellipse at 30% 0%, color-mix(in oklab, var(--aqua) 26%, transparent), transparent 55%),
+    radial-gradient(ellipse at 70% 40%, color-mix(in oklab, var(--gold) 20%, transparent), transparent 50%);
   pointer-events: none;
+}
+
+.dark .coastal-panel {
+  background: color-mix(in oklab, var(--surface) 94%, var(--aqua));
+  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--aqua) 18%, transparent);
 }
 
 .tide-line {
