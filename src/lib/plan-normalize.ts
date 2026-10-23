@@ -48,12 +48,22 @@ function normalizePlace(raw: unknown): PlanPlaceLink | null {
     typeof record.estCostKes === "number"
       ? record.estCostKes
       : Number(record.estCostKes);
+  const duration =
+    typeof record.durationHours === "number"
+      ? record.durationHours
+      : Number(record.durationHours);
+  const catalogueId = asPlainText(
+    record.catalogueId || record.id || record.catalogue_id,
+  );
   return {
     name,
     kind: asPlainText(record.kind) || undefined,
     mapsQuery,
     why: asPlainText(record.why) || undefined,
     estCostKes: Number.isFinite(est) ? est : undefined,
+    catalogueId: catalogueId || undefined,
+    durationHours: Number.isFinite(duration) ? duration : undefined,
+    imageUrl: asPlainText(record.imageUrl) || undefined,
   };
 }
 
