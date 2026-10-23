@@ -64,7 +64,7 @@ type Mode = "hotels" | "restaurants";
 
 export default function HotelsPage() {
   const { userId, isLoaded } = useAuth();
-  const { quota, applyQuota } = useAiQuota();
+  const { quota, applyQuota, promptUpgradeFromError } = useAiQuota();
   const [mode, setMode] = useState<Mode>("hotels");
   const [budgetMax, setBudgetMax] = useState(20000);
   const [vibe, setVibe] = useState("Relaxed beach luxury near the water");
@@ -223,6 +223,7 @@ export default function HotelsPage() {
               priceUsdPerMonth?: number;
             })
           : {};
+      promptUpgradeFromError(err);
       setError(
         payload.code
           ? aiQuotaErrorMessage(payload)
