@@ -164,8 +164,18 @@ type Plan = {
     contingencyKes: number;
     totalKes: number;
     notes: string;
+    catalogueBacked?: boolean;
   };
   stops?: TripStop[];
+  routeLegs?: {
+    from: string;
+    to: string;
+    mapsQuery: string;
+    estHours: number | null;
+    warning?: string;
+  }[];
+  warnings?: { code: string; day?: number; message: string }[];
+  catalogueStats?: { lockedPlaces: number; unlockedPlaces: number };
 };
 
 function typeLabel(type: TripCartItem["type"]) {
@@ -189,7 +199,7 @@ function defaultStartDate() {
 
 export default function PlannerPage() {
   const { userId, isLoaded } = useAuth();
-  const { quota, applyQuota } = useAiQuota();
+  const { quota, applyQuota, promptUpgradeFromError } = useAiQuota();
   const [stops, setStops] = useState<TripStop[]>(defaultTripStops);
   const [interests, setInterests] = useState<string[]>([
     "Wildlife & safari",
@@ -395,6 +405,7 @@ export default function PlannerPage() {
               priceUsdPerMonth?: number;
             })
           : {};
+      promptUpgradeFromError(err);
       setError(
         payload.code
           ? aiQuotaErrorMessage(payload)
@@ -1147,12 +1158,37 @@ export default function PlannerPage() {
                   </div>
                 ) : null}
 
+                {plan.warnings && plan.warnings.length > 0 ? (
+                  <div className="rounded-3xl border border-coral/30 bg-coral/5 p-5">
+                    <h3 className="font-display text-lg text-ocean-deep">
+                      Timing & logistics
+                    </h3>
+                    <ul className="mt-2 space-y-1.5 text-sm text-muted">
+                      {plan.warnings.map((w, i) => (
+                        <li key={`${w.code}-${i}`}>{w.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {plan.catalogueStats ? (
+                  <p className="text-sm text-muted">
+                    {plan.catalogueStats.lockedPlaces} catalogue places ·{" "}
+                    {plan.catalogueStats.unlockedPlaces} AI-suggested
+                    {plan.budgetBreakdown?.catalogueBacked
+                      ? " · budget uses catalogue rates"
+                      : ""}
+                  </p>
+                ) : null}
+
                 {plan.budgetBreakdown ? (
                   <div className="rounded-3xl border border-border bg-brand-deep p-6 text-on-brand">
                     <div className="flex items-center gap-2">
                       <Wallet className="h-5 w-5 text-aqua" />
                       <h3 className="font-display text-2xl">
-                        Damage cost estimate
+                        {plan.budgetBreakdown.catalogueBacked
+                          ? "Catalogue-backed estimate"
+                          : "Trip cost estimate"}
                       </h3>
                     </div>
                     <p className="mt-1 text-3xl font-semibold text-aqua">
@@ -1255,6 +1291,11 @@ export default function PlannerPage() {
                               <div className="min-w-0">
                                 <p className="font-semibold text-ocean-deep">
                                   {place.name}
+                                  {place.catalogueLocked ? (
+                                    <span className="ml-2 rounded-full bg-ocean/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ocean">
+                                      Catalogue
+                                    </span>
+                                  ) : null}
                                   {place.kind ? (
                                     <span className="ml-2 text-[11px] font-medium uppercase tracking-wide text-muted">
                                       {place.kind}
