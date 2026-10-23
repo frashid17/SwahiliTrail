@@ -39,6 +39,8 @@ export default function SharedTripPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<string | null>(null);
   const [leadError, setLeadError] = useState<string | null>(null);
+  const [operatorBrief, setOperatorBrief] = useState<string | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,9 +104,69 @@ export default function SharedTripPage() {
           source: "share_page",
         }),
       });
-      const json = (await res.json()) as { error?: string; message?: string };
+      const json = (await res.json()) as {
+        error?: string;
+        message?: string;
+        id?: string;
+      };
       if (!res.ok) throw new Error(json.error || "Could not send request");
       setSubmitted(json.message || "Request sent");
+
+      // AI operator brief from the structured share — ChatGPT can't do this.
+      setBriefLoading(true);
+      try {
+        const briefRes = await fetch("/api/ai/operator-brief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shareToken: params.token,
+            leadId: json.id,
+            guestName: name,
+            partySize: trip.partySize,
+            startDate: trip.startDate,
+            notes,
+          }),
+        });
+        if (briefRes.ok) {
+          const reader = briefRes.body?.getReader();
+          const decoder = new TextDecoder();
+          let lineBuf = "";
+          let briefText = "";
+          if (reader) {
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              lineBuf += decoder.decode(value, { stream: true });
+              let nl = lineBuf.indexOf("\n");
+              while (nl >= 0) {
+                const line = lineBuf.slice(0, nl).trim();
+                lineBuf = lineBuf.slice(nl + 1);
+                nl = lineBuf.indexOf("\n");
+                if (!line) continue;
+                try {
+                  const event = JSON.parse(line) as {
+                    type?: string;
+                    text?: string;
+                    brief?: string;
+                  };
+                  if (event.type === "delta" && event.text) {
+                    briefText += event.text;
+                    setOperatorBrief(briefText);
+                  } else if (event.type === "done" && event.brief) {
+                    setOperatorBrief(event.brief);
+                  }
+                } catch {
+                  /* skip */
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        /* brief is best-effort */
+      } finally {
+        setBriefLoading(false);
+      }
     } catch (err) {
       setLeadError(err instanceof Error ? err.message : "Request failed");
     } finally {
@@ -279,9 +341,28 @@ export default function SharedTripPage() {
 
           <div className="p-5">
             {submitted ? (
-              <div className="flex items-start gap-3 rounded-xl border border-aqua/30 bg-aqua/10 px-4 py-3 text-sm text-ocean-deep">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-aqua" />
-                {submitted}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 rounded-xl border border-aqua/30 bg-aqua/10 px-4 py-3 text-sm text-ocean-deep">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-aqua" />
+                  {submitted}
+                </div>
+                {(briefLoading || operatorBrief) && (
+                  <div className="rounded-xl border border-border bg-surface p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-aqua">
+                      AI operator brief
+                    </p>
+                    {briefLoading && !operatorBrief ? (
+                      <p className="mt-2 flex items-center gap-2 text-sm text-muted">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Building lodge / driver brief from this itinerary…
+                      </p>
+                    ) : (
+                      <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-relaxed text-ocean-deep">
+                        {operatorBrief}
+                      </pre>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <form onSubmit={(e) => void submitLead(e)} className="space-y-3">
