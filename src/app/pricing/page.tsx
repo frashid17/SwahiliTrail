@@ -13,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { TrailAiMark } from "@/components/ui/trail-ai-mark";
 import {
-  AI_CAPS,
   FREE_AI_QUOTA,
   TRAIL_PLUS_DAILY_CAP,
   TRAIL_PLUS_MONTHLY_CAP,
@@ -22,17 +21,20 @@ import {
 import { cn } from "@/lib/utils";
 
 const freeFeatures = [
-  `${FREE_AI_QUOTA} AI uses per month`,
-  `Abuse caps: ${AI_CAPS.free.perMinute}/min · ${AI_CAPS.free.perHour}/hour`,
-  "Guide, Planner, and Stay & Eat",
-  "Explore places and events",
+  `${FREE_AI_QUOTA} AI query per month (Guide, Planner, or Stay & Eat)`,
+  "Explore places, wildlife, and events",
+  "Save and share trips after you generate",
+  "Public Kenya tourism analytics",
 ];
 
 const plusFeatures = [
-  `Up to ${TRAIL_PLUS_DAILY_CAP} AI uses per day`,
-  `Up to ${TRAIL_PLUS_MONTHLY_CAP} AI uses per month`,
-  `Burst protection: ${AI_CAPS.trail_plus.perMinute}/min · ${AI_CAPS.trail_plus.perHour}/hour`,
-  "Priority fair-use across Guide, Planner, Stay & Eat",
+  `Fair-use AI: up to ${TRAIL_PLUS_DAILY_CAP}/day · ${TRAIL_PLUS_MONTHLY_CAP}/month`,
+  "Catalogue-locked planning with real KES rates & Maps links",
+  "Edit saved trips with AI (swap days, rebuild budget)",
+  "Trip-aware guide that answers against your itinerary",
+  "Operator briefs from shared trip links",
+  "Wishlist → plan, timing warnings, multi-stop routes",
+  "Guide, Planner, and Stay & Eat included",
 ];
 
 const cardVariants = {
@@ -199,8 +201,9 @@ function PricingContent() {
             Pick the plan that fits your Kenya itinerary
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-muted sm:text-lg">
-            Free gets you started. Trail Plus raises fair-use limits on Guide,
-            Planner, and Stay &amp; Eat for 30 days - M-Pesa or card.
+            Free includes one AI request to try the product. Trail Plus unlocks
+            catalogue-grounded planning, trip edits, and a trip-aware guide for
+            30 days — M-Pesa or card.
           </p>
 
           <BillingNotice />
@@ -235,8 +238,9 @@ function PricingContent() {
                     Trail Plus
                   </p>
                   <p className="max-w-xs text-sm leading-relaxed text-on-brand/70">
-                    Higher fair-use AI when you are deep in a Kenya itinerary.
-                    Pay with M-Pesa or card; renew when the period ends.
+                    AI that stays in your trip — edit itineraries, ask a
+                    trip-aware guide, and brief operators. Pay with M-Pesa or
+                    card; renew when the period ends.
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
@@ -302,8 +306,8 @@ function PricingContent() {
                     Free trail
                   </p>
                   <p className="max-w-xs text-sm leading-relaxed text-muted">
-                    Enough AI to plan a weekend - Guide, Planner, Stay &amp; Eat
-                    included.
+                    One free AI request to try Guide, Planner, or Stay &amp;
+                    Eat — then upgrade for ongoing trips.
                   </p>
                 </div>
                 <div className="flex flex-col gap-4">
